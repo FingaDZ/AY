@@ -1,5 +1,6 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from contextlib import asynccontextmanager
 from config import settings
 from database import init_db
 
@@ -15,10 +16,20 @@ from routers import (
     rapports,
 )
 
+# Lifespan event handler moderne
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Startup
+    init_db()
+    print("✅ Base de données initialisée")
+    yield
+    # Shutdown (rien à faire pour l'instant)
+
 app = FastAPI(
     title=settings.APP_NAME,
     version=settings.APP_VERSION,
     description="API de gestion des ressources humaines",
+    lifespan=lifespan,
 )
 
 # Configuration CORS
@@ -29,12 +40,6 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
-
-# Initialiser la base de données au démarrage
-@app.on_event("startup")
-async def startup_event():
-    init_db()
-    print("✅ Base de données initialisée")
 
 # Inclure les routers
 app.include_router(employes.router, prefix="/api")
