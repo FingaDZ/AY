@@ -27,7 +27,17 @@ export const pointageService = {
   getAll: (params = {}) => api.get('/pointages/', { params }),
   getById: (id) => api.get(`/pointages/${id}`),
   create: (data) => api.post('/pointages/', data),
-  update: (id, data) => api.put(`/pointages/${id}`, data),
+  update: (id, data) => {
+    // Convertir les clés jour_XX en format Dict[int, int] pour l'API
+    const jours = {};
+    for (const [key, value] of Object.entries(data)) {
+      if (key.startsWith('jour_')) {
+        const jourNum = parseInt(key.replace('jour_', ''));
+        jours[jourNum] = value;
+      }
+    }
+    return api.put(`/pointages/${id}`, { jours });
+  },
   verrouiller: (id) => api.post(`/pointages/${id}/verrouiller`),
   copier: (data) => api.post('/pointages/copier', data),
   getEmployesActifs: () => api.get('/pointages/employes-actifs'),

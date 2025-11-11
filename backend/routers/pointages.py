@@ -21,8 +21,8 @@ def _pointage_to_response(pointage: Pointage) -> PointageResponse:
     jours_dict = {}
     for i in range(1, 32):
         valeur = pointage.get_jour(i)
-        # valeur est déjà une string ('Tr', 'Ab', etc.) ou None
-        jours_dict[i] = valeur if valeur else None
+        # valeur est un integer (0 ou 1) ou None
+        jours_dict[i] = valeur
     
     totaux_dict = pointage.calculer_totaux()
     totaux = PointageTotaux(**totaux_dict)
@@ -163,19 +163,19 @@ def update_pointage(
             detail="Le pointage est verrouillé et ne peut pas être modifié"
         )
     
-    # Mettre à jour les jours
+    # Mettre à jour les jours (valeurs numériques: 0 ou 1)
     for jour, valeur in pointage_update.jours.items():
         if jour < 1 or jour > 31:
             raise HTTPException(status_code=400, detail=f"Numéro de jour invalide: {jour}")
         
-        if valeur:
-            try:
-                type_jour = TypeJour(valeur)
-                pointage.set_jour(jour, type_jour)
-            except ValueError:
-                raise HTTPException(status_code=400, detail=f"Valeur invalide pour le jour {jour}: {valeur}")
-        else:
-            pointage.set_jour(jour, None)
+        # Valider que c'est bien 0, 1 ou None
+        if valeur is not None and valeur not in (0, 1):
+            raise HTTPException(
+                status_code=400, 
+                detail=f"Valeur invalide pour le jour {jour}: {valeur}. Doit être 0, 1 ou null"
+            )
+        
+        pointage.set_jour(jour, valeur)
     
     db.commit()
     db.refresh(pointage)

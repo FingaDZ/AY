@@ -50,13 +50,7 @@ class PointageVerrouillage(BaseModel):
     verrouille: bool
 
 class PointageTotaux(BaseModel):
-    travailles: int
-    absents: int
-    conges: int
-    maladies: int
-    feries: int
-    arrets: int
-    total_travailles: int  # Total des jours où valeur = 1
+    total_travailles: int  # Total des jours où valeur = 1 (Travaillé + Férié)
 
 class PointageResponse(PointageBase):
     id: int
