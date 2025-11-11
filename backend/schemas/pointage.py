@@ -7,14 +7,44 @@ class PointageBase(BaseModel):
     mois: int = Field(..., ge=1, le=12)
     
 class PointageCreate(PointageBase):
-    pass
+    jour_01: Optional[int] = None
+    jour_02: Optional[int] = None
+    jour_03: Optional[int] = None
+    jour_04: Optional[int] = None
+    jour_05: Optional[int] = None
+    jour_06: Optional[int] = None
+    jour_07: Optional[int] = None
+    jour_08: Optional[int] = None
+    jour_09: Optional[int] = None
+    jour_10: Optional[int] = None
+    jour_11: Optional[int] = None
+    jour_12: Optional[int] = None
+    jour_13: Optional[int] = None
+    jour_14: Optional[int] = None
+    jour_15: Optional[int] = None
+    jour_16: Optional[int] = None
+    jour_17: Optional[int] = None
+    jour_18: Optional[int] = None
+    jour_19: Optional[int] = None
+    jour_20: Optional[int] = None
+    jour_21: Optional[int] = None
+    jour_22: Optional[int] = None
+    jour_23: Optional[int] = None
+    jour_24: Optional[int] = None
+    jour_25: Optional[int] = None
+    jour_26: Optional[int] = None
+    jour_27: Optional[int] = None
+    jour_28: Optional[int] = None
+    jour_29: Optional[int] = None
+    jour_30: Optional[int] = None
+    jour_31: Optional[int] = None
 
 class PointageJourUpdate(BaseModel):
     numero_jour: int = Field(..., ge=1, le=31)
-    valeur: Optional[str] = None  # "Tr", "Ab", "Co", "Ma", "Fe", "Ar" ou None
+    valeur: Optional[int] = None  # 0 ou 1
 
 class PointageUpdate(BaseModel):
-    jours: Dict[int, Optional[str]]  # {1: "Tr", 2: "Ab", ...}
+    jours: Dict[int, Optional[int]]  # {1: 1, 2: 0, ...}
 
 class PointageVerrouillage(BaseModel):
     verrouille: bool
@@ -26,12 +56,12 @@ class PointageTotaux(BaseModel):
     maladies: int
     feries: int
     arrets: int
-    total_travailles: int  # Tr + Fe
+    total_travailles: int  # Total des jours où valeur = 1
 
 class PointageResponse(PointageBase):
     id: int
     verrouille: bool
-    jours: Dict[int, Optional[str]]  # {1: "Tr", 2: "Ab", ...}
+    jours: Dict[int, Optional[int]]  # {1: 1, 2: 0, ...}
     totaux: PointageTotaux
     
     class Config:

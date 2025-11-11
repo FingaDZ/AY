@@ -4,7 +4,7 @@ from datetime import date
 from typing import Optional
 
 from database import get_db
-from models import Pointage, Employe, TypeJour, StatutContrat
+from models import Pointage, Employe, StatutContrat
 from schemas import (
     PointageCreate,
     PointageUpdate,
@@ -21,7 +21,8 @@ def _pointage_to_response(pointage: Pointage) -> PointageResponse:
     jours_dict = {}
     for i in range(1, 32):
         valeur = pointage.get_jour(i)
-        jours_dict[i] = valeur.value if valeur else None
+        # valeur est déjà une string ('Tr', 'Ab', etc.) ou None
+        jours_dict[i] = valeur if valeur else None
     
     totaux_dict = pointage.calculer_totaux()
     totaux = PointageTotaux(**totaux_dict)

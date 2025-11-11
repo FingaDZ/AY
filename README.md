@@ -14,19 +14,48 @@ Application complète de gestion RH avec :
 
 ## 🚀 Démarrage Rapide
 
-### Option 1 : Script automatique (Recommandé)
+### Option 1 : Script automatique - Backend + Frontend (Recommandé)
 
-**Windows PowerShell :**
+**Démarrer toute l'application (Backend + Frontend) :**
 ```powershell
-.\start.ps1
+.\start_all.ps1
 ```
 
-**Windows CMD :**
-```cmd
-start.bat
+**Ou séparément :**
+
+Backend seulement :
+```powershell
+.\start_backend.ps1
+```
+
+Frontend seulement :
+```powershell
+.\start_frontend.ps1
 ```
 
 ### Option 2 : Démarrage manuel
+
+#### Backend
+```powershell
+cd backend
+.\venv\Scripts\Activate.ps1
+uvicorn main:app --host 0.0.0.0 --port 8000 --reload
+```
+
+#### Frontend
+```powershell
+cd frontend
+npm run dev
+```
+
+## 🔗 URLs d'Accès
+
+- **Frontend (Interface utilisateur)** : http://localhost:3000
+- **Backend API** : http://localhost:8000
+- **Documentation API (Swagger)** : http://localhost:8000/docs
+- **ReDoc** : http://localhost:8000/redoc
+
+### Option 3 : Démarrage manuel (Backend seul)
 
 ```powershell
 cd backend
@@ -267,4 +296,4 @@ Cette application est développée pour un usage interne de gestion RH.
 ---
 
 **Version** : 1.0.0  
-**Dernière mise à jour** : Novembre 2024
+**Dernière mise à jour** : Novembre 2025

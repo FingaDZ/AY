@@ -1,5 +1,5 @@
 from .employe import Employe, SituationFamiliale, StatutContrat
-from .pointage import Pointage, TypeJour
+from .pointage import Pointage
 from .client import Client
 from .mission import Mission, Parametre
 from .avance import Avance
@@ -10,7 +10,6 @@ __all__ = [
     "SituationFamiliale",
     "StatutContrat",
     "Pointage",
-    "TypeJour",
     "Client",
     "Mission",
     "Parametre",
