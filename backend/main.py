@@ -36,10 +36,10 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
-# Configuration CORS
+# Configuration CORS - Accepter toutes les origines (réseau LAN)
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=settings.cors_origins_list,
+    allow_origins=["*"],  # Accepter toutes les origines pour déploiement LAN
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

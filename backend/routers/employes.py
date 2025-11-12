@@ -86,12 +86,17 @@ def list_employes(
     statut: Optional[str] = Query(None, description="Filtrer par statut (Actif/Inactif)"),
     search: Optional[str] = Query(None, description="Rechercher par nom ou prénom"),
     poste: Optional[str] = Query(None, description="Filtrer par poste"),
+    inclure_inactifs: bool = Query(False, description="Inclure les employés inactifs/désactivés"),
     db: Session = Depends(get_db),
     current_user: User = Depends(require_auth)
 ):
-    """Lister tous les employés avec filtres"""
+    """Lister tous les employés avec filtres - Par défaut, exclut les employés désactivés"""
     
     query = db.query(Employe)
+    
+    # Filtrer les employés actifs par défaut (soft delete)
+    if not inclure_inactifs:
+        query = query.filter(Employe.actif == True)
     
     # Filtrer par statut
     if statut:
@@ -216,38 +221,92 @@ def update_employe(
     
     return employe
 
-@router.delete("/{employe_id}", status_code=204)
+@router.delete("/{employe_id}", status_code=200)
 def delete_employe(employe_id: int, request: Request, db: Session = Depends(get_db), current_user: User = Depends(require_admin)):
-    """Supprimer un employé"""
+    """Désactiver un employé (soft delete) - La suppression définitive n'est pas autorisée s'il existe des données liées"""
+    from models import Pointage, Avance, Credit, Mission, Salaire
     
     employe = db.query(Employe).filter(Employe.id == employe_id).first()
     
     if not employe:
         raise HTTPException(status_code=404, detail="Employé non trouvé")
     
-    # Sauvegarder les données pour le log
-    employe_data = clean_data_for_logging(employe)
-    employe_name = f"{employe.nom} {employe.prenom}"
+    # Vérifier s'il existe des données liées
+    has_pointages = db.query(Pointage).filter(Pointage.employe_id == employe_id).count() > 0
+    has_avances = db.query(Avance).filter(Avance.employe_id == employe_id).count() > 0
+    has_credits = db.query(Credit).filter(Credit.employe_id == employe_id).count() > 0
+    has_missions = db.query(Mission).filter(Mission.chauffeur_id == employe_id).count() > 0
+    has_salaires = db.query(Salaire).filter(Salaire.employe_id == employe_id).count() > 0
     
-    db.delete(employe)
-    db.commit()
-    
-    # Log de la suppression
-    try:
-        log_action(
-            db=db,
-            module_name="employes",
-            action_type=ActionType.DELETE,
-            record_id=employe_id,
-            old_data=employe_data,
-            description=f"Suppression employé: {employe_name}",
-            user=current_user,
-            request=request
-        )
-    except Exception as e:
-        print(f"Erreur logging: {e}")
-    
-    return None
+    if any([has_pointages, has_avances, has_credits, has_missions, has_salaires]):
+        # L'employé a des données liées - on fait un soft delete
+        employe_data = clean_data_for_logging(employe)
+        employe_name = f"{employe.nom} {employe.prenom}"
+        
+        # Désactiver l'employé
+        employe.actif = False
+        employe.statut_contrat = StatutContrat.INACTIF
+        
+        db.commit()
+        db.refresh(employe)
+        
+        # Log de la désactivation
+        try:
+            log_action(
+                db=db,
+                module_name="employes",
+                action_type=ActionType.UPDATE,
+                record_id=employe_id,
+                old_data=employe_data,
+                new_data=clean_data_for_logging(employe),
+                description=f"Désactivation employé (soft delete): {employe_name} - Raison: données liées existantes",
+                user=current_user,
+                request=request
+            )
+        except Exception as e:
+            print(f"Erreur logging: {e}")
+        
+        return {
+            "message": "L'employé a été désactivé (et non supprimé) car il possède des données liées (pointages, salaires, missions, avances ou crédits).",
+            "action": "désactivation",
+            "employe_id": employe_id,
+            "has_data": {
+                "pointages": has_pointages,
+                "avances": has_avances,
+                "credits": has_credits,
+                "missions": has_missions,
+                "salaires": has_salaires
+            }
+        }
+    else:
+        # Aucune donnée liée - suppression définitive autorisée
+        employe_data = clean_data_for_logging(employe)
+        employe_name = f"{employe.nom} {employe.prenom}"
+        
+        # Log de la suppression AVANT de supprimer
+        try:
+            log_action(
+                db=db,
+                module_name="employes",
+                action_type=ActionType.DELETE,
+                record_id=employe_id,
+                old_data=employe_data,
+                description=f"Suppression définitive employé: {employe_name} - Aucune donnée liée",
+                user=current_user,
+                request=request
+            )
+        except Exception as e:
+            print(f"Erreur logging: {e}")
+        
+        # Suppression définitive
+        db.delete(employe)
+        db.commit()
+        
+        return {
+            "message": "L'employé a été supprimé définitivement (aucune donnée liée trouvée).",
+            "action": "suppression",
+            "employe_id": employe_id
+        }
 
 @router.post("/{employe_id}/valider-contrat")
 def valider_contrat(employe_id: int, db: Session = Depends(get_db)):

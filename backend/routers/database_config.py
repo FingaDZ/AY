@@ -3,6 +3,7 @@ from sqlalchemy.orm import Session
 from sqlalchemy import create_engine
 from typing import Optional
 from pydantic import BaseModel
+from urllib.parse import quote_plus
 
 from database import get_db
 from models import DatabaseConfig, User
@@ -78,7 +79,9 @@ async def create_or_update_database_config(
     
     # Vérifier la connexion avant de sauvegarder
     try:
-        test_connection_string = f"mysql+pymysql://{config_data.username}:{config_data.password}@{config_data.host}:{config_data.port}/{config_data.database_name}?charset={config_data.charset}"
+        # Encoder le mot de passe pour gérer les caractères spéciaux
+        encoded_password = quote_plus(config_data.password)
+        test_connection_string = f"mysql+pymysql://{config_data.username}:{encoded_password}@{config_data.host}:{config_data.port}/{config_data.database_name}?charset={config_data.charset}"
         test_engine = create_engine(test_connection_string)
         test_connection = test_engine.connect()
         test_connection.close()
@@ -164,12 +167,15 @@ async def test_database_connection(
 ):
     """Tester une connexion sans sauvegarder"""
     try:
-        test_connection_string = f"mysql+pymysql://{config_data.username}:{config_data.password}@{config_data.host}:{config_data.port}/{config_data.database_name}?charset={config_data.charset}"
+        # Encoder le mot de passe pour gérer les caractères spéciaux (!@#$%^&*)
+        encoded_password = quote_plus(config_data.password)
+        test_connection_string = f"mysql+pymysql://{config_data.username}:{encoded_password}@{config_data.host}:{config_data.port}/{config_data.database_name}?charset={config_data.charset}"
         test_engine = create_engine(test_connection_string)
         test_connection = test_engine.connect()
         
         # Tester une requête simple
-        result = test_connection.execute("SELECT VERSION()")
+        from sqlalchemy import text
+        result = test_connection.execute(text("SELECT VERSION()"))
         version = result.fetchone()[0]
         
         test_connection.close()

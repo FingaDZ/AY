@@ -99,6 +99,15 @@ function MainLayout({ children }) {
   const fetchCompanyInfo = async () => {
     try {
       const response = await parametresService.getParametres();
+      
+      // Vérifier que response et response.data existent
+      if (!response || !response.data) {
+        console.warn('Réponse API paramètres vide, utilisation des valeurs par défaut');
+        setCompanyName('AY HR');
+        setCompanyInitials('AY');
+        return;
+      }
+      
       const params = response.data;
       
       // Utiliser raison_sociale en priorité, sinon nom_entreprise
@@ -116,6 +125,9 @@ function MainLayout({ children }) {
       setCompanyInitials(initials);
     } catch (error) {
       console.error('Erreur lors de la récupération des paramètres:', error);
+      // Valeurs par défaut en cas d'erreur
+      setCompanyName('AY HR');
+      setCompanyInitials('AY');
     }
   };
 

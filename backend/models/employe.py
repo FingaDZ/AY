@@ -50,6 +50,7 @@ class Employe(Base):
     
     # Statut
     statut_contrat = Column(SQLEnum(StatutContrat), default=StatutContrat.ACTIF, nullable=False, index=True)
+    actif = Column(Boolean, default=True, nullable=False, index=True)  # Soft delete
     
     # Relations
     pointages = relationship("Pointage", back_populates="employe", cascade="all, delete-orphan")
