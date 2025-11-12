@@ -14,6 +14,7 @@ import {
   SettingOutlined,
   AuditOutlined,
   LogoutOutlined,
+  DatabaseOutlined,
 } from '@ant-design/icons';
 import { useAuth } from '../../contexts/AuthContext';
 
@@ -64,6 +65,11 @@ const menuItems = [
     key: '/parametres',
     icon: <SettingOutlined />,
     label: 'Paramètres',
+  },
+  {
+    key: '/database-config',
+    icon: <DatabaseOutlined />,
+    label: 'Base de Données',
   },
   {
     key: '/utilisateurs',

@@ -14,6 +14,7 @@ import SalaireCalcul from './pages/Salaires/SalaireCalcul';
 import Rapports from './pages/Rapports/Rapports';
 import RapportsPage from './pages/Rapports/RapportsPage';
 import ParametresPage from './pages/Parametres/ParametresPage';
+import DatabaseConfigPage from './pages/DatabaseConfig/DatabaseConfigPage';
 import UtilisateursPage from './pages/Utilisateurs/UtilisateursPage';
 import LogsPage from './pages/Logs/LogsPage';
 import LoginPage from './pages/Login/LoginPage';
@@ -74,6 +75,9 @@ function AppRoutes() {
           
           {/* Paramètres */}
           <Route path="/parametres" element={<ParametresPage />} />
+          
+          {/* Configuration Base de Données */}
+          <Route path="/database-config" element={<DatabaseConfigPage />} />
           
           {/* Utilisateurs */}
           <Route path="/utilisateurs" element={<UtilisateursPage />} />

@@ -16,6 +16,7 @@ from routers import (
     rapports,
     parametres,
     utilisateurs,
+    database_config,
 )
 
 # Lifespan event handler moderne
@@ -54,6 +55,7 @@ app.include_router(salaires.router, prefix="/api")
 app.include_router(rapports.router, prefix="/api")
 app.include_router(parametres.router, prefix="/api")
 app.include_router(utilisateurs.router, prefix="/api")
+app.include_router(database_config.router, prefix="/api")
 
 @app.get("/")
 def root():
