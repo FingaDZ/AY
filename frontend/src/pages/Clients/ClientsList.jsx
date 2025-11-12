@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Table, Button, Space, Input, message, Modal, Form, InputNumber, Popconfirm } from 'antd';
-import { PlusOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons';
+import { PlusOutlined, EditOutlined, DeleteOutlined, FilePdfOutlined } from '@ant-design/icons';
 import { clientService } from '../../services';
 
 function ClientsList() {
@@ -59,6 +59,30 @@ function ClientsList() {
     }
   };
 
+  const handleGenererRapport = async () => {
+    try {
+      setLoading(true);
+      const response = await clientService.getRapportListe();
+      
+      // Télécharger le PDF
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement('a');
+      link.href = url;
+      const today = new Date().toISOString().slice(0, 10).replace(/-/g, '');
+      link.setAttribute('download', `clients_${today}.pdf`);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      
+      message.success('Rapport généré avec succès');
+    } catch (error) {
+      message.error(error.response?.data?.detail || 'Erreur lors de la génération du rapport');
+      console.error(error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleEdit = (client) => {
     setEditingClient(client);
     form.setFieldsValue(client);
@@ -93,6 +117,12 @@ function ClientsList() {
       dataIndex: 'distance',
       key: 'distance',
       render: (value) => `${parseFloat(value).toFixed(2)} km`,
+    },
+    {
+      title: 'Tarif (DA/km)',
+      dataIndex: 'tarif_km',
+      key: 'tarif_km',
+      render: (value) => `${parseFloat(value).toFixed(2)} DA/km`,
     },
     {
       title: 'Téléphone',
@@ -130,13 +160,23 @@ function ClientsList() {
     <div>
       <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 16 }}>
         <h2>Liste des Clients</h2>
-        <Button
-          type="primary"
-          icon={<PlusOutlined />}
-          onClick={handleAdd}
-        >
-          Nouveau Client
-        </Button>
+        <Space>
+          <Button
+            type="default"
+            icon={<FilePdfOutlined />}
+            onClick={handleGenererRapport}
+            loading={loading}
+          >
+            Rapport PDF
+          </Button>
+          <Button
+            type="primary"
+            icon={<PlusOutlined />}
+            onClick={handleAdd}
+          >
+            Nouveau Client
+          </Button>
+        </Space>
       </div>
 
       <Table
@@ -190,6 +230,20 @@ function ClientsList() {
               style={{ width: '100%' }}
               min={0}
               step={0.1}
+              precision={2}
+            />
+          </Form.Item>
+
+          <Form.Item
+            label="Tarif kilométrique (DA/km)"
+            name="tarif_km"
+            rules={[{ required: true, message: 'Veuillez saisir le tarif kilométrique' }]}
+            initialValue={3.00}
+          >
+            <InputNumber
+              style={{ width: '100%' }}
+              min={0}
+              step={0.5}
               precision={2}
             />
           </Form.Item>

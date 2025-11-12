@@ -59,23 +59,39 @@ class Pointage(Base):
         setattr(self, f"jour_{numero_jour:02d}", valeur)
     
     def calculer_totaux(self):
-        """Calculer les totaux pour ce pointage - compte les jours = 1"""
-        total_travailles = 0
+        """
+        Calculer les totaux pour ce pointage
+        NOTE: Le système actuel stocke seulement 0 ou 1:
+        - 1 = Travaillé ou Férié  
+        - 0 = Absent, Congé, Maladie ou Arrêt (non différenciables)
+        """
+        totaux = {
+            "jours_travailles": 0,
+            "heures_supplementaires": 0,
+            "jours_absences": 0,  # Inclut congés, maladies, arrêts (tous = 0 dans la DB)
+            "jours_conges": 0,
+            "jours_maladie": 0,
+            "jours_arret": 0,
+            "jours_feries": 0
+        }
         
+        # Compter les jours
         for jour in range(1, 32):
             valeur = self.get_jour(jour)
-            if valeur == 1:
-                total_travailles += 1
+            if valeur == 1:  # Travaillé ou Férié
+                totaux["jours_travailles"] += 1
+            elif valeur == 0:  # Absence (toutes catégories confondues dans la DB)
+                totaux["jours_absences"] += 1
         
-        return {
-            "total_travailles": total_travailles,
-            "travailles": total_travailles,  # Pour compatibilité
-            "absents": 0,
-            "conges": 0,
-            "maladies": 0,
-            "feries": 0,
-            "arrets": 0
-        }
+        # Calculer les heures supplémentaires (si la colonne existe)
+        if hasattr(self, 'heures_supplementaires') and self.heures_supplementaires:
+            totaux["heures_supplementaires"] = float(self.heures_supplementaires)
+        
+        # Compatibilité avec anciens noms
+        totaux["total_travailles"] = totaux["jours_travailles"]
+        totaux["travailles"] = totaux["jours_travailles"]
+        
+        return totaux
     
     def __repr__(self):
         return f"<Pointage {self.employe_id} - {self.mois}/{self.annee}>"

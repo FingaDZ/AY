@@ -7,6 +7,7 @@ class ClientBase(BaseModel):
     prenom: str = Field(..., min_length=1, max_length=100)
     distance: Decimal = Field(..., gt=0, description="Distance en kilomètres")
     telephone: str = Field(..., min_length=1, max_length=20)
+    tarif_km: Decimal = Field(default=3.00, gt=0, description="Tarif kilométrique (DA/km)")
 
 class ClientCreate(ClientBase):
     pass
@@ -16,6 +17,7 @@ class ClientUpdate(BaseModel):
     prenom: Optional[str] = Field(None, min_length=1, max_length=100)
     distance: Optional[Decimal] = Field(None, gt=0)
     telephone: Optional[str] = Field(None, min_length=1, max_length=20)
+    tarif_km: Optional[Decimal] = Field(None, gt=0)
 
 class ClientResponse(ClientBase):
     id: int

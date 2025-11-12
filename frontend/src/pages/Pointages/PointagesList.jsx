@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Table, Button, Select, message, Space, Tag } from 'antd';
+import { Table, Button, Select, InputNumber, message, Space, Tag } from 'antd';
 import { PlusOutlined, EditOutlined, LockOutlined, CopyOutlined, TableOutlined } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
 import { pointageService } from '../../services';
@@ -135,11 +135,6 @@ function PointagesList() {
     { value: 12, label: 'Décembre' },
   ];
 
-  const yearOptions = [];
-  for (let year = currentYear - 2; year <= currentYear + 1; year++) {
-    yearOptions.push({ value: year, label: year });
-  }
-
   return (
     <div>
       <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 16 }}>
@@ -171,15 +166,14 @@ function PointagesList() {
             <Option key={month.value} value={month.value}>{month.label}</Option>
           ))}
         </Select>
-        <Select
+        <InputNumber
           value={filters.annee}
           style={{ width: 120 }}
-          onChange={(value) => setFilters({ ...filters, annee: value })}
-        >
-          {yearOptions.map(year => (
-            <Option key={year.value} value={year.value}>{year.label}</Option>
-          ))}
-        </Select>
+          min={2000}
+          max={2100}
+          placeholder="Année"
+          onChange={(value) => setFilters({ ...filters, annee: value || currentYear })}
+        />
       </Space>
 
       <Table

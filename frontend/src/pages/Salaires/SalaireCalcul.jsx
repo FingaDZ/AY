@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
-import { Card, Select, Button, Table, message, Spin, Descriptions } from 'antd';
-import { CalculatorOutlined } from '@ant-design/icons';
+import { Card, Select, Button, Table, message, Spin, Descriptions, InputNumber, Tag, Space } from 'antd';
+import { CalculatorOutlined, EyeOutlined, FilePdfOutlined, FileZipOutlined } from '@ant-design/icons';
 import { salaireService, employeService } from '../../services';
 
 const { Option } = Select;
@@ -13,9 +13,11 @@ function SalaireCalcul() {
   const [calculating, setCalculating] = useState(false);
   const [employes, setEmployes] = useState([]);
   const [salaires, setSalaires] = useState([]);
+  const [totaux, setTotaux] = useState(null);
   const [filters, setFilters] = useState({
     annee: currentYear,
     mois: currentMonth,
+    jours_supplementaires: 0,
   });
 
   useEffect(() => {
@@ -32,11 +34,17 @@ function SalaireCalcul() {
   };
 
   const handleCalculer = async () => {
+    if (!filters.annee || !filters.mois) {
+      message.warning('Veuillez sélectionner une année et un mois');
+      return;
+    }
+    
     try {
       setCalculating(true);
       const response = await salaireService.calculerTous(filters);
       setSalaires(response.data.salaires || []);
-      message.success('Salaires calculés avec succès');
+      setTotaux(response.data.totaux || null);
+      message.success(`${response.data.calcules || 0} salaire(s) calculé(s) avec succès`);
     } catch (error) {
       message.error('Erreur lors du calcul des salaires');
       console.error(error);
@@ -45,51 +53,273 @@ function SalaireCalcul() {
     }
   };
 
+  const handleGenererBulletins = async () => {
+    if (!filters.annee || !filters.mois) {
+      message.warning('Veuillez sélectionner une année et un mois');
+      return;
+    }
+    
+    if (salaires.length === 0) {
+      message.warning('Veuillez d\'abord calculer les salaires');
+      return;
+    }
+    
+    try {
+      setLoading(true);
+      const response = await salaireService.genererBulletins(filters);
+      
+      // Créer un lien de téléchargement
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', `bulletins_paie_${filters.mois.toString().padStart(2, '0')}_${filters.annee}.zip`);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      
+      message.success('Bulletins de paie générés avec succès');
+    } catch (error) {
+      message.error('Erreur lors de la génération des bulletins');
+      console.error(error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleGenererRapport = async () => {
+    if (!filters.annee || !filters.mois) {
+      message.warning('Veuillez sélectionner une année et un mois');
+      return;
+    }
+    
+    if (salaires.length === 0) {
+      message.warning('Veuillez d\'abord calculer les salaires');
+      return;
+    }
+    
+    try {
+      setLoading(true);
+      const response = await salaireService.genererRapport(filters);
+      
+      // Créer un lien de téléchargement
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', `rapport_salaires_${filters.mois.toString().padStart(2, '0')}_${filters.annee}.pdf`);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      
+      message.success('Rapport PDF généré avec succès');
+    } catch (error) {
+      message.error('Erreur lors de la génération du rapport');
+      console.error(error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const columns = [
+    {
+      title: 'N°',
+      key: 'index',
+      width: 50,
+      render: (_, __, index) => index + 1,
+      fixed: 'left',
+    },
     {
       title: 'Employé',
       key: 'employe',
+      width: 180,
+      fixed: 'left',
       render: (_, record) => {
         const emp = employes.find(e => e.id === record.employe_id);
-        return emp ? `${emp.prenom} ${emp.nom}` : record.employe_id;
+        return emp ? (
+          <div>
+            <div style={{ fontWeight: 'bold' }}>{emp.prenom} {emp.nom}</div>
+            <div style={{ fontSize: '12px', color: '#888' }}>{emp.poste_travail}</div>
+          </div>
+        ) : record.employe_id;
       }
     },
     {
-      title: 'Salaire Base',
+      title: 'Salaire Base Contrat',
+      key: 'salaire_base_contrat',
+      width: 130,
+      align: 'right',
+      render: (_, record) => {
+        const emp = employes.find(e => e.id === record.employe_id);
+        return emp ? `${parseFloat(emp.salaire_base || 0).toLocaleString('fr-FR', {minimumFractionDigits: 2})} DA` : '-';
+      }
+    },
+    {
+      title: 'Jours Trav.',
+      dataIndex: 'jours_travailles',
+      key: 'jours',
+      width: 80,
+      align: 'center',
+    },
+    {
+      title: 'Salaire Base Proratisé',
       dataIndex: 'salaire_base_proratis',
       key: 'salaire_base',
-      render: (val) => `${parseFloat(val || 0).toLocaleString('fr-FR')} DA`
+      width: 130,
+      align: 'right',
+      render: (val) => `${parseFloat(val || 0).toLocaleString('fr-FR', {minimumFractionDigits: 2})}`
     },
     {
-      title: 'Total Indemnités',
-      key: 'indemnites',
-      render: (_, record) => {
-        const total = (parseFloat(record.in || 0) + 
-                      parseFloat(record.ifsp || 0) + 
-                      parseFloat(record.iep || 0) +
-                      parseFloat(record.prime_encouragement || 0));
-        return `${total.toLocaleString('fr-FR')} DA`;
-      }
+      title: 'H. Supp. (1.33h/j)',
+      dataIndex: 'heures_supplementaires',
+      key: 'heures_supp',
+      width: 120,
+      align: 'right',
+      render: (val) => `${parseFloat(val || 0).toLocaleString('fr-FR', {minimumFractionDigits: 2})}`
     },
     {
-      title: 'IRG',
-      dataIndex: 'irg',
-      key: 'irg',
-      render: (val) => `${parseFloat(val || 0).toLocaleString('fr-FR')} DA`
+      title: 'Indemnités',
+      children: [
+        {
+          title: 'IN (5%)',
+          dataIndex: 'indemnite_nuisance',
+          key: 'in',
+          width: 100,
+          align: 'right',
+          render: (val) => `${parseFloat(val || 0).toLocaleString('fr-FR', {minimumFractionDigits: 2})}`
+        },
+        {
+          title: 'IFSP (5%)',
+          dataIndex: 'ifsp',
+          key: 'ifsp',
+          width: 100,
+          align: 'right',
+          render: (val) => `${parseFloat(val || 0).toLocaleString('fr-FR', {minimumFractionDigits: 2})}`
+        },
+        {
+          title: 'IEP (1%/an)',
+          dataIndex: 'iep',
+          key: 'iep',
+          width: 100,
+          align: 'right',
+          render: (val) => `${parseFloat(val || 0).toLocaleString('fr-FR', {minimumFractionDigits: 2})}`
+        },
+      ]
     },
     {
-      title: 'Retenue SS',
-      dataIndex: 'retenue_secu_sociale',
-      key: 'retenue_ss',
-      render: (val) => `${parseFloat(val || 0).toLocaleString('fr-FR')} DA`
+      title: 'Primes',
+      children: [
+        {
+          title: 'Encouragement (10%)',
+          dataIndex: 'prime_encouragement',
+          key: 'prime_encouragement',
+          width: 130,
+          align: 'right',
+          render: (val) => `${parseFloat(val || 0).toLocaleString('fr-FR', {minimumFractionDigits: 2})}`
+        },
+        {
+          title: 'Chauffeur (100DA/j)',
+          dataIndex: 'prime_chauffeur',
+          key: 'prime_chauffeur',
+          width: 130,
+          align: 'right',
+          render: (val) => `${parseFloat(val || 0).toLocaleString('fr-FR', {minimumFractionDigits: 2})}`
+        },
+        {
+          title: 'Nuit Séc. (750DA/m)',
+          dataIndex: 'prime_nuit_agent_securite',
+          key: 'prime_nuit',
+          width: 130,
+          align: 'right',
+          render: (val) => `${parseFloat(val || 0).toLocaleString('fr-FR', {minimumFractionDigits: 2})}`
+        },
+        {
+          title: 'Déplacement',
+          dataIndex: 'prime_deplacement',
+          key: 'prime_deplacement',
+          width: 110,
+          align: 'right',
+          render: (val) => `${parseFloat(val || 0).toLocaleString('fr-FR', {minimumFractionDigits: 2})}`
+        },
+      ]
+    },
+    {
+      title: 'Panier (100DA/j)',
+      dataIndex: 'panier',
+      key: 'panier',
+      width: 110,
+      align: 'right',
+      render: (val) => `${parseFloat(val || 0).toLocaleString('fr-FR', {minimumFractionDigits: 2})}`
+    },
+    {
+      title: 'Transport (100DA/j)',
+      dataIndex: 'prime_transport',
+      key: 'transport',
+      width: 130,
+      align: 'right',
+      render: (val) => `${parseFloat(val || 0).toLocaleString('fr-FR', {minimumFractionDigits: 2})}`
+    },
+    {
+      title: 'Retenues',
+      children: [
+        {
+          title: 'SS (9%)',
+          dataIndex: 'retenue_securite_sociale',
+          key: 'retenue_ss',
+          width: 110,
+          align: 'right',
+          render: (val) => (
+            <span style={{ color: '#ff4d4f' }}>
+              {parseFloat(val || 0).toLocaleString('fr-FR', {minimumFractionDigits: 2})}
+            </span>
+          )
+        },
+        {
+          title: 'IRG',
+          dataIndex: 'irg',
+          key: 'irg',
+          width: 110,
+          align: 'right',
+          render: (val) => (
+            <span style={{ color: '#ff4d4f' }}>
+              {parseFloat(val || 0).toLocaleString('fr-FR', {minimumFractionDigits: 2})}
+            </span>
+          )
+        },
+        {
+          title: 'Avances',
+          dataIndex: 'total_avances',
+          key: 'avances',
+          width: 100,
+          align: 'right',
+          render: (val) => (
+            <span style={{ color: '#ff4d4f' }}>
+              {parseFloat(val || 0).toLocaleString('fr-FR', {minimumFractionDigits: 2})}
+            </span>
+          )
+        },
+        {
+          title: 'Crédits',
+          dataIndex: 'retenue_credit',
+          key: 'credits',
+          width: 100,
+          align: 'right',
+          render: (val) => (
+            <span style={{ color: '#ff4d4f' }}>
+              {parseFloat(val || 0).toLocaleString('fr-FR', {minimumFractionDigits: 2})}
+            </span>
+          )
+        },
+      ]
     },
     {
       title: 'Salaire Net',
       dataIndex: 'salaire_net',
       key: 'salaire_net',
+      width: 150,
+      align: 'right',
+      fixed: 'right',
       render: (val) => (
-        <span style={{ fontWeight: 'bold', color: '#52c41a' }}>
-          {parseFloat(val || 0).toLocaleString('fr-FR')} DA
+        <span style={{ fontWeight: 'bold', color: '#52c41a', fontSize: '15px' }}>
+          {parseFloat(val || 0).toLocaleString('fr-FR', {minimumFractionDigits: 2})} DA
         </span>
       )
     },
@@ -100,109 +330,246 @@ function SalaireCalcul() {
       <h2>Calcul des Salaires</h2>
 
       <Card style={{ marginBottom: 16 }}>
-        <div style={{ display: 'flex', gap: 16, alignItems: 'center' }}>
-          <span>Période:</span>
-          <Select
-            value={filters.mois}
-            style={{ width: 150 }}
-            onChange={(value) => setFilters({ ...filters, mois: value })}
-          >
-            {[...Array(12)].map((_, i) => (
-              <Option key={i + 1} value={i + 1}>
-                {new Date(2000, i).toLocaleString('fr-FR', { month: 'long' })}
-              </Option>
-            ))}
-          </Select>
-          <Select
-            value={filters.annee}
-            style={{ width: 120 }}
-            onChange={(value) => setFilters({ ...filters, annee: value })}
-          >
-            {[currentYear - 1, currentYear, currentYear + 1].map(year => (
-              <Option key={year} value={year}>{year}</Option>
-            ))}
-          </Select>
+        <Space size="middle" wrap>
+          <div>
+            <label style={{ marginRight: 8, fontWeight: 'bold' }}>Mois:</label>
+            <Select
+              value={filters.mois}
+              style={{ width: 150 }}
+              onChange={(value) => setFilters({ ...filters, mois: value })}
+            >
+              {[...Array(12)].map((_, i) => (
+                <Option key={i + 1} value={i + 1}>
+                  {new Date(2000, i).toLocaleString('fr-FR', { month: 'long' })}
+                </Option>
+              ))}
+            </Select>
+          </div>
+          
+          <div>
+            <label style={{ marginRight: 8, fontWeight: 'bold' }}>Année:</label>
+            <InputNumber
+              value={filters.annee}
+              min={2000}
+              max={2100}
+              style={{ width: 120 }}
+              onChange={(value) => setFilters({ ...filters, annee: value })}
+            />
+          </div>
+
+          <div>
+            <label style={{ marginRight: 8, fontWeight: 'bold' }}>Jours Supplémentaires:</label>
+            <InputNumber
+              value={filters.jours_supplementaires}
+              min={0}
+              max={31}
+              style={{ width: 100 }}
+              onChange={(value) => setFilters({ ...filters, jours_supplementaires: value || 0 })}
+            />
+          </div>
+
           <Button
             type="primary"
+            size="large"
             icon={<CalculatorOutlined />}
             onClick={handleCalculer}
             loading={calculating}
           >
             Calculer Tous les Salaires
           </Button>
-        </div>
+
+          {salaires.length > 0 && (
+            <>
+              <Button
+                type="default"
+                size="large"
+                icon={<FileZipOutlined />}
+                onClick={handleGenererBulletins}
+                loading={loading}
+                style={{ backgroundColor: '#52c41a', color: 'white', borderColor: '#52c41a' }}
+              >
+                Générer Bulletins de Paie (ZIP)
+              </Button>
+              
+              <Button
+                type="primary"
+                size="large"
+                icon={<FilePdfOutlined />}
+                onClick={handleGenererRapport}
+                loading={loading}
+              >
+                Rapport PDF Complet
+              </Button>
+            </>
+          )}
+        </Space>
       </Card>
+
+      {/* Résumé des totaux */}
+      {totaux && (
+        <Card style={{ marginBottom: 16, backgroundColor: '#f0f7ff' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-around', flexWrap: 'wrap', gap: 16 }}>
+            <div style={{ textAlign: 'center' }}>
+              <div style={{ fontSize: '14px', color: '#666' }}>Employés</div>
+              <div style={{ fontSize: '24px', fontWeight: 'bold', color: '#1890ff' }}>
+                {salaires.length}
+              </div>
+            </div>
+            <div style={{ textAlign: 'center' }}>
+              <div style={{ fontSize: '14px', color: '#666' }}>Salaire Cotisable Total</div>
+              <div style={{ fontSize: '20px', fontWeight: 'bold' }}>
+                {parseFloat(totaux.salaire_cotisable || 0).toLocaleString('fr-FR', {minimumFractionDigits: 2})} DA
+              </div>
+            </div>
+            <div style={{ textAlign: 'center' }}>
+              <div style={{ fontSize: '14px', color: '#666' }}>Total Retenues SS</div>
+              <div style={{ fontSize: '20px', fontWeight: 'bold', color: '#ff4d4f' }}>
+                {parseFloat(totaux.retenue_securite_sociale || 0).toLocaleString('fr-FR', {minimumFractionDigits: 2})} DA
+              </div>
+            </div>
+            <div style={{ textAlign: 'center' }}>
+              <div style={{ fontSize: '14px', color: '#666' }}>Total IRG</div>
+              <div style={{ fontSize: '20px', fontWeight: 'bold', color: '#ff4d4f' }}>
+                {parseFloat(totaux.irg || 0).toLocaleString('fr-FR', {minimumFractionDigits: 2})} DA
+              </div>
+            </div>
+            <div style={{ textAlign: 'center' }}>
+              <div style={{ fontSize: '14px', color: '#666' }}>Total Avances</div>
+              <div style={{ fontSize: '20px', fontWeight: 'bold', color: '#ff4d4f' }}>
+                {parseFloat(totaux.total_avances || 0).toLocaleString('fr-FR', {minimumFractionDigits: 2})} DA
+              </div>
+            </div>
+            <div style={{ textAlign: 'center' }}>
+              <div style={{ fontSize: '14px', color: '#666' }}>Total Crédits</div>
+              <div style={{ fontSize: '20px', fontWeight: 'bold', color: '#ff4d4f' }}>
+                {parseFloat(totaux.retenue_credit || 0).toLocaleString('fr-FR', {minimumFractionDigits: 2})} DA
+              </div>
+            </div>
+            <div style={{ textAlign: 'center', padding: '0 20px', borderLeft: '2px solid #52c41a' }}>
+              <div style={{ fontSize: '14px', color: '#666' }}>SALAIRE NET TOTAL</div>
+              <div style={{ fontSize: '28px', fontWeight: 'bold', color: '#52c41a' }}>
+                {parseFloat(totaux.salaire_net || 0).toLocaleString('fr-FR', {minimumFractionDigits: 2})} DA
+              </div>
+            </div>
+          </div>
+        </Card>
+      )}
 
       {calculating ? (
         <div style={{ textAlign: 'center', padding: 50 }}>
           <Spin size="large" />
-          <p>Calcul en cours...</p>
+          <p>Calcul des salaires en cours...</p>
         </div>
       ) : (
-        <Table
-          columns={columns}
-          dataSource={salaires}
-          rowKey={(record) => record.employe_id}
-          pagination={false}
-          expandable={{
-            expandedRowRender: (record) => (
-              <Descriptions bordered size="small" column={2}>
-                <Descriptions.Item label="Salaire Base Proratisé">
-                  {parseFloat(record.salaire_base_proratis || 0).toLocaleString('fr-FR')} DA
-                </Descriptions.Item>
-                <Descriptions.Item label="Heures Supplémentaires">
-                  {parseFloat(record.heures_supplementaires || 0).toLocaleString('fr-FR')} DA
-                </Descriptions.Item>
-                <Descriptions.Item label="IN (5%)">
-                  {parseFloat(record.in || 0).toLocaleString('fr-FR')} DA
-                </Descriptions.Item>
-                <Descriptions.Item label="IFSP (5%)">
-                  {parseFloat(record.ifsp || 0).toLocaleString('fr-FR')} DA
-                </Descriptions.Item>
-                <Descriptions.Item label="IEP">
-                  {parseFloat(record.iep || 0).toLocaleString('fr-FR')} DA
-                </Descriptions.Item>
-                <Descriptions.Item label="Prime Encouragement">
-                  {parseFloat(record.prime_encouragement || 0).toLocaleString('fr-FR')} DA
-                </Descriptions.Item>
-                <Descriptions.Item label="Prime Chauffeur">
-                  {parseFloat(record.prime_chauffeur || 0).toLocaleString('fr-FR')} DA
-                </Descriptions.Item>
-                <Descriptions.Item label="Prime Déplacement">
-                  {parseFloat(record.prime_deplacement || 0).toLocaleString('fr-FR')} DA
-                </Descriptions.Item>
-                <Descriptions.Item label="Panier">
-                  {parseFloat(record.panier || 0).toLocaleString('fr-FR')} DA
-                </Descriptions.Item>
-                <Descriptions.Item label="Prime Transport">
-                  {parseFloat(record.prime_transport || 0).toLocaleString('fr-FR')} DA
-                </Descriptions.Item>
-                <Descriptions.Item label="Retenue Sécurité Sociale">
-                  {parseFloat(record.retenue_secu_sociale || 0).toLocaleString('fr-FR')} DA
-                </Descriptions.Item>
-                <Descriptions.Item label="IRG">
-                  {parseFloat(record.irg || 0).toLocaleString('fr-FR')} DA
-                </Descriptions.Item>
-                <Descriptions.Item label="Avances">
-                  {parseFloat(record.total_avances || 0).toLocaleString('fr-FR')} DA
-                </Descriptions.Item>
-                <Descriptions.Item label="Crédits">
-                  {parseFloat(record.total_credits || 0).toLocaleString('fr-FR')} DA
-                </Descriptions.Item>
-                <Descriptions.Item label="Salaire Brut" span={2}>
-                  <span style={{ fontWeight: 'bold' }}>
-                    {parseFloat(record.salaire_brut || 0).toLocaleString('fr-FR')} DA
-                  </span>
-                </Descriptions.Item>
-                <Descriptions.Item label="Salaire Net" span={2}>
-                  <span style={{ fontWeight: 'bold', color: '#52c41a', fontSize: 16 }}>
-                    {parseFloat(record.salaire_net || 0).toLocaleString('fr-FR')} DA
-                  </span>
-                </Descriptions.Item>
-              </Descriptions>
-            ),
-          }}
-        />
+        <Card>
+          <Table
+            columns={columns}
+            dataSource={salaires}
+            rowKey={(record) => record.employe_id}
+            pagination={{
+              pageSize: 50,
+              showTotal: (total) => `Total: ${total} employé(s)`,
+              showSizeChanger: true,
+              pageSizeOptions: ['10', '20', '50', '100'],
+            }}
+            scroll={{ x: 2400, y: 600 }}
+            size="small"
+            bordered
+            expandable={{
+              expandedRowRender: (record) => (
+                <Card style={{ backgroundColor: '#fafafa' }}>
+                  <h4>Détails du calcul - {employes.find(e => e.id === record.employe_id)?.prenom} {employes.find(e => e.id === record.employe_id)?.nom}</h4>
+                  <Descriptions bordered size="small" column={3}>
+                    <Descriptions.Item label="Jours Travaillés">
+                      {record.jours_travailles} / {record.jours_ouvrables}
+                    </Descriptions.Item>
+                    <Descriptions.Item label="Salaire Base Proratisé" span={2}>
+                      {parseFloat(record.salaire_base_proratis || 0).toLocaleString('fr-FR', {minimumFractionDigits: 2})} DA
+                    </Descriptions.Item>
+
+                    <Descriptions.Item label="Heures Supplémentaires">
+                      {parseFloat(record.heures_supplementaires || 0).toLocaleString('fr-FR', {minimumFractionDigits: 2})} DA
+                    </Descriptions.Item>
+                    <Descriptions.Item label="IN (5%)">
+                      {parseFloat(record.indemnite_nuisance || 0).toLocaleString('fr-FR', {minimumFractionDigits: 2})} DA
+                    </Descriptions.Item>
+                    <Descriptions.Item label="IFSP (5%)">
+                      {parseFloat(record.ifsp || 0).toLocaleString('fr-FR', {minimumFractionDigits: 2})} DA
+                    </Descriptions.Item>
+
+                    <Descriptions.Item label="IEP (Ancienneté)">
+                      {parseFloat(record.iep || 0).toLocaleString('fr-FR', {minimumFractionDigits: 2})} DA
+                    </Descriptions.Item>
+                    <Descriptions.Item label="Prime Encouragement (10%)">
+                      {parseFloat(record.prime_encouragement || 0).toLocaleString('fr-FR', {minimumFractionDigits: 2})} DA
+                    </Descriptions.Item>
+                    <Descriptions.Item label="Prime Chauffeur">
+                      {parseFloat(record.prime_chauffeur || 0).toLocaleString('fr-FR', {minimumFractionDigits: 2})} DA
+                    </Descriptions.Item>
+
+                    <Descriptions.Item label="Prime Déplacement (Missions)">
+                      {parseFloat(record.prime_deplacement || 0).toLocaleString('fr-FR', {minimumFractionDigits: 2})} DA
+                    </Descriptions.Item>
+                    <Descriptions.Item label="Prime Objectif">
+                      {parseFloat(record.prime_objectif || 0).toLocaleString('fr-FR', {minimumFractionDigits: 2})} DA
+                    </Descriptions.Item>
+                    <Descriptions.Item label="Prime Variable">
+                      {parseFloat(record.prime_variable || 0).toLocaleString('fr-FR', {minimumFractionDigits: 2})} DA
+                    </Descriptions.Item>
+
+                    <Descriptions.Item label="Salaire Cotisable" span={3}>
+                      <Tag color="blue" style={{ fontSize: '14px', padding: '4px 12px' }}>
+                        {parseFloat(record.salaire_cotisable || 0).toLocaleString('fr-FR', {minimumFractionDigits: 2})} DA
+                      </Tag>
+                    </Descriptions.Item>
+
+                    <Descriptions.Item label="Panier (100 DA/jour)">
+                      {parseFloat(record.panier || 0).toLocaleString('fr-FR', {minimumFractionDigits: 2})} DA
+                    </Descriptions.Item>
+                    <Descriptions.Item label="Prime Transport (100 DA/jour)">
+                      {parseFloat(record.prime_transport || 0).toLocaleString('fr-FR', {minimumFractionDigits: 2})} DA
+                    </Descriptions.Item>
+                    <Descriptions.Item label="Prime Femme au Foyer">
+                      {parseFloat(record.prime_femme_foyer || 0).toLocaleString('fr-FR', {minimumFractionDigits: 2})} DA
+                    </Descriptions.Item>
+
+                    <Descriptions.Item label="Retenue Sécurité Sociale (9%)">
+                      <span style={{ color: '#ff4d4f', fontWeight: 'bold' }}>
+                        - {parseFloat(record.retenue_securite_sociale || 0).toLocaleString('fr-FR', {minimumFractionDigits: 2})} DA
+                      </span>
+                    </Descriptions.Item>
+                    <Descriptions.Item label="IRG">
+                      <span style={{ color: '#ff4d4f', fontWeight: 'bold' }}>
+                        - {parseFloat(record.irg || 0).toLocaleString('fr-FR', {minimumFractionDigits: 2})} DA
+                      </span>
+                    </Descriptions.Item>
+                    <Descriptions.Item label="Salaire Imposable">
+                      <Tag color="cyan" style={{ fontSize: '14px', padding: '4px 12px' }}>
+                        {parseFloat(record.salaire_imposable || 0).toLocaleString('fr-FR', {minimumFractionDigits: 2})} DA
+                      </Tag>
+                    </Descriptions.Item>
+
+                    <Descriptions.Item label="Avances du Mois">
+                      <span style={{ color: '#ff4d4f', fontWeight: 'bold' }}>
+                        - {parseFloat(record.total_avances || 0).toLocaleString('fr-FR', {minimumFractionDigits: 2})} DA
+                      </span>
+                    </Descriptions.Item>
+                    <Descriptions.Item label="Retenue Crédit">
+                      <span style={{ color: '#ff4d4f', fontWeight: 'bold' }}>
+                        - {parseFloat(record.retenue_credit || 0).toLocaleString('fr-FR', {minimumFractionDigits: 2})} DA
+                      </span>
+                    </Descriptions.Item>
+                    <Descriptions.Item label="SALAIRE NET">
+                      <Tag color="success" style={{ fontSize: '16px', padding: '6px 16px', fontWeight: 'bold' }}>
+                        {parseFloat(record.salaire_net || 0).toLocaleString('fr-FR', {minimumFractionDigits: 2})} DA
+                      </Tag>
+                    </Descriptions.Item>
+                  </Descriptions>
+                </Card>
+              ),
+            }}
+          />
+        </Card>
       )}
     </div>
   );

@@ -1,32 +1,59 @@
 from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session, selectinload
 from typing import Optional
 from datetime import date
 
 from database import get_db
-from models import Employe, StatutContrat
+from models import Employe, StatutContrat, Parametres, User
 from schemas import (
     EmployeCreate,
     EmployeUpdate,
     EmployeResponse,
     EmployeListResponse,
 )
+from services.pdf_generator import PDFGenerator
+from middleware import require_admin, require_auth
 
 router = APIRouter(prefix="/employes", tags=["Employés"])
 
 @router.post("/", response_model=EmployeResponse, status_code=201)
-def create_employe(employe: EmployeCreate, db: Session = Depends(get_db)):
+def create_employe(employe: EmployeCreate, db: Session = Depends(get_db), current_user: User = Depends(require_admin)):
     """Créer un nouvel employé"""
     
-    # Vérifier si le numéro de sécurité sociale existe déjà
-    existing = db.query(Employe).filter(
+    # Vérification 1: Doublon par nom + prénom + date de naissance
+    existing_by_identity = db.query(Employe).filter(
+        Employe.nom == employe.nom,
+        Employe.prenom == employe.prenom,
+        Employe.date_naissance == employe.date_naissance
+    ).first()
+    
+    if existing_by_identity:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Un employé avec le même nom ({employe.nom}), prénom ({employe.prenom}) et date de naissance existe déjà"
+        )
+    
+    # Vérification 2: Doublon par numéro de sécurité sociale
+    existing_by_secu = db.query(Employe).filter(
         Employe.numero_secu_sociale == employe.numero_secu_sociale
     ).first()
     
-    if existing:
+    if existing_by_secu:
         raise HTTPException(
             status_code=400,
-            detail="Un employé avec ce numéro de sécurité sociale existe déjà"
+            detail=f"Un employé avec ce numéro de sécurité sociale ({employe.numero_secu_sociale}) existe déjà"
+        )
+    
+    # Vérification 3: Doublon par numéro de compte bancaire
+    existing_by_compte = db.query(Employe).filter(
+        Employe.numero_compte_bancaire == employe.numero_compte_bancaire
+    ).first()
+    
+    if existing_by_compte:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Un employé avec ce numéro de compte bancaire ({employe.numero_compte_bancaire}) existe déjà"
         )
     
     db_employe = Employe(**employe.model_dump())
@@ -43,7 +70,8 @@ def list_employes(
     statut: Optional[str] = Query(None, description="Filtrer par statut (Actif/Inactif)"),
     search: Optional[str] = Query(None, description="Rechercher par nom ou prénom"),
     poste: Optional[str] = Query(None, description="Filtrer par poste"),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_auth)
 ):
     """Lister tous les employés avec filtres"""
     
@@ -73,7 +101,7 @@ def list_employes(
     return EmployeListResponse(total=total, employes=employes)
 
 @router.get("/{employe_id}", response_model=EmployeResponse)
-def get_employe(employe_id: int, db: Session = Depends(get_db)):
+def get_employe(employe_id: int, db: Session = Depends(get_db), current_user: User = Depends(require_auth)):
     """Obtenir un employé par son ID"""
     
     employe = db.query(Employe).filter(Employe.id == employe_id).first()
@@ -87,7 +115,8 @@ def get_employe(employe_id: int, db: Session = Depends(get_db)):
 def update_employe(
     employe_id: int,
     employe_update: EmployeUpdate,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_admin)
 ):
     """Mettre à jour un employé"""
     
@@ -96,17 +125,49 @@ def update_employe(
     if not employe:
         raise HTTPException(status_code=404, detail="Employé non trouvé")
     
-    # Vérifier le numéro de sécurité sociale si modifié
+    # Vérification 1: Doublon par nom + prénom + date de naissance (si modifiés)
+    if employe_update.nom or employe_update.prenom or employe_update.date_naissance:
+        nom_check = employe_update.nom if employe_update.nom else employe.nom
+        prenom_check = employe_update.prenom if employe_update.prenom else employe.prenom
+        date_check = employe_update.date_naissance if employe_update.date_naissance else employe.date_naissance
+        
+        existing_by_identity = db.query(Employe).filter(
+            Employe.nom == nom_check,
+            Employe.prenom == prenom_check,
+            Employe.date_naissance == date_check,
+            Employe.id != employe_id
+        ).first()
+        
+        if existing_by_identity:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Un autre employé avec le même nom ({nom_check}), prénom ({prenom_check}) et date de naissance existe déjà"
+            )
+    
+    # Vérification 2: Doublon par numéro de sécurité sociale (si modifié)
     if employe_update.numero_secu_sociale:
-        existing = db.query(Employe).filter(
+        existing_by_secu = db.query(Employe).filter(
             Employe.numero_secu_sociale == employe_update.numero_secu_sociale,
             Employe.id != employe_id
         ).first()
         
-        if existing:
+        if existing_by_secu:
             raise HTTPException(
                 status_code=400,
-                detail="Un autre employé avec ce numéro de sécurité sociale existe déjà"
+                detail=f"Un autre employé avec ce numéro de sécurité sociale ({employe_update.numero_secu_sociale}) existe déjà"
+            )
+    
+    # Vérification 3: Doublon par numéro de compte bancaire (si modifié)
+    if employe_update.numero_compte_bancaire:
+        existing_by_compte = db.query(Employe).filter(
+            Employe.numero_compte_bancaire == employe_update.numero_compte_bancaire,
+            Employe.id != employe_id
+        ).first()
+        
+        if existing_by_compte:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Un autre employé avec ce numéro de compte bancaire ({employe_update.numero_compte_bancaire}) existe déjà"
             )
     
     # Mettre à jour les champs
@@ -120,7 +181,7 @@ def update_employe(
     return employe
 
 @router.delete("/{employe_id}", status_code=204)
-def delete_employe(employe_id: int, db: Session = Depends(get_db)):
+def delete_employe(employe_id: int, db: Session = Depends(get_db), current_user: User = Depends(require_admin)):
     """Supprimer un employé"""
     
     employe = db.query(Employe).filter(Employe.id == employe_id).first()
@@ -190,3 +251,65 @@ def valider_tous_contrats(db: Session = Depends(get_db)):
         "employes_mis_a_jour": updated_count,
         "message": "Validation des contrats terminée"
     }
+
+@router.get("/rapport-pdf/actifs")
+def generer_rapport_employes_actifs(
+    annee: Optional[int] = Query(None, description="Année pour le filtre"),
+    mois: Optional[int] = Query(None, description="Mois pour le filtre"),
+    db: Session = Depends(get_db)
+):
+    """Générer un rapport PDF de la liste des employés actifs"""
+    
+    # Récupérer les employés actifs
+    employes = db.query(Employe).filter(
+        Employe.statut_contrat == StatutContrat.ACTIF
+    ).all()
+    
+    if not employes:
+        raise HTTPException(status_code=404, detail="Aucun employé actif trouvé")
+    
+    # Préparer les données
+    employes_data = []
+    for idx, emp in enumerate(employes, 1):
+        employes_data.append({
+            'numero': idx,
+            'matricule': str(emp.id),
+            'nom_complet': f"{emp.nom} {emp.prenom}",
+            'date_naissance': emp.date_naissance.strftime('%d/%m/%Y') if emp.date_naissance else '-',
+            'poste_travail': emp.poste_travail or '-',
+            'numero_secu_sociale': emp.numero_secu_sociale or '-',
+            'date_recrutement': emp.date_recrutement.strftime('%d/%m/%Y') if emp.date_recrutement else '-',
+            'statut': emp.statut_contrat.value if emp.statut_contrat else 'Actif'
+        })
+    
+    # Période optionnelle
+    periode = None
+    if annee and mois:
+        periode = {'annee': annee, 'mois': mois}
+    
+    # Récupérer les paramètres de l'entreprise
+    company = db.query(Parametres).first()
+    company_info = company.to_dict() if company else None
+    
+    # Générer le PDF
+    pdf_generator = PDFGenerator()
+    pdf_buffer = pdf_generator.generate_rapport_employes(
+        employes_data=employes_data,
+        periode=periode,
+        company_info=company_info
+    )
+    
+    # Nom du fichier
+    if periode:
+        filename = f"employes_actifs_{mois:02d}_{annee}.pdf"
+    else:
+        filename = f"employes_actifs_{date.today().strftime('%d%m%Y')}.pdf"
+    
+    # Retourner le PDF
+    return StreamingResponse(
+        pdf_buffer,
+        media_type="application/pdf",
+        headers={
+            "Content-Disposition": f"attachment; filename={filename}"
+        }
+    )

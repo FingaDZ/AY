@@ -53,15 +53,35 @@ class SalaireCalculator:
         # Nombre de jours ouvrables du mois (on suppose 26 jours ouvrables)
         jours_ouvrables = 26
         
-        # 1. SALAIRE DE BASE PRORATISÉ
-        if jours_ouvrables > 0:
-            salaire_base_proratis = employe.salaire_base * Decimal(jours_travailles) / Decimal(jours_ouvrables)
+        # Calculer les jours ouvrables réellement travaillés (exclure les vendredis/fériés)
+        # On estime qu'il y a 4-5 vendredis par mois, donc environ 4 jours fériés
+        # Pour être précis, on compte les vendredis dans le mois
+        import calendar
+        _, nb_jours_mois = calendar.monthrange(annee, mois)
+        jours_feries = sum(1 for jour in range(1, nb_jours_mois + 1) 
+                          if calendar.weekday(annee, mois, jour) == 4)  # 4 = Vendredi
+        
+        # Jours ouvrables travaillés = total travaillés - jours fériés
+        jours_ouvrables_travailles = max(0, jours_travailles - jours_feries)
+        
+        # 1. SALAIRE DE BASE PRORATISÉ (sur 30 jours)
+        if nb_jours_mois > 0:
+            salaire_base_proratis = employe.salaire_base * Decimal(jours_travailles) / Decimal(30)
         else:
             salaire_base_proratis = Decimal(0)
         
-        # 2. HEURES SUPPLÉMENTAIRES (50% de majoration)
-        salaire_journalier = employe.salaire_base / Decimal(26)
-        heures_supplementaires = Decimal(jours_supplementaires) * salaire_journalier * Decimal("1.5")
+        # 2. HEURES SUPPLÉMENTAIRES
+        # Calcul: 34.67 heures pour 26 jours = 1.33346 heures par jour
+        # Formule: jours × 1.33346h × taux horaire × 1.5 (majoration)
+        # Taux horaire = salaire_base / 30 jours / 8 heures
+        taux_horaire = employe.salaire_base / Decimal(30) / Decimal(8)
+        heures_supp_par_jour = Decimal("1.33346")
+        heures_supplementaires = (
+            Decimal(jours_ouvrables_travailles) * 
+            heures_supp_par_jour * 
+            taux_horaire * 
+            Decimal("1.5")  # 50% de majoration
+        )
         
         # 3. INDEMNITÉ DE NUISANCE (IN) = 5% du salaire de base
         indemnite_nuisance = employe.salaire_base * Decimal("0.05")
@@ -84,10 +104,15 @@ class SalaireCalculator:
         if "chauffeur" in employe.poste_travail.lower():
             prime_chauffeur = Decimal(100) * Decimal(jours_travailles)
         
-        # 8. PRIME DE DÉPLACEMENT (missions du mois)
+        # 8. PRIME DE NUIT AGENT SÉCURITÉ (750 DA/mois si activée)
+        prime_nuit_agent_securite = Decimal(0)
+        if employe.prime_nuit_agent_securite:
+            prime_nuit_agent_securite = Decimal(750)
+        
+        # 9. PRIME DE DÉPLACEMENT (missions du mois)
         prime_deplacement = self._calculer_prime_deplacement(employe_id, annee, mois)
         
-        # 9. SALAIRE COTISABLE
+        # 10. SALAIRE COTISABLE (SANS panier et prime transport)
         salaire_cotisable = (
             salaire_base_proratis +
             heures_supplementaires +
@@ -96,40 +121,39 @@ class SalaireCalculator:
             iep +
             prime_encouragement +
             prime_chauffeur +
+            prime_nuit_agent_securite +
             prime_deplacement +
             prime_objectif +
             prime_variable
         )
         
-        # 10. RETENUE SÉCURITÉ SOCIALE (9% du salaire cotisable)
+        # 11. RETENUE SÉCURITÉ SOCIALE (9% du salaire cotisable)
         retenue_securite_sociale = salaire_cotisable * Decimal("0.09")
         
-        # 11. PANIER (100 DA × jours travaillés)
+        # 12. PANIER (100 DA × jours travaillés) - IMPOSABLE mais NON COTISABLE
         panier = Decimal(100) * Decimal(jours_travailles)
         
-        # 12. PRIME TRANSPORT (100 DA × jours travaillés)
+        # 13. PRIME TRANSPORT (100 DA × jours travaillés) - IMPOSABLE mais NON COTISABLE
         prime_transport = Decimal(100) * Decimal(jours_travailles)
         
-        # 13. CALCUL DE L'IRG
-        # Salaire brut pour IRG = Salaire cotisable + Panier + Prime Transport - Retenue SS
-        salaire_brut_irg = salaire_cotisable + panier + prime_transport - retenue_securite_sociale
-        irg = self._calculer_irg(salaire_brut_irg)
+        # 14. SALAIRE IMPOSABLE (Cotisable - SS + Panier + Transport)
+        salaire_imposable = salaire_cotisable - retenue_securite_sociale + panier + prime_transport
         
-        # 14. SALAIRE IMPOSABLE
-        salaire_imposable = salaire_cotisable + panier + prime_transport - retenue_securite_sociale - irg
+        # 15. CALCUL DE L'IRG sur le salaire imposable
+        irg = self._calculer_irg(salaire_imposable)
         
-        # 15. DÉDUCTIONS FINALES
+        # 16. DÉDUCTIONS FINALES
         # Total des avances du mois
         total_avances = self._calculer_total_avances(employe_id, annee, mois)
         
         # Retenue crédit du mois
         retenue_credit = self._calculer_retenue_credit(employe_id, annee, mois)
         
-        # 16. PRIME FEMME AU FOYER (1000 DA si applicable)
+        # 17. PRIME FEMME AU FOYER (1000 DA si applicable)
         prime_femme_foyer = Decimal(1000) if employe.femme_au_foyer else Decimal(0)
         
         # 17. SALAIRE NET FINAL
-        salaire_net = salaire_imposable - total_avances - retenue_credit + prime_femme_foyer
+        salaire_net = salaire_imposable - irg - total_avances - retenue_credit + prime_femme_foyer
         
         return {
             "employe_id": employe_id,
@@ -144,6 +168,7 @@ class SalaireCalculator:
             "iep": iep,
             "prime_encouragement": prime_encouragement,
             "prime_chauffeur": prime_chauffeur,
+            "prime_nuit_agent_securite": prime_nuit_agent_securite,
             "prime_deplacement": prime_deplacement,
             "prime_objectif": prime_objectif,
             "prime_variable": prime_variable,

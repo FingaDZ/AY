@@ -1,10 +1,11 @@
 from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
 from datetime import date
 from typing import Optional
 
 from database import get_db
-from models import Pointage, Employe, StatutContrat
+from models import Pointage, Employe, StatutContrat, Parametres
 from schemas import (
     PointageCreate,
     PointageUpdate,
@@ -13,6 +14,7 @@ from schemas import (
     PointageListResponse,
     PointageTotaux,
 )
+from services.pdf_generator import PDFGenerator
 
 router = APIRouter(prefix="/pointages", tags=["Pointages"])
 
@@ -259,6 +261,23 @@ def copier_pointage(
         "pointage_id": nouveau_pointage.id
     }
 
+@router.put("/{pointage_id}/verrouiller", response_model=PointageResponse)
+def toggle_verrouillage_pointage(pointage_id: int, verrouillage: PointageVerrouillage, db: Session = Depends(get_db)):
+    """Verrouiller ou déverrouiller un pointage"""
+    
+    pointage = db.query(Pointage).filter(Pointage.id == pointage_id).first()
+    
+    if not pointage:
+        raise HTTPException(status_code=404, detail="Pointage non trouvé")
+    
+    # Changer l'état de verrouillage
+    pointage.verrouille = verrouillage.verrouille
+    
+    db.commit()
+    db.refresh(pointage)
+    
+    return _pointage_to_response(pointage)
+
 @router.delete("/{pointage_id}", status_code=204)
 def delete_pointage(pointage_id: int, db: Session = Depends(get_db)):
     """Supprimer un pointage"""
@@ -278,3 +297,116 @@ def delete_pointage(pointage_id: int, db: Session = Depends(get_db)):
     db.commit()
     
     return None
+
+@router.get("/rapport-pdf/mensuel")
+def generer_rapport_pointages_mensuel(
+    annee: int = Query(..., description="Année"),
+    mois: int = Query(..., description="Mois"),
+    db: Session = Depends(get_db)
+):
+    """Générer un rapport PDF des pointages du mois"""
+    
+    # Récupérer les pointages du mois
+    pointages = db.query(Pointage).join(Employe).filter(
+        Pointage.annee == annee,
+        Pointage.mois == mois,
+        Employe.statut_contrat == StatutContrat.ACTIF
+    ).all()
+    
+    if not pointages:
+        raise HTTPException(
+            status_code=404, 
+            detail=f"Aucun pointage trouvé pour {mois}/{annee}"
+        )
+    
+    # Préparer les données - regrouper par employé
+    employes_pointages = {}
+    for p in pointages:
+        emp_id = p.employe_id
+        if emp_id not in employes_pointages:
+            employes_pointages[emp_id] = {
+                'employe': p.employe,
+                'pointage': p
+            }
+    
+    # Construire les données du rapport avec calcul des congés
+    from models.conge import Conge
+    from datetime import datetime
+    
+    pointages_data = []
+    for idx, (emp_id, data) in enumerate(employes_pointages.items(), 1):
+        emp = data['employe']
+        p = data['pointage']
+        totaux = p.calculer_totaux()
+        jours_travailles = totaux.get('jours_travailles', 0)
+        
+        # Vérifier si l'employé est nouveau (moins de 3 mois depuis le recrutement)
+        est_nouveau_recrue = False
+        if emp.date_recrutement:
+            mois_anciennete = (datetime.now().year - emp.date_recrutement.year) * 12 + \
+                             (datetime.now().month - emp.date_recrutement.month)
+            est_nouveau_recrue = mois_anciennete < 3
+        
+        # Calculer les jours de congés acquis
+        jours_conges_acquis = Conge.calculer_jours_conges(jours_travailles, est_nouveau_recrue)
+        
+        # Enregistrer ou mettre à jour dans la table conges
+        conge_record = db.query(Conge).filter(
+            Conge.employe_id == emp_id,
+            Conge.annee == annee,
+            Conge.mois == mois
+        ).first()
+        
+        if conge_record:
+            conge_record.jours_travailles = jours_travailles
+            conge_record.jours_conges_acquis = jours_conges_acquis
+            conge_record.jours_conges_restants = float(conge_record.jours_conges_acquis) - float(conge_record.jours_conges_pris)
+        else:
+            conge_record = Conge(
+                employe_id=emp_id,
+                annee=annee,
+                mois=mois,
+                jours_travailles=jours_travailles,
+                jours_conges_acquis=jours_conges_acquis,
+                jours_conges_pris=0,
+                jours_conges_restants=jours_conges_acquis
+            )
+            db.add(conge_record)
+        
+        db.commit()
+        
+        pointages_data.append({
+            'numero': idx,
+            'matricule': str(emp.id) if emp else '-',
+            'nom_complet': f"{emp.nom} {emp.prenom}" if emp else '-',
+            'poste_travail': emp.poste_travail if emp else '-',
+            'jours_travailles': jours_travailles,
+            'absences': totaux.get('jours_absences', 0),
+            'jours_conges_acquis': jours_conges_acquis,
+            'statut': 'Verrouillé' if p.verrouille else 'En cours'
+        })
+    
+    # Récupérer les paramètres de l'entreprise
+    company = db.query(Parametres).first()
+    company_info = company.to_dict() if company else None
+    
+    # Générer le PDF
+    pdf_generator = PDFGenerator()
+    periode = {'annee': annee, 'mois': mois}
+    pdf_buffer = pdf_generator.generate_rapport_pointages(
+        pointages_data=pointages_data,
+        periode=periode,
+        company_info=company_info
+    )
+    
+    # Nom du fichier
+    filename = f"pointages_{mois:02d}_{annee}.pdf"
+    
+    # Retourner le PDF
+    return StreamingResponse(
+        pdf_buffer,
+        media_type="application/pdf",
+        headers={
+            "Content-Disposition": f"attachment; filename={filename}"
+        }
+    )

@@ -58,6 +58,12 @@ class SalaireCalculCreate(BaseModel):
     prime_objectif: Decimal = Field(default=Decimal(0), ge=0)
     prime_variable: Decimal = Field(default=Decimal(0), ge=0)
 
+class SalaireCalculTousCreate(BaseModel):
+    """Paramètres pour calculer tous les salaires"""
+    annee: int = Field(..., ge=2000, le=2100)
+    mois: int = Field(..., ge=1, le=12)
+    jours_supplementaires: int = Field(default=0, ge=0)
+
 class SalaireCalculResponse(SalaireCalculBase):
     id: int
     employe_nom: str

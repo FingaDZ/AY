@@ -31,6 +31,7 @@ class Employe(Base):
     # Informations administratives
     numero_secu_sociale = Column(String(50), unique=True, nullable=False)
     numero_compte_bancaire = Column(String(50), nullable=False)
+    numero_anem = Column(String(50), nullable=True, index=True)  # N° ANEM (alphanumérique)
     
     # Situation
     situation_familiale = Column(SQLEnum(SituationFamiliale), nullable=False)
@@ -44,6 +45,9 @@ class Employe(Base):
     # Salaire
     salaire_base = Column(Numeric(12, 2), nullable=False)
     
+    # Primes spécifiques
+    prime_nuit_agent_securite = Column(Boolean, default=False, nullable=False)  # Prime de nuit 750 DA/mois pour agents de sécurité
+    
     # Statut
     statut_contrat = Column(SQLEnum(StatutContrat), default=StatutContrat.ACTIF, nullable=False, index=True)
     
@@ -52,6 +56,7 @@ class Employe(Base):
     avances = relationship("Avance", back_populates="employe", cascade="all, delete-orphan")
     credits = relationship("Credit", back_populates="employe", cascade="all, delete-orphan")
     missions = relationship("Mission", back_populates="chauffeur", cascade="all, delete-orphan")
+    conges = relationship("Conge", back_populates="employe", cascade="all, delete-orphan")
     
     def __repr__(self):
         return f"<Employe {self.id}: {self.prenom} {self.nom}>"

@@ -1,6 +1,8 @@
 from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
 from typing import Optional
+from datetime import date
 
 from database import get_db
 from models import Client
@@ -10,6 +12,8 @@ from schemas import (
     ClientResponse,
     ClientListResponse,
 )
+from services.pdf_generator import PDFGenerator
+from models import Parametres
 
 router = APIRouter(prefix="/clients", tags=["Clients"])
 
@@ -95,3 +99,44 @@ def delete_client(client_id: int, db: Session = Depends(get_db)):
     db.commit()
     
     return None
+
+@router.get("/rapport-pdf/liste")
+def generer_rapport_clients(db: Session = Depends(get_db)):
+    """Générer un rapport PDF de la liste de tous les clients"""
+    
+    # Récupérer tous les clients
+    clients = db.query(Client).all()
+    
+    if not clients:
+        raise HTTPException(status_code=404, detail="Aucun client trouvé")
+    
+    # Préparer les données
+    clients_data = []
+    for idx, client in enumerate(clients, 1):
+        clients_data.append({
+            'numero': idx,
+            'nom': f"{client.prenom or ''} {client.nom or ''}".strip() or '-',
+            'distance': f"{client.distance or 0} km" if client.distance else '-',
+            'telephone': client.telephone or '-',
+            'tarif_km': f"{client.tarif_km or 0} DA/km" if client.tarif_km else '-'
+        })
+    
+    # Récupérer les paramètres de l'entreprise (si existants)
+    company = db.query(Parametres).first()
+    company_info = company.to_dict() if company else None
+
+    # Générer le PDF
+    pdf_generator = PDFGenerator()
+    pdf_buffer = pdf_generator.generate_rapport_clients(clients_data=clients_data, company_info=company_info)
+    
+    # Nom du fichier
+    filename = f"clients_{date.today().strftime('%d%m%Y')}.pdf"
+    
+    # Retourner le PDF
+    return StreamingResponse(
+        pdf_buffer,
+        media_type="application/pdf",
+        headers={
+            "Content-Disposition": f"attachment; filename={filename}"
+        }
+    )

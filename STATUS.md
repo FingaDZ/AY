@@ -378,7 +378,87 @@ Pour toute question ou problème :
 
 ---
 
-**Version** : 1.0.0  
-**Date** : Novembre 2025  
+## 🆕 Dernières Mises à Jour
+
+### Version 1.2.0 - 15 Novembre 2024
+**Module: Gestion des Missions - Fonctionnalités Complètes**
+
+#### Nouvelles Fonctionnalités
+- ✅ **CRUD Complet**: Modification et suppression de missions
+- ✅ **Filtres Avancés**: Par date (plage), chauffeur, client
+- ✅ **Totaux par Chauffeur**: Nombre missions, distance, primes (avec filtres)
+- ✅ **PDF Ordre de Mission**: Génération automatique pour chauffeurs
+- ✅ **PDF Rapport**: Export filtré en format A4 professionnel
+
+#### Fichiers Ajoutés
+- `backend/services/pdf_generator.py` - Générateur de PDFs avec ReportLab
+- `MISSIONS_FEATURES.md` - Documentation technique complète
+- `GUIDE_MISSIONS.md` - Guide utilisateur illustré
+- `MISSIONS_SUMMARY.md` - Résumé des modifications
+- `test_missions_crud.ps1` - Tests CRUD et filtres
+- `test_pdf_generation.ps1` - Tests génération PDF
+
+#### Fichiers Modifiés
+- `backend/routers/missions.py` - +120 lignes (5 nouveaux endpoints)
+- `frontend/src/pages/Missions/MissionsList.jsx` - +160 lignes (UI complète)
+- `frontend/src/services/index.js` - +2 méthodes
+- `backend/requirements.txt` - Ajout reportlab
+
+#### Tests Effectués
+```powershell
+# Test CRUD et filtres
+.\test_missions_crud.ps1
+# Résultat: ✓ 2 missions, ✓ filtres OK, ✓ totaux calculés
+
+# Test génération PDF
+.\test_pdf_generation.ps1
+# Résultat: ✓ Ordre mission (2375 bytes), ✓ Rapport (2308 bytes)
+```
+
+#### Utilisation
+```
+Page Missions → Filtres → Totaux → Actions (Modifier/Supprimer/Ordre) → Rapport PDF
+```
+
+---
+
+### Version 1.2.1 - 15 Novembre 2024
+**Module: Ordre de Mission - Format A5 Optimisé**
+
+#### Améliorations Format PDF
+- ✅ **Format A5** (148×210mm) au lieu de A4 - Économie 50% papier
+- ✅ **Noir et Blanc** uniquement - Plus d'encre couleur
+- ✅ **Numéro Format YYMMDD-XXXXX** - Exemple: 251111-00001
+- ✅ **Réinitialisation Mensuelle** du compteur
+- ✅ **3 Signatures**: Chauffeur, Client, Responsable
+- ✅ **Date Unique** en haut du document
+- ✅ **En-têtes Corrigés** - Plus de balises HTML visibles
+
+#### Fichiers Ajoutés
+- `FORMAT_ORDRE_MISSION.md` - Spécifications du format A5
+- `ORDRE_MISSION_V2.md` - Guide de mise à jour v2.0
+- `test_ordre_A5.ps1` - Test du nouveau format
+
+#### Fichiers Modifiés
+- `backend/services/pdf_generator.py` - Format A5, styles N&B, 3 signatures
+  - Ajout: `_generate_ordre_numero()` pour format YYMMDD-XXXXX
+  - Modifié: `generate_ordre_mission()` - A5, marges 1cm, sans couleurs
+
+#### Tests
+```powershell
+.\test_ordre_A5.ps1
+# Résultat: ✓ PDF 2251 bytes, Format A5, N&B, Numéro 251111-00001
+```
+
+#### Avantages
+- **-50% papier** (A5 vs A4)
+- **-100% encre couleur**
+- **Format poche** pour chauffeurs
+- **Traçabilité** avec numéro unique YYMMDD-XXXXX
+
+---
+
+**Version** : 1.2.1  
+**Date** : 15 Novembre 2024  
 **Statut** : ✅ Production Ready  
 **Serveur** : 🟢 En cours d'exécution sur http://localhost:8000

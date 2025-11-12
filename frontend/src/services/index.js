@@ -21,6 +21,12 @@ export const employeService = {
   
   // Valider tous les contrats
   validerTousContrats: () => api.post('/employes/valider-tous-contrats'),
+  
+  // Rapport PDF employés actifs
+  getRapportActifs: (annee, mois) => api.get('/employes/rapport-pdf/actifs', { 
+    params: { annee, mois }, 
+    responseType: 'blob' 
+  }),
 };
 
 export const pointageService = {
@@ -38,9 +44,16 @@ export const pointageService = {
     }
     return api.put(`/pointages/${id}`, { jours });
   },
-  verrouiller: (id) => api.post(`/pointages/${id}/verrouiller`),
+  verrouiller: (id) => api.put(`/pointages/${id}/verrouiller`, { verrouille: true }),
+  deverrouiller: (id) => api.put(`/pointages/${id}/verrouiller`, { verrouille: false }),
   copier: (data) => api.post('/pointages/copier', data),
   getEmployesActifs: () => api.get('/pointages/employes-actifs'),
+  
+  // Rapport PDF pointages mensuels
+  getRapportMensuel: (annee, mois) => api.get('/pointages/rapport-pdf/mensuel', {
+    params: { annee, mois },
+    responseType: 'blob'
+  }),
 };
 
 export const clientService = {
@@ -49,13 +62,20 @@ export const clientService = {
   create: (data) => api.post('/clients/', data),
   update: (id, data) => api.put(`/clients/${id}`, data),
   delete: (id) => api.delete(`/clients/${id}`),
+  
+  // Rapport PDF liste clients
+  getRapportListe: () => api.get('/clients/rapport-pdf/liste', { responseType: 'blob' }),
 };
 
 export const missionService = {
   getAll: (params = {}) => api.get('/missions/', { params }),
   getById: (id) => api.get(`/missions/${id}`),
   create: (data) => api.post('/missions/', data),
+  update: (id, data) => api.put(`/missions/${id}`, data),
   delete: (id) => api.delete(`/missions/${id}`),
+  getTotauxChauffeur: (params = {}) => api.get('/missions/totaux-chauffeur', { params }),
+  getOrdreMissionPdf: (id) => api.get(`/missions/${id}/ordre-mission/pdf`, { responseType: 'blob' }),
+  getRapportPdf: (params = {}) => api.post('/missions/rapport/pdf', null, { params, responseType: 'blob' }),
   getPrimesMensuelles: (params) => api.get('/missions/primes-mensuelles', { params }),
   getTarifKm: () => api.get('/missions/parametres/tarif-km'),
   updateTarifKm: (tarif) => api.put('/missions/parametres/tarif-km', null, { params: { nouveau_tarif: tarif } }),
@@ -68,6 +88,12 @@ export const avanceService = {
   update: (id, data) => api.put(`/avances/${id}`, data),
   delete: (id) => api.delete(`/avances/${id}`),
   getTotalMensuel: (params) => api.get('/avances/total-mensuel', { params }),
+  
+  // Rapport PDF avances mensuelles
+  getRapportMensuel: (annee, mois) => api.get('/avances/rapport-pdf/mensuel', {
+    params: { annee, mois },
+    responseType: 'blob'
+  }),
 };
 
 export const creditService = {
@@ -77,12 +103,19 @@ export const creditService = {
   update: (id, data) => api.put(`/credits/${id}`, data),
   delete: (id) => api.delete(`/credits/${id}`),
   getHistorique: (id) => api.get(`/credits/${id}/historique`),
+  getEcheancier: (id) => api.get(`/credits/${id}/echeancier`),
   createProrogation: (id, data) => api.post(`/credits/${id}/prorogation`, data),
+  enregistrerRetenue: (id, mois, annee) => api.post(`/credits/${id}/retenue`, null, { 
+    params: { mois, annee } 
+  }),
+  getPdf: (params = {}) => api.get('/credits/pdf', { params, responseType: 'blob' }),
 };
 
 export const salaireService = {
   calculer: (data) => api.post('/salaires/calculer', data),
   calculerTous: (data) => api.post('/salaires/calculer-tous', data),
+  genererBulletins: (data) => api.post('/salaires/bulletins-paie/generer', data, { responseType: 'blob' }),
+  genererRapport: (data) => api.post('/salaires/rapport-pdf', data, { responseType: 'blob' }),
   getRapport: (annee, mois) => api.get(`/salaires/rapport/${annee}/${mois}`),
 };
 

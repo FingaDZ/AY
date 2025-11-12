@@ -95,6 +95,7 @@ function EmployeForm() {
           initialValues={{
             situation_familiale: 'Célibataire',
             femme_au_foyer: false,
+            prime_nuit_agent_securite: false,
             statut_contrat: 'Actif',
           }}
         >
@@ -163,6 +164,14 @@ function EmployeForm() {
           </Form.Item>
 
           <Form.Item
+            label="N° ANEM"
+            name="numero_anem"
+            rules={[{ required: false }]}
+          >
+            <Input placeholder="N° ANEM (optionnel)" />
+          </Form.Item>
+
+          <Form.Item
             label="Situation Familiale"
             name="situation_familiale"
             rules={[{ required: true }]}
@@ -219,6 +228,17 @@ function EmployeForm() {
               formatter={value => `${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ' ')}
               parser={value => value.replace(/\s?/g, '')}
             />
+          </Form.Item>
+
+          <Form.Item
+            label="Prime de Nuit Agent Sécurité (750 DA/mois)"
+            name="prime_nuit_agent_securite"
+            valuePropName="checked"
+          >
+            <Select defaultValue={false}>
+              <Option value={true}>Oui</Option>
+              <Option value={false}>Non</Option>
+            </Select>
           </Form.Item>
 
           <Form.Item

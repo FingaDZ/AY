@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
-import { Table, Select, Button, message, Tag, Space, Modal, Radio } from 'antd';
-import { SaveOutlined, ReloadOutlined } from '@ant-design/icons';
+import { Table, Select, Button, message, Tag, Space, Modal, Radio, Input } from 'antd';
+import { SaveOutlined, ReloadOutlined, ThunderboltOutlined, LockOutlined, UnlockOutlined, FilePdfOutlined } from '@ant-design/icons';
 import { pointageService, employeService } from '../../services';
 
 const { Option } = Select;
@@ -51,6 +51,22 @@ function GrillePointage() {
   const [selectedType, setSelectedType] = useState('Tr');
   const [remplissageModal, setRemplissageModal] = useState(null);
   const [selectedEmployeFilter, setSelectedEmployeFilter] = useState(null);
+  const [remplissageTousModal, setRemplissageTousModal] = useState(false);
+  const [searchId, setSearchId] = useState('');
+  const [vendredis, setVendredis] = useState([]);
+
+  // Fonction pour calculer les vendredis du mois
+  const getVendredis = (annee, mois) => {
+    const nbJours = getDaysInMonth(annee, mois);
+    const vendredisArray = [];
+    for (let jour = 1; jour <= nbJours; jour++) {
+      const date = new Date(annee, mois - 1, jour);
+      if (date.getDay() === 5) { // 5 = Vendredi
+        vendredisArray.push(jour);
+      }
+    }
+    return vendredisArray;
+  };
 
   useEffect(() => {
     loadData();
@@ -58,11 +74,15 @@ function GrillePointage() {
 
   useEffect(() => {
     filterEmployes();
-  }, [employes, filters.poste, selectedEmployeFilter]);
+  }, [employes, filters.poste, selectedEmployeFilter, searchId]);
 
   const loadData = async () => {
     try {
       setLoading(true);
+      
+      // Calculer les vendredis du mois
+      const vendredisArray = getVendredis(filters.annee, filters.mois);
+      setVendredis(vendredisArray);
       
       // Charger tous les employés
       const empResponse = await employeService.getAll({ statut: filters.statut });
@@ -87,15 +107,8 @@ function GrillePointage() {
         });
       }
       
-      // Créer automatiquement les pointages manquants avec jours pré-remplis
-      for (const emp of emps) {
-        if (!ptgMap[emp.id]) {
-          // Créer un pointage avec valeurs par défaut
-          const newPointage = await creerPointageAutomatique(emp);
-          ptgMap[emp.id] = newPointage;
-        }
-      }
-      
+      // Ne PAS créer automatiquement - charger seulement ce qui existe
+      // L'utilisateur créera manuellement avec le bouton "Auto" ou en cliquant
       setPointages(ptgMap);
       
     } catch (error) {
@@ -106,48 +119,16 @@ function GrillePointage() {
     }
   };
 
-  const creerPointageAutomatique = async (employe) => {
-    const nbJours = getDaysInMonth(filters.annee, filters.mois);
-    const dateRecrutement = new Date(employe.date_recrutement);
-    const moisCourant = new Date(filters.annee, filters.mois - 1, 1);
-    
-    const pointageData = {
-      employe_id: employe.id,
-      annee: filters.annee,
-      mois: filters.mois,
-    };
-    
-    // Remplir les jours automatiquement avec valeurs numériques
-    for (let jour = 1; jour <= nbJours; jour++) {
-      const dateJour = new Date(filters.annee, filters.mois - 1, jour);
-      const jourSemaine = dateJour.getDay(); // 0=Dimanche, 5=Vendredi
-      const jourKey = `jour_${jour.toString().padStart(2, '0')}`;
-      
-      // Avant la date de recrutement = Absent (0)
-      if (dateJour < dateRecrutement) {
-        pointageData[jourKey] = 0;
-      }
-      // Vendredi = Férié (1)
-      else if (jourSemaine === 5) {
-        pointageData[jourKey] = 1;
-      }
-      // Jour de recrutement et après = Travaillé (1)
-      else {
-        pointageData[jourKey] = 1;
-      }
-    }
-    
-    try {
-      const response = await pointageService.create(pointageData);
-      return response.data;
-    } catch (error) {
-      console.error('Erreur création pointage auto:', error);
-      return pointageData;
-    }
-  };
-
   const filterEmployes = () => {
     let filtered = employes;
+    
+    // Filtrer par ID
+    if (searchId) {
+      const id = parseInt(searchId);
+      if (!isNaN(id)) {
+        filtered = filtered.filter(emp => emp.id === id);
+      }
+    }
     
     // Filtrer par poste
     if (filters.poste !== 'tous') {
@@ -171,7 +152,174 @@ function GrillePointage() {
     return new Date(year, month, 0).getDate();
   };
 
+  const handleToggleVerrouillage = async (employeId) => {
+    const pointage = pointages[employeId];
+    
+    if (!pointage || !pointage.id) {
+      message.warning('Veuillez d\'abord sauvegarder le pointage avant de le verrouiller');
+      return;
+    }
+    
+    const estVerrouille = pointage.verrouille;
+    const action = estVerrouille ? 'déverrouiller' : 'verrouiller';
+    
+    Modal.confirm({
+      title: `Confirmer le ${action === 'verrouiller' ? 'verrouillage' : 'déverrouillage'}`,
+      content: estVerrouille 
+        ? 'Êtes-vous sûr de vouloir déverrouiller ce pointage ? Il pourra être modifié à nouveau.'
+        : 'Êtes-vous sûr de vouloir verrouiller ce pointage ? Il ne pourra plus être modifié et sera utilisé pour le calcul des salaires.',
+      okText: 'Oui',
+      cancelText: 'Annuler',
+      onOk: async () => {
+        try {
+          const response = estVerrouille 
+            ? await pointageService.deverrouiller(pointage.id)
+            : await pointageService.verrouiller(pointage.id);
+          
+          // Mettre à jour l'état local
+          setPointages(prev => ({
+            ...prev,
+            [employeId]: {
+              ...prev[employeId],
+              verrouille: !estVerrouille,
+            },
+          }));
+          
+          message.success(`Pointage ${estVerrouille ? 'déverrouillé' : 'verrouillé'} avec succès`);
+        } catch (error) {
+          console.error(`Erreur lors du ${action}:`, error);
+          message.error(`Erreur lors du ${action}: ${error.response?.data?.detail || error.message}`);
+        }
+      },
+    });
+  };
+
+  const handleVerrouillageTout = async () => {
+    // Vérifier que tous les employés ont un pointage
+    const employesSansPointage = [];
+    const employesNonRemplis = [];
+    const employesDejaNonVerrouilles = [];
+    
+    for (const emp of filteredEmployes) {
+      const pointage = pointages[emp.id];
+      
+      if (!pointage || !pointage.id) {
+        employesSansPointage.push(`${emp.prenom} ${emp.nom}`);
+      } else if (pointage.verrouille) {
+        // Déjà verrouillé, ignorer
+      } else {
+        // Vérifier que le pointage est rempli (au moins un jour avec une valeur)
+        const nbJours = getDaysInMonth(filters.annee, filters.mois);
+        let hasData = false;
+        for (let i = 1; i <= nbJours; i++) {
+          const jourKey = `jour_${i.toString().padStart(2, '0')}`;
+          if (pointage[jourKey] !== undefined && pointage[jourKey] !== null) {
+            hasData = true;
+            break;
+          }
+        }
+        
+        if (!hasData) {
+          employesNonRemplis.push(`${emp.prenom} ${emp.nom}`);
+        } else {
+          employesDejaNonVerrouilles.push(emp.id);
+        }
+      }
+    }
+    
+    // Afficher les erreurs si nécessaire
+    if (employesSansPointage.length > 0) {
+      Modal.error({
+        title: 'Pointages manquants',
+        content: (
+          <div>
+            <p>Les employés suivants n'ont pas de pointage créé :</p>
+            <ul>
+              {employesSansPointage.map((nom, i) => <li key={i}>{nom}</li>)}
+            </ul>
+            <p>Veuillez créer leurs pointages avant de verrouiller.</p>
+          </div>
+        ),
+      });
+      return;
+    }
+    
+    if (employesNonRemplis.length > 0) {
+      Modal.error({
+        title: 'Pointages non remplis',
+        content: (
+          <div>
+            <p>Les employés suivants ont un pointage vide :</p>
+            <ul>
+              {employesNonRemplis.map((nom, i) => <li key={i}>{nom}</li>)}
+            </ul>
+            <p>Veuillez remplir leurs pointages avant de verrouiller.</p>
+          </div>
+        ),
+      });
+      return;
+    }
+    
+    if (employesDejaNonVerrouilles.length === 0) {
+      message.info('Tous les pointages sont déjà verrouillés');
+      return;
+    }
+    
+    // Confirmation
+    Modal.confirm({
+      title: 'Verrouiller tous les pointages',
+      content: (
+        <div>
+          <p>⚠️ Vous êtes sur le point de verrouiller <strong>{employesDejaNonVerrouilles.length} pointage(s)</strong>.</p>
+          <p>Une fois verrouillés, ils ne pourront plus être modifiés et seront utilisés pour le calcul des salaires.</p>
+          <p>Êtes-vous sûr de vouloir continuer ?</p>
+        </div>
+      ),
+      okText: 'Oui, verrouiller tout',
+      okType: 'danger',
+      cancelText: 'Annuler',
+      onOk: async () => {
+        let successCount = 0;
+        let errorCount = 0;
+        
+        message.loading('Verrouillage en cours...', 0);
+        
+        for (const empId of employesDejaNonVerrouilles) {
+          try {
+            const pointage = pointages[empId];
+            await pointageService.verrouiller(pointage.id);
+            
+            setPointages(prev => ({
+              ...prev,
+              [empId]: {
+                ...prev[empId],
+                verrouille: true,
+              },
+            }));
+            
+            successCount++;
+          } catch (error) {
+            console.error(`Erreur verrouillage employé ${empId}:`, error);
+            errorCount++;
+          }
+        }
+        
+        message.destroy();
+        if (errorCount === 0) {
+          message.success(`✅ ${successCount} pointage(s) verrouillé(s) avec succès`);
+        } else {
+          message.warning(`${successCount} verrouillés, ${errorCount} erreur(s)`);
+        }
+      },
+    });
+  };
+
   const handleCellClick = (employeId, jour) => {
+    const pointage = pointages[employeId];
+    if (pointage?.verrouille) {
+      message.warning('Ce pointage est verrouillé et ne peut pas être modifié');
+      return;
+    }
     setEditCell({ employeId, jour });
   };
 
@@ -213,11 +361,18 @@ function GrillePointage() {
 
   const handleRemplirEmploye = async (employeId, typeJour) => {
     try {
+      const pointage = pointages[employeId];
+      
+      // Vérifier si verrouillé
+      if (pointage?.verrouille) {
+        message.warning('Ce pointage est verrouillé et ne peut pas être modifié');
+        return;
+      }
+      
       const nbJours = getDaysInMonth(filters.annee, filters.mois);
       const employe = employes.find(e => e.id === employeId);
       const dateRecrutement = new Date(employe.date_recrutement);
       
-      let pointage = pointages[employeId];
       const updatedData = pointage ? { ...pointage } : {
         employe_id: employeId,
         annee: filters.annee,
@@ -265,16 +420,108 @@ function GrillePointage() {
     }
   };
 
+  const handleRemplirTous = async (typeJour) => {
+    try {
+      const nbJours = getDaysInMonth(filters.annee, filters.mois);
+      const updates = {};
+      let successCount = 0;
+      let errorCount = 0;
+      let skippedCount = 0;
+      
+      setRemplissageTousModal(false);
+      message.loading('Remplissage en cours...', 0);
+      
+      for (const employe of filteredEmployes) {
+        try {
+          let pointage = pointages[employe.id];
+          
+          // Ignorer les pointages verrouillés
+          if (pointage?.verrouille) {
+            skippedCount++;
+            continue;
+          }
+          
+          const dateRecrutement = new Date(employe.date_recrutement);
+          const updatedData = pointage ? { ...pointage } : {
+            employe_id: employe.id,
+            annee: filters.annee,
+            mois: filters.mois,
+          };
+          
+          // Remplir tous les jours selon les règles
+          for (let jour = 1; jour <= nbJours; jour++) {
+            const dateJour = new Date(filters.annee, filters.mois - 1, jour);
+            const jourSemaine = dateJour.getDay();
+            const jourKey = `jour_${jour.toString().padStart(2, '0')}`;
+            
+            // Avant la date de recrutement = Absent (0)
+            if (dateJour < dateRecrutement) {
+              updatedData[jourKey] = 0;
+            }
+            // Vendredi = Férié (1)
+            else if (jourSemaine === 5) {
+              updatedData[jourKey] = 1;
+            }
+            // Sinon appliquer le type demandé
+            else {
+              updatedData[jourKey] = codeToValue(typeJour);
+            }
+          }
+          
+          if (pointage && pointage.id) {
+            await pointageService.update(pointage.id, updatedData);
+          } else {
+            const response = await pointageService.create(updatedData);
+            updatedData.id = response.data.id;
+          }
+          
+          updates[employe.id] = updatedData;
+          successCount++;
+          
+        } catch (error) {
+          console.error(`Erreur pour employé ${employe.id}:`, error);
+          errorCount++;
+        }
+      }
+      
+      setPointages(prev => ({
+        ...prev,
+        ...updates,
+      }));
+      
+      message.destroy();
+      if (errorCount === 0 && skippedCount === 0) {
+        message.success(`${successCount} employé(s) rempli(s) avec succès`);
+      } else if (errorCount === 0 && skippedCount > 0) {
+        message.success(`${successCount} employé(s) rempli(s), ${skippedCount} verrouillé(s) ignoré(s)`);
+      } else {
+        message.warning(`${successCount} succès, ${errorCount} erreur(s), ${skippedCount} verrouillés`);
+      }
+      
+    } catch (error) {
+      message.destroy();
+      message.error('Erreur lors du remplissage massif');
+      console.error(error);
+    }
+  };
+
   const handleSaveAll = async () => {
     try {
       setSaving(true);
       
       let successCount = 0;
       let errorCount = 0;
+      let skippedCount = 0;
       const errors = [];
       
       // Sauvegarder tous les pointages modifiés
       for (const [employeId, pointage] of Object.entries(pointages)) {
+        // Ignorer les pointages verrouillés
+        if (pointage.verrouille) {
+          skippedCount++;
+          continue;
+        }
+        
         try {
           // Préparer les données à envoyer avec valeurs numériques
           if (pointage.id) {
@@ -330,11 +577,13 @@ function GrillePointage() {
         }
       }
       
-      if (errorCount === 0) {
+      if (errorCount === 0 && skippedCount === 0) {
         message.success(`${successCount} pointage(s) sauvegardé(s) avec succès`);
+      } else if (errorCount === 0 && skippedCount > 0) {
+        message.success(`${successCount} pointage(s) sauvegardé(s), ${skippedCount} verrouillé(s) ignoré(s)`);
       } else {
         const errorMsg = errors.map(e => `Employé ${e.employeId}: ${e.message}`).join('\n');
-        message.error(`${successCount} sauvegardés, ${errorCount} erreur(s). Voir console pour détails.`);
+        message.error(`${successCount} sauvegardés, ${errorCount} erreur(s), ${skippedCount} verrouillés. Voir console pour détails.`);
         console.error('Errors:', errorMsg);
       }
       
@@ -346,10 +595,41 @@ function GrillePointage() {
     }
   };
 
+  const handleGenererRapport = async () => {
+    try {
+      setSaving(true);
+      const response = await pointageService.getRapportMensuel(filters.annee, filters.mois);
+      
+      // Télécharger le PDF
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', `pointages_${filters.mois.toString().padStart(2, '0')}_${filters.annee}.pdf`);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      
+      message.success('Rapport généré avec succès');
+    } catch (error) {
+      message.error(error.response?.data?.detail || 'Erreur lors de la génération du rapport');
+      console.error(error);
+    } finally {
+      setSaving(false);
+    }
+  };
+
   const nbJours = getDaysInMonth(filters.annee, filters.mois);
 
   // Colonnes du tableau
   const columns = [
+    {
+      title: 'ID',
+      dataIndex: 'id',
+      key: 'id',
+      fixed: 'left',
+      width: 60,
+      align: 'center',
+    },
     {
       title: 'Employé',
       key: 'employe',
@@ -367,45 +647,96 @@ function GrillePointage() {
       key: 'action',
       fixed: 'left',
       width: 80,
-      render: (_, record) => (
-        <Button
-          size="small"
-          onClick={() => setRemplissageModal(record.id)}
-          title="Remplissage rapide"
-        >
-          Auto
-        </Button>
-      ),
-    },
-    ...Array.from({ length: nbJours }, (_, i) => i + 1).map(jour => ({
-      title: jour,
-      key: `jour_${jour}`,
-      width: 45,
-      align: 'center',
       render: (_, record) => {
-        const jourKey = `jour_${jour.toString().padStart(2, '0')}`;
         const pointage = pointages[record.id];
-        const valeurNum = pointage?.[jourKey];
-        
-        // Convertir valeur numérique en code pour l'affichage
-        const typeJour = valueToCode(valeurNum);
-        const config = TYPE_JOUR[typeJour] || { short: '-', color: 'default' };
+        const estVerrouille = pointage?.verrouille;
         
         return (
-          <Tag
-            color={config.color}
-            style={{ 
-              cursor: 'pointer', 
-              minWidth: '30px',
-              margin: 0,
-            }}
-            onClick={() => handleCellClick(record.id, jour)}
+          <Button
+            size="small"
+            onClick={() => setRemplissageModal(record.id)}
+            title="Remplissage rapide"
+            disabled={estVerrouille}
           >
-            {config.short}
-          </Tag>
+            Auto
+          </Button>
         );
       },
-    })),
+    },
+    {
+      title: 'Statut',
+      key: 'verrouille',
+      fixed: 'left',
+      width: 100,
+      align: 'center',
+      render: (_, record) => {
+        const pointage = pointages[record.id];
+        const estVerrouille = pointage?.verrouille;
+        
+        return (
+          <Space direction="vertical" size="small" style={{ width: '100%' }}>
+            <Tag 
+              color={estVerrouille ? 'red' : 'green'} 
+              icon={estVerrouille ? <LockOutlined /> : <UnlockOutlined />}
+              style={{ width: '100%', textAlign: 'center' }}
+            >
+              {estVerrouille ? 'Verrouillé' : 'Modifiable'}
+            </Tag>
+            <Button
+              size="small"
+              type={estVerrouille ? 'default' : 'primary'}
+              danger={estVerrouille}
+              icon={estVerrouille ? <UnlockOutlined /> : <LockOutlined />}
+              onClick={() => handleToggleVerrouillage(record.id)}
+              style={{ width: '100%' }}
+            >
+              {estVerrouille ? 'Déverr.' : 'Verr.'}
+            </Button>
+          </Space>
+        );
+      },
+    },
+    ...Array.from({ length: nbJours }, (_, i) => i + 1).map(jour => {
+      const estVendredi = vendredis.includes(jour);
+      return {
+        title: jour,
+        key: `jour_${jour}`,
+        width: 45,
+        align: 'center',
+        // Fond vert clair pour les vendredis
+        onHeaderCell: () => ({
+          style: { backgroundColor: estVendredi ? '#d4f4dd' : undefined }
+        }),
+        onCell: () => ({
+          style: { backgroundColor: estVendredi ? '#f0fdf4' : undefined }
+        }),
+        render: (_, record) => {
+          const jourKey = `jour_${jour.toString().padStart(2, '0')}`;
+          const pointage = pointages[record.id];
+          const valeurNum = pointage?.[jourKey];
+          const estVerrouille = pointage?.verrouille;
+          
+          // Convertir valeur numérique en code pour l'affichage
+          const typeJour = valueToCode(valeurNum);
+          const config = TYPE_JOUR[typeJour] || { short: '-', color: 'default' };
+          
+          return (
+            <Tag
+              color={config.color}
+              style={{ 
+                cursor: estVerrouille ? 'not-allowed' : 'pointer',
+                minWidth: '30px',
+                margin: 0,
+                opacity: estVerrouille ? 0.6 : 1,
+              }}
+              onClick={() => !estVerrouille && handleCellClick(record.id, jour)}
+            >
+              {config.short}
+            </Tag>
+          );
+        },
+      };
+    }),
     {
       title: 'Total T',
       key: 'total_travailles',
@@ -469,6 +800,14 @@ function GrillePointage() {
           ))}
         </Select>
 
+        <Input
+          placeholder="Rechercher par ID"
+          style={{ width: 150 }}
+          value={searchId}
+          onChange={(e) => setSearchId(e.target.value)}
+          allowClear
+        />
+
         <Select
           value={selectedEmployeFilter}
           style={{ width: 250 }}
@@ -480,7 +819,7 @@ function GrillePointage() {
         >
           {employes.map(emp => (
             <Option key={emp.id} value={emp.id}>
-              {emp.prenom} {emp.nom} - {emp.poste_travail}
+              #{emp.id} - {emp.prenom} {emp.nom}
             </Option>
           ))}
         </Select>
@@ -514,12 +853,38 @@ function GrillePointage() {
         </Button>
 
         <Button
+          type="default"
+          icon={<ThunderboltOutlined />}
+          onClick={() => setRemplissageTousModal(true)}
+          style={{ background: '#52c41a', color: 'white', borderColor: '#52c41a' }}
+        >
+          Auto Tous
+        </Button>
+
+        <Button
           type="primary"
           icon={<SaveOutlined />}
           onClick={handleSaveAll}
           loading={saving}
         >
           Tout sauvegarder
+        </Button>
+
+        <Button
+          type="primary"
+          danger
+          icon={<LockOutlined />}
+          onClick={handleVerrouillageTout}
+        >
+          Verrouiller Tout
+        </Button>
+
+        <Button
+          icon={<FilePdfOutlined />}
+          onClick={handleGenererRapport}
+          loading={saving}
+        >
+          Rapport PDF
         </Button>
       </Space>
 
@@ -541,8 +906,9 @@ function GrillePointage() {
         rowKey="id"
         scroll={{ x: 'max-content' }}
         pagination={{
-          pageSize: 20,
+          pageSize: 50,
           showSizeChanger: true,
+          pageSizeOptions: ['10', '20', '50', '100'],
           showTotal: (total) => `Total: ${total} employés`,
         }}
         bordered
@@ -600,7 +966,7 @@ function GrillePointage() {
             <p style={{ fontSize: '12px', color: '#666', marginBottom: 16 }}>
               Remplir automatiquement avec les règles suivantes :
               <br />• Jours avant recrutement : Absent
-              <br />• Vendredis : Férié
+              <br />• Vendredis : Férié (Travaillé)
               <br />• Jour de recrutement et après : Type sélectionné
             </p>
             <Space direction="vertical" style={{ width: '100%' }}>
@@ -626,6 +992,56 @@ function GrillePointage() {
             </Space>
           </div>
         )}
+      </Modal>
+
+      <Modal
+        title="Remplissage automatique - Tous les employés"
+        open={remplissageTousModal}
+        onCancel={() => setRemplissageTousModal(false)}
+        footer={null}
+        width={500}
+      >
+        <div>
+          <p style={{ marginBottom: 16 }}>
+            <strong>
+              Vous allez remplir automatiquement {filteredEmployes.length} employé(s)
+            </strong>
+          </p>
+          <p style={{ fontSize: '12px', color: '#666', marginBottom: 16 }}>
+            Remplir automatiquement avec les règles suivantes :
+            <br />• Jours avant recrutement : Absent
+            <br />• Vendredis : Férié (Travaillé)
+            <br />• Jour de recrutement et après : Type sélectionné
+            <br /><br />
+            <span style={{ color: '#ff4d4f', fontWeight: 'bold' }}>
+              ⚠️ Cette opération va remplacer tous les pointages existants pour la période sélectionnée.
+            </span>
+          </p>
+          <Space direction="vertical" style={{ width: '100%' }}>
+            <Button 
+              type="primary" 
+              block 
+              onClick={() => handleRemplirTous('Tr')}
+              icon={<ThunderboltOutlined />}
+            >
+              <Tag color="green">Travaillé</Tag> Remplir tous en "Travaillé"
+            </Button>
+            <Button 
+              block 
+              onClick={() => handleRemplirTous('Ab')}
+              icon={<ThunderboltOutlined />}
+            >
+              <Tag color="red">Absent</Tag> Remplir tous en "Absent"
+            </Button>
+            <Button 
+              block 
+              onClick={() => handleRemplirTous('Co')}
+              icon={<ThunderboltOutlined />}
+            >
+              <Tag color="blue">Congé</Tag> Remplir tous en "Congé"
+            </Button>
+          </Space>
+        </div>
       </Modal>
     </div>
   );

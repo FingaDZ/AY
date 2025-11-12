@@ -1,7 +1,8 @@
 from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
 from sqlalchemy import func
-from typing import Optional
+from typing import Optional, List
 from decimal import Decimal
 
 from database import get_db
@@ -15,8 +16,10 @@ from schemas import (
     ParametreUpdate,
     ParametreResponse,
 )
+from services.pdf_generator import PDFGenerator
 
 router = APIRouter(prefix="/missions", tags=["Missions"])
+pdf_generator = PDFGenerator()
 
 def get_tarif_km(db: Session) -> Decimal:
     """Obtenir le tarif kilométrique depuis les paramètres"""
@@ -52,8 +55,8 @@ def create_mission(mission: MissionCreate, db: Session = Depends(get_db)):
     if not client:
         raise HTTPException(status_code=404, detail="Client non trouvé")
     
-    # Récupérer le tarif kilométrique
-    tarif_km = get_tarif_km(db)
+    # Utiliser le tarif kilométrique du client
+    tarif_km = client.tarif_km
     
     # Calculer la prime
     prime_calculee = client.distance * tarif_km
@@ -74,11 +77,70 @@ def create_mission(mission: MissionCreate, db: Session = Depends(get_db)):
     
     return db_mission
 
+@router.put("/{mission_id}", response_model=MissionResponse)
+def update_mission(
+    mission_id: int,
+    mission: MissionCreate,
+    db: Session = Depends(get_db)
+):
+    """Modifier une mission existante"""
+    
+    # Vérifier que la mission existe
+    db_mission = db.query(Mission).filter(Mission.id == mission_id).first()
+    if not db_mission:
+        raise HTTPException(status_code=404, detail="Mission non trouvée")
+    
+    # Vérifier que le chauffeur existe
+    chauffeur = db.query(Employe).filter(Employe.id == mission.chauffeur_id).first()
+    if not chauffeur:
+        raise HTTPException(status_code=404, detail="Chauffeur non trouvé")
+    
+    # Vérifier que le client existe
+    client = db.query(Client).filter(Client.id == mission.client_id).first()
+    if not client:
+        raise HTTPException(status_code=404, detail="Client non trouvé")
+    
+    # Recalculer la prime avec le tarif du client
+    distance = client.distance
+    tarif_km = client.tarif_km
+    prime_calculee = distance * tarif_km
+    
+    # Mettre à jour les champs
+    db_mission.date_mission = mission.date_mission
+    db_mission.chauffeur_id = mission.chauffeur_id
+    db_mission.client_id = mission.client_id
+    db_mission.distance = distance
+    db_mission.prime_calculee = prime_calculee
+    
+    db.commit()
+    db.refresh(db_mission)
+    
+    return db_mission
+
+@router.delete("/{mission_id}", status_code=204)
+def delete_mission(
+    mission_id: int,
+    db: Session = Depends(get_db)
+):
+    """Supprimer une mission"""
+    
+    db_mission = db.query(Mission).filter(Mission.id == mission_id).first()
+    if not db_mission:
+        raise HTTPException(status_code=404, detail="Mission non trouvée")
+    
+    db.delete(db_mission)
+    db.commit()
+    
+    return None
+
 @router.get("/", response_model=MissionListResponse)
 def list_missions(
     skip: int = Query(0, ge=0),
     limit: int = Query(100, ge=1, le=1000),
     chauffeur_id: Optional[int] = None,
+    client_id: Optional[int] = None,
+    date_debut: Optional[str] = None,
+    date_fin: Optional[str] = None,
     annee: Optional[int] = None,
     mois: Optional[int] = None,
     db: Session = Depends(get_db)
@@ -89,6 +151,15 @@ def list_missions(
     
     if chauffeur_id:
         query = query.filter(Mission.chauffeur_id == chauffeur_id)
+    
+    if client_id:
+        query = query.filter(Mission.client_id == client_id)
+    
+    if date_debut:
+        query = query.filter(Mission.date_mission >= date_debut)
+    
+    if date_fin:
+        query = query.filter(Mission.date_mission <= date_fin)
     
     if annee and mois:
         query = query.filter(
@@ -102,6 +173,50 @@ def list_missions(
     missions = query.offset(skip).limit(limit).all()
     
     return MissionListResponse(total=total, missions=missions)
+
+@router.get("/totaux-chauffeur")
+def get_totaux_chauffeur(
+    chauffeur_id: Optional[int] = None,
+    date_debut: Optional[str] = None,
+    date_fin: Optional[str] = None,
+    db: Session = Depends(get_db)
+):
+    """Obtenir les totaux par chauffeur (nombre de missions, distance totale, primes totales)"""
+    
+    query = db.query(
+        Mission.chauffeur_id,
+        Employe.prenom,
+        Employe.nom,
+        func.count(Mission.id).label('nombre_missions'),
+        func.sum(Mission.distance).label('total_distance'),
+        func.sum(Mission.prime_calculee).label('total_primes')
+    ).join(Employe, Mission.chauffeur_id == Employe.id)
+    
+    if chauffeur_id:
+        query = query.filter(Mission.chauffeur_id == chauffeur_id)
+    
+    if date_debut:
+        query = query.filter(Mission.date_mission >= date_debut)
+    
+    if date_fin:
+        query = query.filter(Mission.date_mission <= date_fin)
+    
+    query = query.group_by(Mission.chauffeur_id, Employe.prenom, Employe.nom)
+    
+    results = query.all()
+    
+    totaux = [
+        {
+            "chauffeur_id": r.chauffeur_id,
+            "nom_complet": f"{r.prenom} {r.nom}",
+            "nombre_missions": r.nombre_missions,
+            "total_distance": float(r.total_distance or 0),
+            "total_primes": float(r.total_primes or 0)
+        }
+        for r in results
+    ]
+    
+    return {"totaux": totaux}
 
 @router.get("/primes-mensuelles")
 def get_primes_mensuelles(
@@ -209,3 +324,102 @@ def update_tarif_km(
     db.refresh(param)
     
     return param
+
+@router.get("/{mission_id}/ordre-mission/pdf")
+def generate_ordre_mission_pdf(
+    mission_id: int,
+    db: Session = Depends(get_db)
+):
+    """Générer un ordre de mission PDF pour un chauffeur"""
+    
+    mission = db.query(Mission).filter(Mission.id == mission_id).first()
+    if not mission:
+        raise HTTPException(status_code=404, detail="Mission non trouvée")
+    
+    chauffeur = db.query(Employe).filter(Employe.id == mission.chauffeur_id).first()
+    client = db.query(Client).filter(Client.id == mission.client_id).first()
+    
+    if not chauffeur or not client:
+        raise HTTPException(status_code=404, detail="Données manquantes")
+    
+    mission_data = {
+        'id': mission.id,
+        'date_mission': str(mission.date_mission),
+        'chauffeur_nom': chauffeur.nom,
+        'chauffeur_prenom': chauffeur.prenom,
+        'client_nom': client.nom,
+        'client_prenom': client.prenom,
+        'distance': float(mission.distance),
+        'prime_calculee': float(mission.prime_calculee)
+    }
+    
+    pdf_buffer = pdf_generator.generate_ordre_mission(mission_data)
+    
+    return StreamingResponse(
+        pdf_buffer,
+        media_type='application/pdf',
+        headers={
+            'Content-Disposition': f'attachment; filename="ordre_mission_{mission_id:05d}.pdf"'
+        }
+    )
+
+@router.post("/rapport/pdf")
+def generate_rapport_missions_pdf(
+    chauffeur_id: Optional[int] = None,
+    client_id: Optional[int] = None,
+    date_debut: Optional[str] = None,
+    date_fin: Optional[str] = None,
+    db: Session = Depends(get_db)
+):
+    """Générer un rapport PDF des missions filtrées"""
+    
+    query = db.query(Mission)
+    
+    if chauffeur_id:
+        query = query.filter(Mission.chauffeur_id == chauffeur_id)
+    
+    if client_id:
+        query = query.filter(Mission.client_id == client_id)
+    
+    if date_debut:
+        query = query.filter(Mission.date_mission >= date_debut)
+    
+    if date_fin:
+        query = query.filter(Mission.date_mission <= date_fin)
+    
+    missions = query.all()
+    
+    if not missions:
+        raise HTTPException(status_code=404, detail="Aucune mission trouvée avec ces filtres")
+    
+    # Préparer les données pour le PDF
+    missions_data = []
+    for mission in missions:
+        chauffeur = db.query(Employe).filter(Employe.id == mission.chauffeur_id).first()
+        client = db.query(Client).filter(Client.id == mission.client_id).first()
+        
+        missions_data.append({
+            'date_mission': str(mission.date_mission),
+            'chauffeur_prenom': chauffeur.prenom,
+            'chauffeur_nom': chauffeur.nom,
+            'client_prenom': client.prenom,
+            'client_nom': client.nom,
+            'distance': float(mission.distance),
+            'prime_calculee': float(mission.prime_calculee)
+        })
+    
+    filters = {}
+    if date_debut:
+        filters['date_debut'] = date_debut
+    if date_fin:
+        filters['date_fin'] = date_fin
+    
+    pdf_buffer = pdf_generator.generate_rapport_missions(missions_data, filters)
+    
+    return StreamingResponse(
+        pdf_buffer,
+        media_type='application/pdf',
+        headers={
+            'Content-Disposition': 'attachment; filename="rapport_missions.pdf"'
+        }
+    )

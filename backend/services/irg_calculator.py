@@ -1,4 +1,5 @@
 import openpyxl
+import csv
 from decimal import Decimal
 from typing import Dict, List, Tuple
 from pathlib import Path
@@ -15,21 +16,41 @@ class IRGCalculator:
             fichier_irg: Chemin vers le fichier irg.xlsx
         """
         if fichier_irg is None:
-            # Chemin par défaut
-            fichier_irg = Path(__file__).parent.parent / "data" / "irg.xlsx"
+            # Utiliser le fichier irg.xlsx à la racine du projet
+            fichier_irg = Path(__file__).parent.parent.parent / "irg.xlsx"
         
         self.fichier_irg = Path(fichier_irg)
         self.bareme = self._charger_bareme()
     
     def _charger_bareme(self) -> List[Tuple[Decimal, Decimal]]:
         """
-        Charger le barème IRG depuis le fichier Excel
+        Charger le barème IRG directement depuis F:\Code\AY HR\irg.xlsx
         Retourne une liste de tuples (salaire, irg)
         """
         if not self.fichier_irg.exists():
-            print(f"⚠️  Fichier IRG non trouvé: {self.fichier_irg}")
-            print("Utilisation du barème par défaut")
-            return self._bareme_par_defaut()
+            print(f"❌ ERREUR: Fichier IRG non trouvé: {self.fichier_irg}")
+            raise FileNotFoundError(f"Fichier IRG requis non trouvé: {self.fichier_irg}")
+        
+        try:
+            wb = openpyxl.load_workbook(self.fichier_irg, data_only=True)
+            sheet = wb.active
+            
+            bareme = []
+            # Ignorer la première ligne (en-têtes: MONTANT, IRG)
+            for row in sheet.iter_rows(min_row=2, values_only=True):
+                if row[0] is not None and row[1] is not None:
+                    salaire = Decimal(str(row[0]))
+                    irg = Decimal(str(row[1]))
+                    bareme.append((salaire, irg))
+            
+            wb.close()
+            
+            print(f"✅ Barème IRG chargé depuis {self.fichier_irg.name}: {len(bareme)} lignes")
+            return bareme
+            
+        except Exception as e:
+            print(f"❌ Erreur lors du chargement du barème IRG: {e}")
+            raise
         
         try:
             wb = openpyxl.load_workbook(self.fichier_irg, data_only=True)
@@ -50,71 +71,41 @@ class IRGCalculator:
             
         except Exception as e:
             print(f"❌ Erreur lors du chargement du barème IRG: {e}")
-            print("Utilisation du barème par défaut")
-            return self._bareme_par_defaut()
-    
-    def _bareme_par_defaut(self) -> List[Tuple[Decimal, Decimal]]:
-        """Barème IRG par défaut (Algérie 2024 - à vérifier)"""
-        return [
-            (Decimal("0"), Decimal("0")),
-            (Decimal("30000"), Decimal("0")),
-            (Decimal("35000"), Decimal("500")),
-            (Decimal("40000"), Decimal("1000")),
-            (Decimal("45000"), Decimal("1750")),
-            (Decimal("50000"), Decimal("2500")),
-            (Decimal("55000"), Decimal("3500")),
-            (Decimal("60000"), Decimal("4500")),
-            (Decimal("70000"), Decimal("7000")),
-            (Decimal("80000"), Decimal("9500")),
-            (Decimal("90000"), Decimal("12500")),
-            (Decimal("100000"), Decimal("15500")),
-            (Decimal("120000"), Decimal("22500")),
-            (Decimal("150000"), Decimal("33000")),
-        ]
+            raise
     
     def calculer_irg(self, salaire_imposable: Decimal) -> Decimal:
         """
         Calculer l'IRG pour un salaire imposable donné
+        Lookup direct dans le fichier Excel sans calcul
         
         Args:
             salaire_imposable: Salaire imposable en DA
             
         Returns:
-            Montant de l'IRG en DA
+            Montant de l'IRG en DA (valeur exacte du fichier Excel)
         """
         if not self.bareme:
             return Decimal("0")
         
-        # Si le salaire est inférieur au premier seuil, pas d'IRG
-        if salaire_imposable <= self.bareme[0][0]:
+        # Si le salaire est inférieur au premier seuil
+        if salaire_imposable < self.bareme[0][0]:
             return Decimal("0")
         
-        # Si le salaire est supérieur au dernier seuil, extrapoler
+        # Si le salaire est supérieur au dernier seuil
         if salaire_imposable >= self.bareme[-1][0]:
-            # Interpolation linéaire sur les deux derniers points
-            if len(self.bareme) >= 2:
-                s1, irg1 = self.bareme[-2]
-                s2, irg2 = self.bareme[-1]
-                taux = (irg2 - irg1) / (s2 - s1)
-                return irg2 + (salaire_imposable - s2) * taux
+            return self.bareme[-1][1]
+        
+        # Recherche du salaire exact ou immédiatement inférieur
+        irg_retenu = Decimal("0")
+        
+        for salaire_bareme, irg_bareme in self.bareme:
+            if salaire_imposable >= salaire_bareme:
+                irg_retenu = irg_bareme
             else:
-                return self.bareme[-1][1]
+                # On a dépassé, on retourne l'IRG précédent
+                break
         
-        # Interpolation linéaire entre deux tranches
-        for i in range(len(self.bareme) - 1):
-            s1, irg1 = self.bareme[i]
-            s2, irg2 = self.bareme[i + 1]
-            
-            if s1 <= salaire_imposable <= s2:
-                # Interpolation linéaire
-                if s2 == s1:
-                    return irg1
-                
-                ratio = (salaire_imposable - s1) / (s2 - s1)
-                irg = irg1 + (irg2 - irg1) * ratio
-                return irg.quantize(Decimal("0.01"))
-        
-        return Decimal("0")
+        return irg_retenu
     
     def recharger_bareme(self):
         """Recharger le barème depuis le fichier"""

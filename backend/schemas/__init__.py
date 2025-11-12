@@ -56,6 +56,7 @@ from .credit import (
 from .salaire import (
     SalaireCalculBase,
     SalaireCalculCreate,
+    SalaireCalculTousCreate,
     SalaireCalculResponse,
     SalaireCalculListResponse,
     SalaireDetailResponse,
@@ -107,6 +108,7 @@ __all__ = [
     "ProrogationCreditResponse",
     "SalaireCalculBase",
     "SalaireCalculCreate",
+    "SalaireCalculTousCreate",
     "SalaireCalculResponse",
     "SalaireCalculListResponse",
     "SalaireDetailResponse",

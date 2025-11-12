@@ -4,6 +4,9 @@ from .client import Client
 from .mission import Mission, Parametre
 from .avance import Avance
 from .credit import Credit, RetenueCredit, ProrogationCredit, StatutCredit
+from .conge import Conge
+from .parametres import Parametres
+from .user import User, UserRole
 
 __all__ = [
     "Employe",
@@ -18,4 +21,8 @@ __all__ = [
     "RetenueCredit",
     "ProrogationCredit",
     "StatutCredit",
+    "Conge",
+    "Parametres",
+    "User",
+    "UserRole",
 ]

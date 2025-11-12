@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Table, Button, Space, Input, Select, Tag, message, Popconfirm } from 'antd';
-import { PlusOutlined, EditOutlined, DeleteOutlined, SearchOutlined } from '@ant-design/icons';
+import { PlusOutlined, EditOutlined, DeleteOutlined, SearchOutlined, FilePdfOutlined } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
 import { employeService } from '../../services';
 import { format } from 'date-fns';
@@ -49,6 +49,33 @@ function EmployesList() {
     }
   };
 
+  const handleGenererRapport = async () => {
+    try {
+      setLoading(true);
+      const now = new Date();
+      const annee = now.getFullYear();
+      const mois = now.getMonth() + 1;
+      
+      const response = await employeService.getRapportActifs(annee, mois);
+      
+      // Télécharger le PDF
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', `employes_actifs_${mois.toString().padStart(2, '0')}_${annee}.pdf`);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      
+      message.success('Rapport généré avec succès');
+    } catch (error) {
+      message.error('Erreur lors de la génération du rapport');
+      console.error(error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const columns = [
     {
       title: 'ID',
@@ -67,6 +94,12 @@ function EmployesList() {
       dataIndex: 'prenom',
       key: 'prenom',
       sorter: (a, b) => a.prenom.localeCompare(b.prenom),
+    },
+    {
+      title: 'N° ANEM',
+      dataIndex: 'numero_anem',
+      key: 'numero_anem',
+      render: (value) => value || '-',
     },
     {
       title: 'Poste',
@@ -126,13 +159,22 @@ function EmployesList() {
     <div>
       <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 16 }}>
         <h2>Liste des Employés</h2>
-        <Button
-          type="primary"
-          icon={<PlusOutlined />}
-          onClick={() => navigate('/employes/nouveau')}
-        >
-          Nouvel Employé
-        </Button>
+        <Space>
+          <Button
+            icon={<FilePdfOutlined />}
+            onClick={handleGenererRapport}
+            loading={loading}
+          >
+            Rapport PDF
+          </Button>
+          <Button
+            type="primary"
+            icon={<PlusOutlined />}
+            onClick={() => navigate('/employes/nouveau')}
+          >
+            Nouvel Employé
+          </Button>
+        </Space>
       </div>
 
       <Space style={{ marginBottom: 16 }} size="middle">

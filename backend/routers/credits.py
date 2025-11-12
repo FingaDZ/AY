@@ -1,8 +1,10 @@
 from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
 from typing import Optional
 from decimal import Decimal
 from datetime import date
+from dateutil.relativedelta import relativedelta
 
 from database import get_db
 from models import Credit, RetenueCredit, ProrogationCredit, Employe, StatutCredit
@@ -14,6 +16,7 @@ from schemas import (
     ProrogationCreditCreate,
     ProrogationCreditResponse,
 )
+from services.pdf_generator import PDFGenerator
 
 router = APIRouter(prefix="/credits", tags=["Crédits"])
 
@@ -70,6 +73,64 @@ def list_credits(
     
     return CreditListResponse(total=total, credits=credits)
 
+@router.get("/pdf")
+def get_credits_pdf(
+    employe_id: Optional[int] = None,
+    statut: Optional[str] = None,
+    db: Session = Depends(get_db)
+):
+    """Générer un PDF de la liste des crédits"""
+    
+    # Récupérer les crédits avec filtres
+    query = db.query(Credit)
+    
+    if employe_id:
+        query = query.filter(Credit.employe_id == employe_id)
+    
+    if statut:
+        if statut not in ["En cours", "Soldé"]:
+            raise HTTPException(status_code=400, detail="Statut invalide")
+        query = query.filter(Credit.statut == statut)
+    
+    credits = query.all()
+    
+    # Préparer les données pour le PDF
+    credits_data = []
+    filters_data = {}
+    
+    for credit in credits:
+        employe = db.query(Employe).filter(Employe.id == credit.employe_id).first()
+        employe_nom = f"{employe.prenom} {employe.nom}" if employe else f"ID {credit.employe_id}"
+        
+        credits_data.append({
+            'employe_nom': employe_nom,
+            'date_octroi': credit.date_octroi.strftime('%d/%m/%Y'),
+            'montant_total': float(credit.montant_total),
+            'nombre_mensualites': credit.nombre_mensualites,
+            'montant_retenu': float(credit.montant_retenu),
+            'statut': credit.statut.value if hasattr(credit.statut, 'value') else str(credit.statut)
+        })
+        
+        # Ajouter le nom de l'employé aux filtres si un seul employé
+        if employe_id and not filters_data.get('employe_nom'):
+            filters_data['employe_nom'] = employe_nom
+    
+    if statut:
+        filters_data['statut'] = statut
+    
+    # Générer le PDF
+    pdf_generator = PDFGenerator()
+    pdf_buffer = pdf_generator.generate_credits_pdf(credits_data, filters_data)
+    
+    # Retourner le PDF
+    return StreamingResponse(
+        pdf_buffer,
+        media_type="application/pdf",
+        headers={
+            "Content-Disposition": f"attachment; filename=credits_{date.today().strftime('%Y%m%d')}.pdf"
+        }
+    )
+
 @router.get("/{credit_id}", response_model=CreditResponse)
 def get_credit(credit_id: int, db: Session = Depends(get_db)):
     """Obtenir un crédit par son ID"""
@@ -103,6 +164,61 @@ def get_historique_credit(credit_id: int, db: Session = Depends(get_db)):
         "retenues": retenues,
         "prorogations": prorogations
     }
+
+@router.get("/{credit_id}/echeancier")
+def get_echeancier_credit(credit_id: int, db: Session = Depends(get_db)):
+    """Obtenir l'échéancier complet d'un crédit avec statuts de paiement"""
+    
+    credit = db.query(Credit).filter(Credit.id == credit_id).first()
+    
+    if not credit:
+        raise HTTPException(status_code=404, detail="Crédit non trouvé")
+    
+    # Récupérer les retenues existantes
+    retenues = db.query(RetenueCredit).filter(
+        RetenueCredit.credit_id == credit_id
+    ).all()
+    
+    # Récupérer les prorogations
+    prorogations = db.query(ProrogationCredit).filter(
+        ProrogationCredit.credit_id == credit_id
+    ).all()
+    
+    # Créer un dictionnaire des retenues par (mois, année)
+    retenues_dict = {(r.mois, r.annee): r for r in retenues}
+    
+    # Créer un dictionnaire des prorogations par (mois_initial, année_initiale)
+    prorogations_dict = {(p.mois_initial, p.annee_initiale): p for p in prorogations}
+    
+    # Générer l'échéancier complet
+    echeancier = []
+    date_debut = credit.date_octroi
+    
+    for i in range(credit.nombre_mensualites):
+        date_mensualite = date_debut + relativedelta(months=i)
+        mois = date_mensualite.month
+        annee = date_mensualite.year
+        
+        # Vérifier si retenue existe
+        retenue = retenues_dict.get((mois, annee))
+        
+        # Vérifier si prorogation existe
+        prorogation = prorogations_dict.get((mois, annee))
+        
+        echeancier.append({
+            "mois": mois,
+            "annee": annee,
+            "montant": float(credit.montant_mensualite),
+            "statut": "payé" if retenue else "non payé",
+            "date_retenue": retenue.date_retenue if retenue else None,
+            "prorogation": {
+                "mois_reporte": prorogation.mois_reporte,
+                "annee_reportee": prorogation.annee_reportee,
+                "motif": prorogation.motif
+            } if prorogation else None
+        })
+    
+    return echeancier
 
 @router.put("/{credit_id}", response_model=CreditResponse)
 def update_credit(
