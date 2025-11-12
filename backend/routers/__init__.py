@@ -1,4 +1,4 @@
-from . import employes, pointages, clients, missions, avances, credits, salaires, rapports, parametres, utilisateurs, database_config
+from . import employes, pointages, clients, missions, avances, credits, salaires, rapports, parametres, utilisateurs, database_config, logs
 
 __all__ = [
     "employes",
@@ -12,4 +12,5 @@ __all__ = [
     "parametres",
     "utilisateurs",
     "database_config",
+    "logs",
 ]

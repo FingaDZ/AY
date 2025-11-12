@@ -8,6 +8,7 @@ from .conge import Conge
 from .parametres import Parametres
 from .user import User, UserRole
 from .database_config import DatabaseConfig
+from .logging import Logging, ActionType
 
 __all__ = [
     "Employe",
@@ -27,4 +28,6 @@ __all__ = [
     "User",
     "UserRole",
     "DatabaseConfig",
+    "Logging",
+    "ActionType",
 ]

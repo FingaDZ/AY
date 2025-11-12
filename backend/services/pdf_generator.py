@@ -10,16 +10,26 @@ from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.ttfonts import TTFont
 from datetime import datetime
 from io import BytesIO
-from typing import List, Dict
+from typing import List, Dict, Optional
 import qrcode
+from sqlalchemy.orm import Session
+from models import Parametres
 
 
 class PDFGenerator:
     """Générateur de PDFs pour les missions"""
     
-    def __init__(self):
+    def __init__(self, db: Optional[Session] = None):
+        self.db = db
         self.styles = getSampleStyleSheet()
         self._setup_styles()
+        self._parametres = None
+    
+    def _get_parametres(self) -> Optional[Parametres]:
+        """Récupérer les paramètres de l'entreprise"""
+        if self._parametres is None and self.db:
+            self._parametres = self.db.query(Parametres).first()
+        return self._parametres
     
     def _setup_styles(self):
         """Configurer les styles personnalisés"""
@@ -49,6 +59,71 @@ class PDFGenerator:
             fontSize=9,
             spaceAfter=8,
         ))
+        
+        # Style pour le footer
+        self.styles.add(ParagraphStyle(
+            name='Footer',
+            parent=self.styles['Normal'],
+            fontSize=7,
+            textColor=colors.grey,
+            alignment=TA_CENTER,
+        ))
+    
+    def _create_company_header(self, include_details=True) -> List:
+        """Créer l'en-tête avec les informations de l'entreprise"""
+        elements = []
+        params = self._get_parametres()
+        
+        if params:
+            company_name = params.raison_sociale or params.nom_entreprise or "AY HR"
+            
+            # Titre principal
+            elements.append(Paragraph(f"<b>{company_name}</b>", self.styles['CustomTitle']))
+            
+            if include_details:
+                # Détails de l'entreprise
+                details = []
+                if params.adresse:
+                    details.append(params.adresse)
+                if params.telephone:
+                    details.append(f"Tél: {params.telephone}")
+                
+                detail_text = " | ".join(details)
+                if detail_text:
+                    detail_style = ParagraphStyle(
+                        name='CompanyDetails',
+                        parent=self.styles['Normal'],
+                        fontSize=8,
+                        alignment=TA_CENTER,
+                        spaceAfter=4
+                    )
+                    elements.append(Paragraph(detail_text, detail_style))
+                
+                # Identifiants
+                ids = []
+                if params.rc:
+                    ids.append(f"RC: {params.rc}")
+                if params.nif:
+                    ids.append(f"NIF: {params.nif}")
+                if params.nis:
+                    ids.append(f"NIS: {params.nis}")
+                
+                id_text = " | ".join(ids)
+                if id_text:
+                    id_style = ParagraphStyle(
+                        name='CompanyIds',
+                        parent=self.styles['Normal'],
+                        fontSize=7,
+                        alignment=TA_CENTER,
+                        spaceAfter=10
+                    )
+                    elements.append(Paragraph(id_text, id_style))
+        
+        return elements
+    
+    def _create_footer(self) -> Paragraph:
+        """Créer le footer 'Powered by AIRBAND'"""
+        return Paragraph("Powered by AIRBAND", self.styles['Footer'])
     
     def _generate_ordre_numero(self, mission_id: int, date_mission: str) -> str:
         """

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Layout, Menu, Dropdown, Avatar, Space } from 'antd';
 import { useNavigate, useLocation } from 'react-router-dom';
 import {
@@ -17,8 +17,9 @@ import {
   DatabaseOutlined,
 } from '@ant-design/icons';
 import { useAuth } from '../../contexts/AuthContext';
+import parametresService from '../../services/parametres';
 
-const { Header, Sider, Content } = Layout;
+const { Header, Sider, Content, Footer } = Layout;
 
 const menuItems = [
   {
@@ -85,9 +86,38 @@ const menuItems = [
 
 function MainLayout({ children }) {
   const [collapsed, setCollapsed] = useState(false);
+  const [companyInitials, setCompanyInitials] = useState('AY');
+  const [companyName, setCompanyName] = useState('AY HR');
   const navigate = useNavigate();
   const location = useLocation();
   const { user, logout, isAdmin } = useAuth();
+
+  useEffect(() => {
+    fetchCompanyInfo();
+  }, []);
+
+  const fetchCompanyInfo = async () => {
+    try {
+      const response = await parametresService.getParametres();
+      const params = response.data;
+      
+      // Utiliser raison_sociale en priorité, sinon nom_entreprise
+      const name = params.raison_sociale || params.nom_entreprise || 'AY HR';
+      setCompanyName(name);
+      
+      // Générer les initiales à partir du nom
+      const initials = name
+        .split(' ')
+        .map(word => word[0])
+        .join('')
+        .substring(0, 3)
+        .toUpperCase();
+      
+      setCompanyInitials(initials);
+    } catch (error) {
+      console.error('Erreur lors de la récupération des paramètres:', error);
+    }
+  };
 
   const handleMenuClick = ({ key }) => {
     navigate(key);
@@ -128,7 +158,7 @@ function MainLayout({ children }) {
           fontSize: collapsed ? 16 : 20,
           fontWeight: 'bold',
         }}>
-          {collapsed ? 'AY' : 'AY HR'}
+          {collapsed ? companyInitials : companyName}
         </div>
         <Menu
           theme="dark"
@@ -160,6 +190,14 @@ function MainLayout({ children }) {
         <Content style={{ margin: '24px 16px', padding: 24, background: '#fff' }}>
           {children}
         </Content>
+        <Footer style={{ 
+          textAlign: 'center', 
+          padding: '12px 50px',
+          color: '#888',
+          fontSize: '12px'
+        }}>
+          Powered by AIRBAND
+        </Footer>
       </Layout>
     </Layout>
   );

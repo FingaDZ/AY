@@ -1,11 +1,11 @@
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session, selectinload
 from typing import Optional
 from datetime import date
 
 from database import get_db
-from models import Employe, StatutContrat, Parametres, User
+from models import Employe, StatutContrat, Parametres, User, ActionType
 from schemas import (
     EmployeCreate,
     EmployeUpdate,
@@ -13,12 +13,13 @@ from schemas import (
     EmployeListResponse,
 )
 from services.pdf_generator import PDFGenerator
+from services.logging_service import log_action, clean_data_for_logging
 from middleware import require_admin, require_auth
 
 router = APIRouter(prefix="/employes", tags=["Employés"])
 
 @router.post("/", response_model=EmployeResponse, status_code=201)
-def create_employe(employe: EmployeCreate, db: Session = Depends(get_db), current_user: User = Depends(require_admin)):
+def create_employe(employe: EmployeCreate, request: Request, db: Session = Depends(get_db), current_user: User = Depends(require_admin)):
     """Créer un nouvel employé"""
     
     # Vérification 1: Doublon par nom + prénom + date de naissance
@@ -60,6 +61,21 @@ def create_employe(employe: EmployeCreate, db: Session = Depends(get_db), curren
     db.add(db_employe)
     db.commit()
     db.refresh(db_employe)
+    
+    # Log de la création
+    try:
+        log_action(
+            db=db,
+            module_name="employes",
+            action_type=ActionType.CREATE,
+            record_id=db_employe.id,
+            new_data=clean_data_for_logging(db_employe),
+            description=f"Création employé: {db_employe.nom} {db_employe.prenom}",
+            user=current_user,
+            request=request
+        )
+    except Exception as e:
+        print(f"Erreur logging: {e}")
     
     return db_employe
 
@@ -115,6 +131,7 @@ def get_employe(employe_id: int, db: Session = Depends(get_db), current_user: Us
 def update_employe(
     employe_id: int,
     employe_update: EmployeUpdate,
+    request: Request,
     db: Session = Depends(get_db),
     current_user: User = Depends(require_admin)
 ):
@@ -124,6 +141,9 @@ def update_employe(
     
     if not employe:
         raise HTTPException(status_code=404, detail="Employé non trouvé")
+    
+    # Sauvegarder les anciennes données pour le log
+    old_data = clean_data_for_logging(employe)
     
     # Vérification 1: Doublon par nom + prénom + date de naissance (si modifiés)
     if employe_update.nom or employe_update.prenom or employe_update.date_naissance:
@@ -178,10 +198,26 @@ def update_employe(
     db.commit()
     db.refresh(employe)
     
+    # Log de la modification
+    try:
+        log_action(
+            db=db,
+            module_name="employes",
+            action_type=ActionType.UPDATE,
+            record_id=employe.id,
+            old_data=old_data,
+            new_data=clean_data_for_logging(employe),
+            description=f"Modification employé: {employe.nom} {employe.prenom}",
+            user=current_user,
+            request=request
+        )
+    except Exception as e:
+        print(f"Erreur logging: {e}")
+    
     return employe
 
 @router.delete("/{employe_id}", status_code=204)
-def delete_employe(employe_id: int, db: Session = Depends(get_db), current_user: User = Depends(require_admin)):
+def delete_employe(employe_id: int, request: Request, db: Session = Depends(get_db), current_user: User = Depends(require_admin)):
     """Supprimer un employé"""
     
     employe = db.query(Employe).filter(Employe.id == employe_id).first()
@@ -189,8 +225,27 @@ def delete_employe(employe_id: int, db: Session = Depends(get_db), current_user:
     if not employe:
         raise HTTPException(status_code=404, detail="Employé non trouvé")
     
+    # Sauvegarder les données pour le log
+    employe_data = clean_data_for_logging(employe)
+    employe_name = f"{employe.nom} {employe.prenom}"
+    
     db.delete(employe)
     db.commit()
+    
+    # Log de la suppression
+    try:
+        log_action(
+            db=db,
+            module_name="employes",
+            action_type=ActionType.DELETE,
+            record_id=employe_id,
+            old_data=employe_data,
+            description=f"Suppression employé: {employe_name}",
+            user=current_user,
+            request=request
+        )
+    except Exception as e:
+        print(f"Erreur logging: {e}")
     
     return None
 
