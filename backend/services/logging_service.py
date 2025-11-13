@@ -63,11 +63,12 @@ def log_action(
 
 def clean_data_for_logging(data: Any) -> Optional[Dict[str, Any]]:
     """
-    Nettoie les données pour le logging (enlève les champs sensibles)
+    Nettoie les données pour le logging (enlève les champs sensibles et convertit les types complexes)
     """
     if data is None:
         return None
     
+    # Extraire le dictionnaire
     if hasattr(data, 'to_dict'):
         data_dict = data.to_dict()
     elif hasattr(data, '__dict__'):
@@ -83,16 +84,41 @@ def clean_data_for_logging(data: Any) -> Optional[Dict[str, Any]]:
         if field in data_dict:
             data_dict[field] = '***HIDDEN***'
     
-    # Convertir les objets datetime en string
+    # Convertir les types complexes
     from decimal import Decimal
-    for key, value in data_dict.items():
-        if hasattr(value, 'isoformat'):
-            data_dict[key] = value.isoformat()
-        elif isinstance(value, Decimal):
-            data_dict[key] = float(value)
-        elif hasattr(value, '__name__'):  # Pour les enums
-            data_dict[key] = str(value)
-        elif hasattr(value, 'value'):  # Pour les enums avec .value
-            data_dict[key] = value.value
+    from datetime import date, datetime
     
-    return data_dict
+    def convert_value(value):
+        """Convertit une valeur en type sérialisable JSON"""
+        if value is None:
+            return None
+        elif isinstance(value, (str, int, float, bool)):
+            return value
+        elif isinstance(value, Decimal):
+            return float(value)
+        elif isinstance(value, (date, datetime)):
+            return value.isoformat()
+        elif hasattr(value, 'value'):  # Enums
+            return value.value
+        elif hasattr(value, '__name__'):  # Enums sans .value
+            return str(value)
+        elif isinstance(value, (list, tuple)):
+            return [convert_value(v) for v in value]
+        elif isinstance(value, dict):
+            return {k: convert_value(v) for k, v in value.items()}
+        else:
+            # Pour les objets SQLAlchemy ou autres, ignorer
+            return None
+    
+    # Convertir toutes les valeurs
+    cleaned_dict = {}
+    for key, value in data_dict.items():
+        try:
+            cleaned_value = convert_value(value)
+            if cleaned_value is not None or value is None:
+                cleaned_dict[key] = cleaned_value
+        except Exception:
+            # En cas d'erreur, ignorer le champ
+            pass
+    
+    return cleaned_dict
