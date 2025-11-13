@@ -1,8 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Form, Input, DatePicker, Select, InputNumber, Button, Card, message, Spin } from 'antd';
 import { useNavigate, useParams } from 'react-router-dom';
-import { employeService } from '../../services';
-import axios from 'axios';
+import { employeService, posteService } from '../../services';
 import dayjs from 'dayjs';
 
 const { Option } = Select;
@@ -26,11 +25,7 @@ function EmployeForm() {
 
   const loadPostes = async () => {
     try {
-      const token = localStorage.getItem('token');
-      const response = await axios.get('http://localhost:8000/api/postes', {
-        headers: { Authorization: `Bearer ${token}` },
-        params: { actif_seulement: true }
-      });
+      const response = await posteService.getAll({ actif_seulement: true });
       setPostes(response.data.postes);
     } catch (error) {
       message.error('Erreur lors du chargement des postes');
