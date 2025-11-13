@@ -271,7 +271,10 @@ function EmployeForm() {
               min={20000}
               step={1000}
               formatter={value => `${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ' ')}
-              parser={value => value.replace(/\s?/g, '')}
+              parser={value => {
+                const parsed = value.replace(/\s/g, '');
+                return parsed ? Number(parsed) : 0;
+              }}
             />
           </Form.Item>
 
