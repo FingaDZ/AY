@@ -1,5 +1,15 @@
 # Application de Gestion des Ressources Humaines
 
+[![Version](https://img.shields.io/badge/version-1.1.2-blue.svg)](https://github.com/FingaDZ/AY/releases/tag/v1.1.2)
+[![Status](https://img.shields.io/badge/status-production%20ready-success.svg)](https://github.com/FingaDZ/AY)
+[![Last Updated](https://img.shields.io/badge/updated-Nov%2013%2C%202025-orange.svg)](https://github.com/FingaDZ/AY/commits/main)
+[![License](https://img.shields.io/badge/license-Internal%20Use-red.svg)](https://github.com/FingaDZ/AY)
+
+> **Version actuelle** : 1.1.2  
+> **Dernière mise à jour** : 13 novembre 2025  
+> **Statut** : ✅ Production Ready  
+> 📋 **[Voir le changelog complet](CHANGELOG.md)**
+
 ## 📋 Description
 Application complète de gestion RH avec :
 - ✅ Gestion des employés (CRUD complet)
@@ -12,7 +22,32 @@ Application complète de gestion RH avec :
 - ✅ Génération de rapports PDF/Excel
 - ✅ Calcul IRG selon barème personnalisable
 
-## 🚀 Démarrage Rapide
+## � État du Système (v1.1.2)
+
+| Module | Statut | Description |
+|--------|--------|-------------|
+| 👤 Authentification | ✅ Opérationnel | JWT + Rôles (Admin/User) |
+| 👥 Employés | ✅ Opérationnel | CRUD + Soft delete + Protection données |
+| 📅 Pointages | ✅ Opérationnel | Grille 31 jours + Verrouillage |
+| 🚗 Missions | ✅ Opérationnel | Ordres + Calcul primes |
+| 💰 Avances | ✅ Opérationnel | Gestion + Déduction auto |
+| 💳 Crédits | ✅ Opérationnel | Mensualités + Prorogation |
+| 💵 Salaires | ✅ Opérationnel | Calcul complet + IRG |
+| 📄 PDF/Excel | ✅ Opérationnel | Bulletins + Rapports personnalisés |
+| 📝 Logging | ✅ Opérationnel | Audit complet avec filtres |
+| 🗄️ Base de données | ✅ Opérationnel | Config dynamique + MariaDB |
+| 🎨 Branding | ✅ Opérationnel | Logo initiales + Footer AIRBAND |
+
+### 🔐 Sécurité
+- ✅ Soft delete pour protection des données
+- ✅ Logging complet de toutes les actions
+- ✅ CORS configuré pour réseau LAN
+- ✅ Encodage sécurisé des mots de passe DB
+
+### 🐛 Bugs Connus
+Aucun bug critique identifié. Warnings mineurs Ant Design (non bloquants).
+
+## �🚀 Démarrage Rapide
 
 ### Option 1 : Script automatique - Backend + Frontend (Recommandé)
 
@@ -50,10 +85,13 @@ npm run dev
 
 ## 🔗 URLs d'Accès
 
-- **Frontend (Interface utilisateur)** : http://localhost:3000
-- **Backend API** : http://localhost:8000
-- **Documentation API (Swagger)** : http://localhost:8000/docs
-- **ReDoc** : http://localhost:8000/redoc
+| Service | URL | Description |
+|---------|-----|-------------|
+| 🖥️ **Frontend** | http://localhost:3000 | Interface utilisateur |
+| 🔌 **Backend API** | http://localhost:8000 | API REST |
+| 📚 **Swagger** | http://localhost:8000/docs | Documentation interactive |
+| 📖 **ReDoc** | http://localhost:8000/redoc | Documentation alternative |
+| ❤️ **Health** | http://localhost:8000/health | État de santé API |
 
 ### Option 3 : Démarrage manuel (Backend seul)
 
@@ -289,11 +327,69 @@ Consultez le fichier [INSTALLATION.md](INSTALLATION.md) pour les problèmes cour
 - Guide utilisateur : [GUIDE_UTILISATEUR.md](GUIDE_UTILISATEUR.md)
 - Guide d'installation : [INSTALLATION.md](INSTALLATION.md)
 
-## 🎓 Licence
+## 📜 Historique des Versions
+
+### v1.1.2 - 13 novembre 2025 ✅ ACTUELLE
+**Corrections finales**
+- ✅ PDF bulletins de paie avec informations entreprise dynamiques
+- ✅ Test connexion DB avec mots de passe spéciaux (!@#$)
+- ✅ Correction erreur 500 création employé (schéma actif)
+- ✅ Suppression warnings React Router v7 (future flags)
+
+📄 [Détails complets](CORRECTIONS_V1.1.2.md)
+
+---
+
+### v1.1.1 - 12 novembre 2025
+**Corrections critiques**
+- 🛡️ Protection des données : soft delete avec vérification données liées
+- ✅ Logging des suppressions d'employés corrigé
+- � CORS ouvert pour réseau LAN (allow_origins=['*'])
+- 🔐 Encodage passwords spéciaux pour connexion DB
+- 🐛 Correction erreur frontend paramètres entreprise
+
+📄 [Détails complets](CORRECTIONS_V1.1.1.md)
+
+**⚠️ CHANGEMENT IMPORTANT** : Les employés avec données liées (pointages, salaires, missions, avances, crédits) ne peuvent plus être supprimés définitivement - ils sont désactivés (soft delete).
+
+---
+
+### v1.1.0 - 12 novembre 2025
+**Système de logging et branding entreprise**
+- 📝 Système de logging complet (CREATE, UPDATE, DELETE)
+- 🎨 Branding entreprise : logo avec initiales dynamiques
+- 🏢 Paramètres entreprise intégrés dans tous les PDF
+- 🔍 Page de logs avec filtres avancés (module, action, user, dates)
+- 📊 Footer "Powered by AIRBAND" sur tous les écrans et PDF
+
+📄 [Guide complet](AMELIORATIONS_V1.1.md) | [Guide logging](LOGGING_GUIDE.md)
+
+---
+
+### v1.0.0 - 11 novembre 2025
+**Première version stable**
+- 👤 Système d'authentification et autorisation JWT
+- 🔒 Rôles utilisateurs (Admin, User)
+- 🗄️ Configuration base de données dynamique
+- ✅ Toutes les fonctionnalités RH opérationnelles
+
+📄 [Détails complets](STATUS.md)
+
+---
+
+### Versions précédentes
+- **10 novembre 2025** : Migration pointages numériques (0/1)
+- **9 novembre 2025** : Initial commit - Système RH complet
+
+---
+
+## �🎓 Licence
 
 Cette application est développée pour un usage interne de gestion RH.
 
 ---
 
-**Version** : 1.0.0  
-**Dernière mise à jour** : Novembre 2025
+**Version actuelle** : 1.1.2  
+**Dernière mise à jour** : 13 novembre 2025  
+**Statut** : ✅ Production Ready  
+**Stack** : FastAPI + React + MariaDB + SQLAlchemy
