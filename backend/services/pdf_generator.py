@@ -627,17 +627,23 @@ class PDFGenerator:
         story.append(periode_text)
         story.append(Spacer(1, 0.5*cm))
         
+        # Récupérer les paramètres de l'entreprise
+        params = self._get_parametres()
+        company_name = params.raison_sociale or params.nom_entreprise or "AY HR Management" if params else "AY HR Management"
+        company_address = params.adresse or "Alger, Algérie" if params else "Alger, Algérie"
+        company_cnas = params.numero_cnas or "000000000000000" if params else "000000000000000"
+        
         # Fusionner tableaux EMPLOYEUR et EMPLOYÉ côte à côte
         info_data = [
             # En-têtes fusionnés
             [Paragraph("<b>EMPLOYEUR</b>", self.styles['CustomBody']), '', 
              Paragraph("<b>EMPLOYÉ</b>", self.styles['CustomBody']), ''],
             # Lignes de données
-            ['Raison Sociale:', 'AY HR Management',
+            ['Raison Sociale:', company_name,
              'Nom:', f"{employe_data.get('prenom', '')} {employe_data.get('nom', '')}"],
-            ['Adresse:', 'Alger, Algérie',
+            ['Adresse:', company_address,
              'Poste:', employe_data.get('poste_travail', '')],
-            ['CNAS:', '000000000000000',
+            ['CNAS:', company_cnas,
              'N° Sécurité Sociale:', employe_data.get('numero_secu_sociale', 'N/A')],
             ['', '',
              'Date de recrutement:', str(employe_data.get('date_recrutement', 'N/A'))],
@@ -822,12 +828,12 @@ class PDFGenerator:
         story.append(total_table)
         
         # Pied de page
-        story.append(Spacer(1, 1*cm))
+        story.append(Spacer(1, 0.5*cm))
         footer = Paragraph(
             f"<i>Bulletin généré le {datetime.now().strftime('%d/%m/%Y à %H:%M')}</i><br/>"
             "<i>Ce bulletin ne doit pas être divulgué à des tiers.</i>",
             ParagraphStyle(
-                'Footer',
+                'FooterInfo',
                 parent=self.styles['Normal'],
                 fontSize=7,
                 textColor=colors.grey,
@@ -835,6 +841,10 @@ class PDFGenerator:
             )
         )
         story.append(footer)
+        story.append(Spacer(1, 0.3*cm))
+        
+        # Footer "Powered by AIRBAND"
+        story.append(self._create_footer())
         
         # Générer le PDF
         doc.build(story)

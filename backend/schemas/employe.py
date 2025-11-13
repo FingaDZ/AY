@@ -21,6 +21,7 @@ class EmployeBase(BaseModel):
     salaire_base: Decimal = Field(..., gt=0)
     prime_nuit_agent_securite: bool = False
     statut_contrat: str = "Actif"  # "Actif" ou "Inactif"
+    actif: bool = True  # Soft delete - True par défaut
 
 class EmployeCreate(EmployeBase):
     pass
@@ -43,6 +44,7 @@ class EmployeUpdate(BaseModel):
     salaire_base: Optional[Decimal] = Field(None, gt=0)
     prime_nuit_agent_securite: Optional[bool] = None
     statut_contrat: Optional[str] = None
+    actif: Optional[bool] = None  # Permet de réactiver un employé
 
 class EmployeResponse(EmployeBase):
     id: int

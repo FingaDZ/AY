@@ -1,6 +1,7 @@
 from sqlalchemy import Column, Integer, String, Boolean, DateTime
 from database import Base
 from datetime import datetime
+from urllib.parse import quote_plus
 
 
 class DatabaseConfig(Base):
@@ -33,5 +34,6 @@ class DatabaseConfig(Base):
         }
 
     def connection_string(self):
-        """Génère la chaîne de connexion MySQL"""
-        return f"mysql+pymysql://{self.username}:{self.password}@{self.host}:{self.port}/{self.database_name}?charset={self.charset}"
+        """Génère la chaîne de connexion MySQL avec encodage du mot de passe"""
+        encoded_password = quote_plus(self.password)
+        return f"mysql+pymysql://{self.username}:{encoded_password}@{self.host}:{self.port}/{self.database_name}?charset={self.charset}"
