@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Table, Button, Space, message, Popconfirm, Tag, Switch } from 'antd';
 import { PlusOutlined, EditOutlined, DeleteOutlined, CarOutlined } from '@ant-design/icons';
-import axios from 'axios';
+import { posteService } from '../../services';
 import PosteForm from './PosteForm';
 
 const PostesList = () => {
@@ -14,10 +14,8 @@ const PostesList = () => {
   const fetchPostes = async () => {
     setLoading(true);
     try {
-      const token = localStorage.getItem('token');
-      const response = await axios.get('http://localhost:8000/api/postes', {
-        headers: { Authorization: `Bearer ${token}` },
-        params: { actif_seulement: !showInactive }
+      const response = await posteService.getAll({ 
+        actif_seulement: !showInactive 
       });
       setPostes(response.data.postes);
     } catch (error) {
@@ -44,10 +42,7 @@ const PostesList = () => {
 
   const handleDelete = async (id, libelle) => {
     try {
-      const token = localStorage.getItem('token');
-      await axios.delete(`http://localhost:8000/api/postes/${id}`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
+      await posteService.delete(id);
       message.success(`Poste "${libelle}" supprimé`);
       fetchPostes();
     } catch (error) {

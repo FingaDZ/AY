@@ -119,6 +119,14 @@ export const salaireService = {
   getRapport: (annee, mois) => api.get(`/salaires/rapport/${annee}/${mois}`),
 };
 
+export const posteService = {
+  getAll: (params = {}) => api.get('/postes/', { params }),
+  getById: (id) => api.get(`/postes/${id}`),
+  create: (data) => api.post('/postes/', data),
+  update: (id, data) => api.put(`/postes/${id}`, data),
+  delete: (id) => api.delete(`/postes/${id}`),
+};
+
 export const rapportService = {
   getPointagesPdf: (params) => api.get('/rapports/pointages/pdf', { 
     params, 

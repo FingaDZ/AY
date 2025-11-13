@@ -1,6 +1,6 @@
 import React, { useEffect } from 'react';
 import { Modal, Form, Input, Switch, message } from 'antd';
-import axios from 'axios';
+import { posteService } from '../../services';
 
 const PosteForm = ({ visible, onCancel, onSuccess, poste }) => {
   const [form] = Form.useForm();
@@ -16,16 +16,11 @@ const PosteForm = ({ visible, onCancel, onSuccess, poste }) => {
 
   const handleSubmit = async (values) => {
     try {
-      const token = localStorage.getItem('token');
-      const config = {
-        headers: { Authorization: `Bearer ${token}` }
-      };
-
       if (isEdit) {
-        await axios.put(`http://localhost:8000/api/postes/${poste.id}`, values, config);
+        await posteService.update(poste.id, values);
         message.success('Poste modifié avec succès');
       } else {
-        await axios.post('http://localhost:8000/api/postes', values, config);
+        await posteService.create(values);
         message.success('Poste créé avec succès');
       }
 
