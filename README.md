@@ -1,18 +1,19 @@
 # Application de Gestion des Ressources Humaines
 
-[![Version](https://img.shields.io/badge/version-1.1.2-blue.svg)](https://github.com/FingaDZ/AY/releases/tag/v1.1.2)
+[![Version](https://img.shields.io/badge/version-1.1.3-blue.svg)](https://github.com/FingaDZ/AY/releases/tag/v1.1.3)
 [![Status](https://img.shields.io/badge/status-production%20ready-success.svg)](https://github.com/FingaDZ/AY)
 [![Last Updated](https://img.shields.io/badge/updated-Nov%2013%2C%202025-orange.svg)](https://github.com/FingaDZ/AY/commits/main)
 [![License](https://img.shields.io/badge/license-Internal%20Use-red.svg)](https://github.com/FingaDZ/AY)
 
-> **Version actuelle** : 1.1.2  
+> **Version actuelle** : 1.1.3  
 > **Dernière mise à jour** : 13 novembre 2025  
 > **Statut** : ✅ Production Ready  
-> 📋 **[Voir le changelog complet](CHANGELOG.md)**
+> 📋 **[Voir le changelog complet](CHANGELOG.md)** | 📦 **[Release Notes v1.1.3](RELEASE_NOTES_V1.1.3.md)**
 
 ## 📋 Description
 Application complète de gestion RH avec :
-- ✅ Gestion des employés (CRUD complet)
+- ✅ Gestion des employés (CRUD complet + durée contrat)
+- ✅ **NOUVEAU** Gestion dynamique des postes de travail (CRUD)
 - ✅ Système de pointage mensuel automatisé
 - ✅ Gestion des clients et distances
 - ✅ Ordres de mission pour chauffeurs avec calcul de primes
@@ -22,12 +23,13 @@ Application complète de gestion RH avec :
 - ✅ Génération de rapports PDF/Excel
 - ✅ Calcul IRG selon barème personnalisable
 
-## � État du Système (v1.1.2)
+## 📊 État du Système (v1.1.3)
 
 | Module | Statut | Description |
 |--------|--------|-------------|
 | 👤 Authentification | ✅ Opérationnel | JWT + Rôles (Admin/User) |
-| 👥 Employés | ✅ Opérationnel | CRUD + Soft delete + Protection données |
+| 👥 Employés | ✅ Opérationnel | CRUD + Soft delete + Durée contrat |
+| 🏢 Postes | ✅ Opérationnel | **NOUVEAU** Gestion dynamique CRUD |
 | 📅 Pointages | ✅ Opérationnel | Grille 31 jours + Verrouillage |
 | 🚗 Missions | ✅ Opérationnel | Ordres + Calcul primes |
 | 💰 Avances | ✅ Opérationnel | Gestion + Déduction auto |

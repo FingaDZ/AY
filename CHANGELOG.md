@@ -5,7 +5,61 @@ Tous les changements notables de ce projet seront documentés dans ce fichier.
 Le format est basé sur [Keep a Changelog](https://keepachangelog.com/fr/1.0.0/),
 et ce projet adhère à [Semantic Versioning](https://semver.org/lang/fr/).
 
-## [1.1.2] - 2025-11-13 ✅ ACTUELLE
+## [1.1.3] - 2025-11-13 ✅ ACTUELLE
+
+### ✨ Nouvelles Fonctionnalités
+- **Module Postes de Travail** : Gestion complète et dynamique des postes (CRUD, filtrage, protection postes système)
+  - Table `postes_travail` avec colonnes : id, libelle, est_chauffeur, modifiable, actif
+  - Router API `/api/postes` complet avec authentification admin
+  - Interface React : `PostesList.jsx` et `PosteForm.jsx`
+  - Service frontend `posteService` avec authentification automatique
+  - Les postes ne sont plus hardcodés dans le formulaire employé
+- **Durée de Contrat Automatique** : Ajout champ `duree_contrat` (mois) avec calcul automatique de `date_fin_contrat`
+  - Migration `migrate_add_duree_contrat.py`
+  - Champ affiché dans le formulaire employé
+
+### 🐛 Corrections Critiques
+- **Erreur 401 Module Postes** : Correction authentification dans `PostesList.jsx` et `PosteForm.jsx`
+  - Remplacement `axios` direct par `posteService` avec intercepteur automatique
+- **Erreur 401 Formulaire Employé** : Correction chargement liste postes dans `EmployeForm.jsx`
+  - Import et utilisation de `posteService.getAll()`
+- **Validation Salaire Incorrect** : Fix parser InputNumber retournant string au lieu de number
+  - Ajout conversion explicite : `parser={value => { ... return Number(parsed) }}`
+  - La validation `min: 20000` fonctionne maintenant correctement
+
+### 📄 Fichiers Ajoutés
+- `backend/routers/postes_travail.py` - Router API postes
+- `backend/models/poste_travail.py` - Modèle SQLAlchemy
+- `backend/schemas/poste_travail.py` - Schemas Pydantic
+- `backend/migrate_add_duree_contrat.py` - Migration durée contrat
+- `backend/migrate_add_postes_travail.py` - Migration postes
+- `frontend/src/pages/Postes/PostesList.jsx` - Composant liste
+- `frontend/src/pages/Postes/PosteForm.jsx` - Composant formulaire
+- `SESSION_CORRECTIONS_V1.1.3.md` - Documentation complète (519 lignes)
+- `RELEASE_NOTES_V1.1.3.md` - Notes de release détaillées
+
+### 📄 Fichiers Modifiés
+- `frontend/src/services/index.js` - Ajout `posteService`
+- `frontend/src/pages/Employes/EmployeForm.jsx` - Fix auth + durée contrat + validation salaire
+- `frontend/src/App.jsx` - Ajout route `/postes`
+- `backend/main.py` - Enregistrement router postes
+
+### 🔧 Améliorations Techniques
+- Architecture service centralisé pour authentification (tous modules utilisent services configurés)
+- Validation robuste avec types corrects (number vs string)
+- Code plus maintenable (suppression axios redondant, services réutilisables)
+
+### 📊 Commits
+- `d0f1ebd` - fix(frontend): Correction validation salaire
+- `75dc44c` - fix(frontend): Correction authentification EmployeForm
+- `069acf4` - fix(frontend): Correction authentification module Postes
+- `b1f8113` - docs: Documentation session v1.1.3
+- `e0c2fa3` - feat: Ajout durée contrat + module postes
+- `1d29c82` - fix: Corrections bugs v1.1.2
+
+---
+
+## [1.1.2] - 2025-11-13
 
 ### 🐛 Corrections
 - **PDF Bulletins de Paie** : Affichage dynamique des informations entreprise depuis `parametres_entreprise` (raison sociale, adresse, CNAS) au lieu de valeurs codées en dur
