@@ -24,7 +24,12 @@ class EmployeBase(BaseModel):
     actif: bool = True  # Soft delete - True par défaut
 
 class EmployeCreate(EmployeBase):
-    pass
+    @field_validator('salaire_base')
+    @classmethod
+    def validate_salaire_minimum(cls, v):
+        if v < 20000:
+            raise ValueError('Le salaire minimum légal est de 20 000 DA')
+        return v
 
 class EmployeUpdate(BaseModel):
     nom: Optional[str] = Field(None, min_length=1, max_length=100)

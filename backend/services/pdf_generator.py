@@ -107,6 +107,8 @@ class PDFGenerator:
                     ids.append(f"NIF: {params.nif}")
                 if params.nis:
                     ids.append(f"NIS: {params.nis}")
+                if params.numero_secu_employeur:
+                    ids.append(f"N° SS EMPLOYEUR: {params.numero_secu_employeur}")
                 
                 id_text = " | ".join(ids)
                 if id_text:
@@ -631,7 +633,8 @@ class PDFGenerator:
         params = self._get_parametres()
         company_name = params.raison_sociale or params.nom_entreprise or "AY HR Management" if params else "AY HR Management"
         company_address = params.adresse or "Alger, Algérie" if params else "Alger, Algérie"
-        company_cnas = params.numero_cnas or "000000000000000" if params else "000000000000000"
+        company_rc = params.rc or "N/A" if params else "N/A"
+        company_ss_employeur = params.numero_secu_employeur or "N/A" if params else "N/A"
         
         # Fusionner tableaux EMPLOYEUR et EMPLOYÉ côte à côte
         info_data = [
@@ -641,11 +644,11 @@ class PDFGenerator:
             # Lignes de données
             ['Raison Sociale:', company_name,
              'Nom:', f"{employe_data.get('prenom', '')} {employe_data.get('nom', '')}"],
-            ['Adresse:', company_address,
+            ['RC:', company_rc,
              'Poste:', employe_data.get('poste_travail', '')],
-            ['CNAS:', company_cnas,
+            ['N° SS EMPLOYEUR:', company_ss_employeur,
              'N° Sécurité Sociale:', employe_data.get('numero_secu_sociale', 'N/A')],
-            ['', '',
+            ['Adresse:', company_address,
              'Date de recrutement:', str(employe_data.get('date_recrutement', 'N/A'))],
         ]
         
@@ -877,7 +880,13 @@ class PDFGenerator:
         
         story = []
         
-        # En-tête avec QR Code
+        # En-tête entreprise
+        company_header = self._create_company_header(include_details=True)
+        for element in company_header:
+            story.append(element)
+        story.append(Spacer(1, 0.3*cm))
+        
+        # Titre du rapport avec QR Code
         header_data = [[
             Paragraph("<b>RAPPORT DÉTAILLÉ DES SALAIRES</b>", self.styles['CustomTitle']),
             self._generate_qr_rapport(periode, len(salaires_data), totaux.get('total_net', 0))

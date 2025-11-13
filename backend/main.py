@@ -25,7 +25,7 @@ from routers import (
 async def lifespan(app: FastAPI):
     # Startup
     init_db()
-    print("✅ Base de données initialisée")
+    print("Base de donnees initialisee")
     yield
     # Shutdown (rien à faire pour l'instant)
 

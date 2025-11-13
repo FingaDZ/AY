@@ -5,7 +5,7 @@ from typing import Optional
 from datetime import date
 
 from database import get_db
-from models import Employe, StatutContrat, Parametres, User, ActionType
+from models import Employe, StatutContrat, SituationFamiliale, Parametres, User, ActionType
 from schemas import (
     EmployeCreate,
     EmployeUpdate,
@@ -21,63 +21,69 @@ router = APIRouter(prefix="/employes", tags=["Employés"])
 @router.post("/", response_model=EmployeResponse, status_code=201)
 def create_employe(employe: EmployeCreate, request: Request, db: Session = Depends(get_db), current_user: User = Depends(require_admin)):
     """Créer un nouvel employé"""
-    
-    # Vérification 1: Doublon par nom + prénom + date de naissance
-    existing_by_identity = db.query(Employe).filter(
-        Employe.nom == employe.nom,
-        Employe.prenom == employe.prenom,
-        Employe.date_naissance == employe.date_naissance
-    ).first()
-    
-    if existing_by_identity:
-        raise HTTPException(
-            status_code=400,
-            detail=f"Un employé avec le même nom ({employe.nom}), prénom ({employe.prenom}) et date de naissance existe déjà"
-        )
-    
-    # Vérification 2: Doublon par numéro de sécurité sociale
-    existing_by_secu = db.query(Employe).filter(
-        Employe.numero_secu_sociale == employe.numero_secu_sociale
-    ).first()
-    
-    if existing_by_secu:
-        raise HTTPException(
-            status_code=400,
-            detail=f"Un employé avec ce numéro de sécurité sociale ({employe.numero_secu_sociale}) existe déjà"
-        )
-    
-    # Vérification 3: Doublon par numéro de compte bancaire
-    existing_by_compte = db.query(Employe).filter(
-        Employe.numero_compte_bancaire == employe.numero_compte_bancaire
-    ).first()
-    
-    if existing_by_compte:
-        raise HTTPException(
-            status_code=400,
-            detail=f"Un employé avec ce numéro de compte bancaire ({employe.numero_compte_bancaire}) existe déjà"
-        )
-    
-    db_employe = Employe(**employe.model_dump())
-    db.add(db_employe)
-    db.commit()
-    db.refresh(db_employe)
-    
-    # Log de la création
     try:
-        log_action(
-            db=db,
-            module_name="employes",
-            action_type=ActionType.CREATE,
-            record_id=db_employe.id,
-            new_data=clean_data_for_logging(db_employe),
-            description=f"Création employé: {db_employe.nom} {db_employe.prenom}",
-            user=current_user,
-            request=request
-        )
+        # Vérification 1: Doublon par nom + prénom + date de naissance
+        existing_by_identity = db.query(Employe).filter(
+            Employe.nom == employe.nom,
+            Employe.prenom == employe.prenom,
+            Employe.date_naissance == employe.date_naissance
+        ).first()
+        
+        if existing_by_identity:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Un employé avec le même nom ({employe.nom}), prénom ({employe.prenom}) et date de naissance existe déjà"
+            )
+        
+        # Vérification 2: Doublon par numéro de sécurité sociale
+        existing_by_secu = db.query(Employe).filter(
+            Employe.numero_secu_sociale == employe.numero_secu_sociale
+        ).first()
+        
+        if existing_by_secu:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Un employé avec ce numéro de sécurité sociale ({employe.numero_secu_sociale}) existe déjà"
+            )
+        
+        # Vérification 3: Doublon par numéro de compte bancaire
+        existing_by_compte = db.query(Employe).filter(
+            Employe.numero_compte_bancaire == employe.numero_compte_bancaire
+        ).first()
+        
+        if existing_by_compte:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Un employé avec ce numéro de compte bancaire ({employe.numero_compte_bancaire}) existe déjà"
+            )
+        
+        # Créer l'employé
+        db_employe = Employe(**employe.model_dump())
+        db.add(db_employe)
+        db.commit()
+        db.refresh(db_employe)
+        
+        # Log de la création
+        try:
+            log_action(
+                db=db,
+                module_name="employes",
+                action_type=ActionType.CREATE,
+                record_id=db_employe.id,
+                new_data=clean_data_for_logging(db_employe),
+                description=f"Création employé: {db_employe.nom} {db_employe.prenom}",
+                user=current_user,
+                request=request
+            )
+        except Exception as e:
+            print(f"Erreur logging: {e}")
+        
+        return db_employe
+    except HTTPException:
+        raise
     except Exception as e:
-        print(f"Erreur logging: {e}")
-    
-    return db_employe
+        db.rollback()
+        raise HTTPException(status_code=500, detail=f"Erreur serveur: {str(e)}")
 
 @router.get("/", response_model=EmployeListResponse)
 def list_employes(

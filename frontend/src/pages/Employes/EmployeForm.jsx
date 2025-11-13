@@ -219,11 +219,18 @@ function EmployeForm() {
           <Form.Item
             label="Salaire de Base (DA)"
             name="salaire_base"
-            rules={[{ required: true, message: 'Veuillez saisir le salaire' }]}
+            rules={[
+              { required: true, message: 'Veuillez saisir le salaire' },
+              { 
+                type: 'number', 
+                min: 20000, 
+                message: 'Le salaire minimum légal est de 20 000 DA' 
+              }
+            ]}
           >
             <InputNumber
               style={{ width: '100%' }}
-              min={0}
+              min={20000}
               step={1000}
               formatter={value => `${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ' ')}
               parser={value => value.replace(/\s?/g, '')}
@@ -235,7 +242,7 @@ function EmployeForm() {
             name="prime_nuit_agent_securite"
             valuePropName="checked"
           >
-            <Select defaultValue={false}>
+            <Select>
               <Option value={true}>Oui</Option>
               <Option value={false}>Non</Option>
             </Select>

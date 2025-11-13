@@ -100,15 +100,15 @@ function MainLayout({ children }) {
     try {
       const response = await parametresService.getParametres();
       
-      // Vérifier que response et response.data existent
-      if (!response || !response.data) {
+      // Vérifier que response existe (le service retourne déjà response.data)
+      if (!response) {
         console.warn('Réponse API paramètres vide, utilisation des valeurs par défaut');
         setCompanyName('AY HR');
         setCompanyInitials('AY');
         return;
       }
       
-      const params = response.data;
+      const params = response;
       
       // Utiliser raison_sociale en priorité, sinon nom_entreprise
       const name = params.raison_sociale || params.nom_entreprise || 'AY HR';

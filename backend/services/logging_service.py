@@ -84,10 +84,15 @@ def clean_data_for_logging(data: Any) -> Optional[Dict[str, Any]]:
             data_dict[field] = '***HIDDEN***'
     
     # Convertir les objets datetime en string
+    from decimal import Decimal
     for key, value in data_dict.items():
         if hasattr(value, 'isoformat'):
             data_dict[key] = value.isoformat()
+        elif isinstance(value, Decimal):
+            data_dict[key] = float(value)
         elif hasattr(value, '__name__'):  # Pour les enums
             data_dict[key] = str(value)
+        elif hasattr(value, 'value'):  # Pour les enums avec .value
+            data_dict[key] = value.value
     
     return data_dict

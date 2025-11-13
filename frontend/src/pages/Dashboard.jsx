@@ -48,11 +48,11 @@ function Dashboard() {
 
       setStats({
         employes: employes.data.total || 0,
-        clients: Array.isArray(clients.data) ? clients.data.length : 0,
-        pointages: Array.isArray(pointages.data) ? pointages.data.length : 0,
-        avances: Array.isArray(avances.data) ? avances.data.length : 0,
-        credits: Array.isArray(credits.data) ? credits.data.length : 0,
-        missions: Array.isArray(missions.data) ? missions.data.length : 0,
+        clients: clients.data.total || 0,
+        pointages: pointages.data.total || 0,
+        avances: avances.data.total || 0,
+        credits: credits.data.total || 0,
+        missions: missions.data.total || 0,
       });
     } catch (error) {
       message.error('Erreur lors du chargement des statistiques');
