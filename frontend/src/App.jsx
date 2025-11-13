@@ -5,6 +5,7 @@ import MainLayout from './components/Layout/MainLayout';
 import Dashboard from './pages/Dashboard';
 import EmployesList from './pages/Employes/EmployesList';
 import EmployeForm from './pages/Employes/EmployeForm';
+import PostesList from './pages/Postes/PostesList';
 import GrillePointage from './pages/Pointages/GrillePointage';
 import ClientsList from './pages/Clients/ClientsList';
 import MissionsList from './pages/Missions/MissionsList';
@@ -50,6 +51,9 @@ function AppRoutes() {
           <Route path="/employes" element={<EmployesList />} />
           <Route path="/employes/nouveau" element={<EmployeForm />} />
           <Route path="/employes/:id" element={<EmployeForm />} />
+          
+          {/* Postes de Travail */}
+          <Route path="/postes" element={<PostesList />} />
           
           {/* Pointages - Vue grille uniquement */}
           <Route path="/pointages" element={<GrillePointage />} />

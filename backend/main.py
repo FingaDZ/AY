@@ -18,6 +18,7 @@ from routers import (
     utilisateurs,
     database_config,
     logs,
+    postes_travail,
 )
 
 # Lifespan event handler moderne
@@ -58,6 +59,7 @@ app.include_router(parametres.router, prefix="/api")
 app.include_router(utilisateurs.router, prefix="/api")
 app.include_router(database_config.router, prefix="/api")
 app.include_router(logs.router, prefix="/api")
+app.include_router(postes_travail.router, prefix="/api")
 
 @app.get("/")
 def root():

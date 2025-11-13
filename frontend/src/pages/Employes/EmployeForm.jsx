@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Form, Input, DatePicker, Select, InputNumber, Button, Card, message, Spin } from 'antd';
 import { useNavigate, useParams } from 'react-router-dom';
 import { employeService } from '../../services';
+import axios from 'axios';
 import dayjs from 'dayjs';
 
 const { Option } = Select;
@@ -12,14 +13,30 @@ function EmployeForm() {
   const [form] = Form.useForm();
   const [loading, setLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [postes, setPostes] = useState([]);
 
   const isEdit = !!id;
 
   useEffect(() => {
+    loadPostes();
     if (isEdit) {
       loadEmploye();
     }
   }, [id]);
+
+  const loadPostes = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await axios.get('http://localhost:8000/api/postes', {
+        headers: { Authorization: `Bearer ${token}` },
+        params: { actif_seulement: true }
+      });
+      setPostes(response.data.postes);
+    } catch (error) {
+      message.error('Erreur lors du chargement des postes');
+      console.error('Erreur:', error);
+    }
+  };
 
   const loadEmploye = async () => {
     try {
@@ -202,8 +219,22 @@ function EmployeForm() {
           </Form.Item>
 
           <Form.Item
+            label="Durée du Contrat (mois)"
+            name="duree_contrat"
+            tooltip="Si vous saisissez la durée, la date de fin sera calculée automatiquement"
+          >
+            <InputNumber 
+              min={1} 
+              max={120} 
+              placeholder="Ex: 6, 12, 24 mois" 
+              style={{ width: '100%' }} 
+            />
+          </Form.Item>
+
+          <Form.Item
             label="Date de Fin de Contrat"
             name="date_fin_contrat"
+            tooltip="Calculée automatiquement si vous saisissez la durée"
           >
             <DatePicker style={{ width: '100%' }} format="DD/MM/YYYY" />
           </Form.Item>
@@ -211,9 +242,21 @@ function EmployeForm() {
           <Form.Item
             label="Poste de Travail"
             name="poste_travail"
-            rules={[{ required: true, message: 'Veuillez saisir le poste' }]}
+            rules={[{ required: true, message: 'Veuillez sélectionner le poste' }]}
           >
-            <Input />
+            <Select 
+              placeholder="Sélectionnez un poste"
+              showSearch
+              filterOption={(input, option) =>
+                option.children.toLowerCase().includes(input.toLowerCase())
+              }
+            >
+              {postes.map(poste => (
+                <Option key={poste.id} value={poste.libelle}>
+                  {poste.libelle}
+                </Option>
+              ))}
+            </Select>
           </Form.Item>
 
           <Form.Item

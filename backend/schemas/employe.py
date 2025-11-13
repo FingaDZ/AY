@@ -16,6 +16,7 @@ class EmployeBase(BaseModel):
     situation_familiale: str  # "Célibataire" ou "Marié"
     femme_au_foyer: bool = False
     date_recrutement: date
+    duree_contrat: Optional[int] = Field(None, gt=0, description="Durée du contrat en mois")
     date_fin_contrat: Optional[date] = None
     poste_travail: str = Field(..., min_length=1, max_length=100)
     salaire_base: Decimal = Field(..., gt=0)
@@ -44,6 +45,7 @@ class EmployeUpdate(BaseModel):
     situation_familiale: Optional[str] = None
     femme_au_foyer: Optional[bool] = None
     date_recrutement: Optional[date] = None
+    duree_contrat: Optional[int] = Field(None, gt=0, description="Durée du contrat en mois")
     date_fin_contrat: Optional[date] = None
     poste_travail: Optional[str] = Field(None, min_length=1, max_length=100)
     salaire_base: Optional[Decimal] = Field(None, gt=0)

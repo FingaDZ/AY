@@ -57,8 +57,15 @@ def create_employe(employe: EmployeCreate, request: Request, db: Session = Depen
                 detail=f"Un employé avec ce numéro de compte bancaire ({employe.numero_compte_bancaire}) existe déjà"
             )
         
-        # Créer l'employé
-        db_employe = Employe(**employe.model_dump())
+        # Créer l'employé avec données
+        employe_data = employe.model_dump()
+        
+        # Calculer automatiquement date_fin_contrat si duree_contrat est fournie
+        if employe_data.get('duree_contrat') and employe_data.get('date_recrutement'):
+            from dateutil.relativedelta import relativedelta
+            employe_data['date_fin_contrat'] = employe_data['date_recrutement'] + relativedelta(months=employe_data['duree_contrat'])
+        
+        db_employe = Employe(**employe_data)
         db.add(db_employe)
         db.commit()
         db.refresh(db_employe)
@@ -203,6 +210,16 @@ def update_employe(
     
     # Mettre à jour les champs
     update_data = employe_update.model_dump(exclude_unset=True)
+    
+    # Calculer automatiquement date_fin_contrat si duree_contrat ou date_recrutement est modifiée
+    if 'duree_contrat' in update_data or 'date_recrutement' in update_data:
+        duree = update_data.get('duree_contrat', employe.duree_contrat)
+        date_recrutement = update_data.get('date_recrutement', employe.date_recrutement)
+        
+        if duree and date_recrutement:
+            from dateutil.relativedelta import relativedelta
+            update_data['date_fin_contrat'] = date_recrutement + relativedelta(months=duree)
+    
     for field, value in update_data.items():
         setattr(employe, field, value)
     

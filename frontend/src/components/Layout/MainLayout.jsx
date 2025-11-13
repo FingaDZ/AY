@@ -15,6 +15,7 @@ import {
   AuditOutlined,
   LogoutOutlined,
   DatabaseOutlined,
+  IdcardOutlined,
 } from '@ant-design/icons';
 import { useAuth } from '../../contexts/AuthContext';
 import parametresService from '../../services/parametres';
@@ -31,6 +32,11 @@ const menuItems = [
     key: '/employes',
     icon: <UserOutlined />,
     label: 'Employés',
+  },
+  {
+    key: '/postes',
+    icon: <IdcardOutlined />,
+    label: 'Postes',
   },
   {
     key: '/pointages',

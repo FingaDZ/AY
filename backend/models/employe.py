@@ -39,6 +39,7 @@ class Employe(Base):
     
     # Emploi
     date_recrutement = Column(Date, nullable=False)
+    duree_contrat = Column(Integer, nullable=True)  # Durée en mois (ex: 6, 12, 24)
     date_fin_contrat = Column(Date, nullable=True)
     poste_travail = Column(String(100), nullable=False, index=True)
     
