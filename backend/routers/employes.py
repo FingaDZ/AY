@@ -247,47 +247,44 @@ def update_employe(
 @router.get("/{employe_id}/check-delete", status_code=200)
 def check_can_delete(employe_id: int, db: Session = Depends(get_db), current_user: User = Depends(require_auth)):
     """Vérifier si un employé peut être supprimé ou doit être désactivé"""
-    from models import Pointage, Salaire
+    from models import Pointage
     
     employe = db.query(Employe).filter(Employe.id == employe_id).first()
     
     if not employe:
         raise HTTPException(status_code=404, detail="Employé non trouvé")
     
-    # Vérifier uniquement les pointages et salaires
+    # Vérifier uniquement les pointages
     has_pointages = db.query(Pointage).filter(Pointage.employe_id == employe_id).count() > 0
-    has_salaires = db.query(Salaire).filter(Salaire.employe_id == employe_id).count() > 0
     
-    can_delete = not (has_pointages or has_salaires)
+    can_delete = not has_pointages
     
     return {
         "can_delete": can_delete,
         "employe_id": employe_id,
         "employe_nom": f"{employe.nom} {employe.prenom}",
         "has_data": {
-            "pointages": has_pointages,
-            "salaires": has_salaires
+            "pointages": has_pointages
         }
     }
 
 @router.delete("/{employe_id}", status_code=200)
 def delete_employe(employe_id: int, request: Request, db: Session = Depends(get_db), current_user: User = Depends(require_admin)):
-    """Supprimer définitivement un employé (seulement si aucun pointage ou salaire)"""
-    from models import Pointage, Salaire
+    """Supprimer définitivement un employé (seulement si aucun pointage)"""
+    from models import Pointage
     
     employe = db.query(Employe).filter(Employe.id == employe_id).first()
     
     if not employe:
         raise HTTPException(status_code=404, detail="Employé non trouvé")
     
-    # Vérifier s'il existe des pointages ou salaires
+    # Vérifier s'il existe des pointages
     has_pointages = db.query(Pointage).filter(Pointage.employe_id == employe_id).count() > 0
-    has_salaires = db.query(Salaire).filter(Salaire.employe_id == employe_id).count() > 0
     
-    if has_pointages or has_salaires:
+    if has_pointages:
         raise HTTPException(
             status_code=400, 
-            detail="Impossible de supprimer cet employé car il possède des enregistrements (pointages ou salaires) dans la base de données."
+            detail="Impossible de supprimer cet employé car il possède des pointages dans la base de données."
         )
     
     # Aucune donnée liée - suppression définitive

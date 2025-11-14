@@ -67,12 +67,9 @@ function EmployesList() {
       } else {
         // L'employé a des enregistrements - afficher modal avec option de désactivation
         const hasPointages = has_data.pointages;
-        const hasSalaires = has_data.salaires;
         
-        let detailsMessage = `${employe.nom} ${employe.prenom} possède des enregistrements dans la base de données :\n\n`;
-        if (hasPointages) detailsMessage += '• Pointages\n';
-        if (hasSalaires) detailsMessage += '• Salaires\n';
-        detailsMessage += '\nCet employé ne peut pas être supprimé pour préserver l\'intégrité du système.';
+        let detailsMessage = `${employe.nom} ${employe.prenom} possède des pointages enregistrés dans la base de données.\n\n`;
+        detailsMessage += 'Cet employé ne peut pas être supprimé pour préserver l\'intégrité du système.';
 
         Modal.confirm({
           title: 'Impossible de supprimer',
