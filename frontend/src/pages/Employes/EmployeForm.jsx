@@ -53,6 +53,17 @@ function EmployeForm() {
     }
   };
 
+  // Auto-calcul de la date de fin de contrat
+  const calculateDateFinContrat = () => {
+    const dateRecrutement = form.getFieldValue('date_recrutement');
+    const dureeContrat = form.getFieldValue('duree_contrat');
+    
+    if (dateRecrutement && dureeContrat) {
+      const dateFinContrat = dayjs(dateRecrutement).add(dureeContrat, 'month');
+      form.setFieldsValue({ date_fin_contrat: dateFinContrat });
+    }
+  };
+
   const handleSubmit = async (values) => {
     try {
       setSubmitting(true);
@@ -210,26 +221,31 @@ function EmployeForm() {
             name="date_recrutement"
             rules={[{ required: true, message: 'Veuillez sélectionner la date' }]}
           >
-            <DatePicker style={{ width: '100%' }} format="DD/MM/YYYY" />
+            <DatePicker 
+              style={{ width: '100%' }} 
+              format="DD/MM/YYYY" 
+              onChange={calculateDateFinContrat}
+            />
           </Form.Item>
 
           <Form.Item
             label="Durée du Contrat (mois)"
             name="duree_contrat"
-            tooltip="Si vous saisissez la durée, la date de fin sera calculée automatiquement"
+            tooltip="La date de fin sera calculée automatiquement"
           >
             <InputNumber 
               min={1} 
               max={120} 
               placeholder="Ex: 6, 12, 24 mois" 
               style={{ width: '100%' }} 
+              onChange={calculateDateFinContrat}
             />
           </Form.Item>
 
           <Form.Item
             label="Date de Fin de Contrat"
             name="date_fin_contrat"
-            tooltip="Calculée automatiquement si vous saisissez la durée"
+            tooltip="Calculée automatiquement (modifiable manuellement si besoin)"
           >
             <DatePicker style={{ width: '100%' }} format="DD/MM/YYYY" />
           </Form.Item>
