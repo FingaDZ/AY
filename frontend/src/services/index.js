@@ -13,8 +13,14 @@ export const employeService = {
   // Mettre à jour un employé
   update: (id, data) => api.put(`/employes/${id}`, data),
   
-  // Supprimer un employé
+  // Vérifier si l'employé peut être supprimé
+  checkCanDelete: (id) => api.get(`/employes/${id}/check-delete`),
+  
+  // Supprimer un employé (définitif)
   delete: (id) => api.delete(`/employes/${id}`),
+  
+  // Désactiver un employé (soft delete)
+  deactivate: (id) => api.post(`/employes/${id}/deactivate`),
   
   // Valider le contrat
   validerContrat: (id) => api.post(`/employes/${id}/valider-contrat`),
