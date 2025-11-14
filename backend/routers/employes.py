@@ -22,39 +22,42 @@ router = APIRouter(prefix="/employes", tags=["Employés"])
 def create_employe(employe: EmployeCreate, request: Request, db: Session = Depends(get_db), current_user: User = Depends(require_admin)):
     """Créer un nouvel employé"""
     try:
-        # Vérification 1: Doublon par nom + prénom + date de naissance
+        # Vérification 1: Doublon par nom + prénom + date de naissance (seulement employés actifs)
         existing_by_identity = db.query(Employe).filter(
             Employe.nom == employe.nom,
             Employe.prenom == employe.prenom,
-            Employe.date_naissance == employe.date_naissance
+            Employe.date_naissance == employe.date_naissance,
+            Employe.actif == True  # Exclure les employés désactivés
         ).first()
         
         if existing_by_identity:
             raise HTTPException(
                 status_code=400,
-                detail=f"Un employé avec le même nom ({employe.nom}), prénom ({employe.prenom}) et date de naissance existe déjà"
+                detail=f"Un employé actif avec le même nom ({employe.nom}), prénom ({employe.prenom}) et date de naissance existe déjà"
             )
         
-        # Vérification 2: Doublon par numéro de sécurité sociale
+        # Vérification 2: Doublon par numéro de sécurité sociale (seulement employés actifs)
         existing_by_secu = db.query(Employe).filter(
-            Employe.numero_secu_sociale == employe.numero_secu_sociale
+            Employe.numero_secu_sociale == employe.numero_secu_sociale,
+            Employe.actif == True  # Exclure les employés désactivés
         ).first()
         
         if existing_by_secu:
             raise HTTPException(
                 status_code=400,
-                detail=f"Un employé avec ce numéro de sécurité sociale ({employe.numero_secu_sociale}) existe déjà"
+                detail=f"Un employé actif avec ce numéro de sécurité sociale ({employe.numero_secu_sociale}) existe déjà"
             )
         
-        # Vérification 3: Doublon par numéro de compte bancaire
+        # Vérification 3: Doublon par numéro de compte bancaire (seulement employés actifs)
         existing_by_compte = db.query(Employe).filter(
-            Employe.numero_compte_bancaire == employe.numero_compte_bancaire
+            Employe.numero_compte_bancaire == employe.numero_compte_bancaire,
+            Employe.actif == True  # Exclure les employés désactivés
         ).first()
         
         if existing_by_compte:
             raise HTTPException(
                 status_code=400,
-                detail=f"Un employé avec ce numéro de compte bancaire ({employe.numero_compte_bancaire}) existe déjà"
+                detail=f"Un employé actif avec ce numéro de compte bancaire ({employe.numero_compte_bancaire}) existe déjà"
             )
         
         # Créer l'employé avec données
@@ -115,7 +118,9 @@ def list_employes(
     if statut:
         if statut not in ["Actif", "Inactif"]:
             raise HTTPException(status_code=400, detail="Statut invalide")
-        query = query.filter(Employe.statut_contrat == statut)
+        from models.employe import StatutContrat
+        statut_enum = StatutContrat.ACTIF if statut == "Actif" else StatutContrat.INACTIF
+        query = query.filter(Employe.statut_contrat == statut_enum)
     
     # Recherche par nom ou prénom
     if search:
@@ -354,6 +359,48 @@ def deactivate_employe(employe_id: int, request: Request, db: Session = Depends(
     
     return {
         "message": "Employé désactivé avec succès",
+        "employe_id": employe_id
+    }
+
+@router.post("/{employe_id}/reactivate", status_code=200)
+def reactivate_employe(employe_id: int, request: Request, db: Session = Depends(get_db), current_user: User = Depends(require_admin)):
+    """Réactiver un employé désactivé"""
+    employe = db.query(Employe).filter(Employe.id == employe_id).first()
+    
+    if not employe:
+        raise HTTPException(status_code=404, detail="Employé non trouvé")
+    
+    if employe.actif:
+        raise HTTPException(status_code=400, detail="L'employé est déjà actif")
+    
+    employe_data_before = clean_data_for_logging(employe)
+    employe_name = f"{employe.nom} {employe.prenom}"
+    
+    # Réactiver l'employé
+    employe.actif = True
+    employe.statut_contrat = StatutContrat.ACTIF
+    
+    db.commit()
+    db.refresh(employe)
+    
+    # Log de la réactivation
+    try:
+        log_action(
+            db=db,
+            module_name="employes",
+            action_type=ActionType.UPDATE,
+            record_id=employe_id,
+            old_data=employe_data_before,
+            new_data=clean_data_for_logging(employe),
+            description=f"Réactivation employé: {employe_name}",
+            user=current_user,
+            request=request
+        )
+    except Exception as e:
+        print(f"Erreur logging: {e}")
+    
+    return {
+        "message": "Employé réactivé avec succès",
         "employe_id": employe_id
     }
 

@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { Table, Button, Space, message, Popconfirm, Tag, Switch } from 'antd';
-import { PlusOutlined, EditOutlined, DeleteOutlined, CarOutlined } from '@ant-design/icons';
+import { Table, Button, Space, message, Popconfirm, Tag, Switch, Input } from 'antd';
+import { PlusOutlined, EditOutlined, DeleteOutlined, CarOutlined, SearchOutlined } from '@ant-design/icons';
 import { posteService } from '../../services';
 import PosteForm from './PosteForm';
+
+const { Search } = Input;
 
 const PostesList = () => {
   const [postes, setPostes] = useState([]);
@@ -10,6 +12,7 @@ const PostesList = () => {
   const [modalVisible, setModalVisible] = useState(false);
   const [editingPoste, setEditingPoste] = useState(null);
   const [showInactive, setShowInactive] = useState(false);
+  const [searchText, setSearchText] = useState('');
 
   const fetchPostes = async () => {
     setLoading(true);
@@ -57,6 +60,12 @@ const PostesList = () => {
   };
 
   const columns = [
+    {
+      title: 'N°',
+      key: 'index',
+      width: 50,
+      render: (text, record, index) => index + 1,
+    },
     {
       title: 'ID',
       dataIndex: 'id',
@@ -161,11 +170,20 @@ const PostesList = () => {
             onChange={setShowInactive}
           />
         </Space>
+        <Search
+          placeholder="Rechercher un poste..."
+          allowClear
+          style={{ width: 300 }}
+          prefix={<SearchOutlined />}
+          onChange={(e) => setSearchText(e.target.value)}
+        />
       </div>
 
       <Table
         columns={columns}
-        dataSource={postes}
+        dataSource={postes.filter(p => 
+          p.libelle.toLowerCase().includes(searchText.toLowerCase())
+        )}
         rowKey="id"
         loading={loading}
         pagination={{

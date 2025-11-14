@@ -22,6 +22,9 @@ export const employeService = {
   // Désactiver un employé (soft delete)
   deactivate: (id) => api.post(`/employes/${id}/deactivate`),
   
+  // Réactiver un employé
+  reactivate: (id) => api.post(`/employes/${id}/reactivate`),
+  
   // Valider le contrat
   validerContrat: (id) => api.post(`/employes/${id}/valider-contrat`),
   

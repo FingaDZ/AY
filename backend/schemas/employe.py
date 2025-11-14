@@ -53,11 +53,19 @@ class EmployeUpdate(BaseModel):
     statut_contrat: Optional[str] = None
     actif: Optional[bool] = None  # Permet de réactiver un employé
 
+    @field_validator('salaire_base')
+    @classmethod
+    def validate_salaire_minimum(cls, v):
+        if v is not None and v < 20000:
+            raise ValueError('Le salaire minimum légal est de 20 000 DA')
+        return v
+
 class EmployeResponse(EmployeBase):
     id: int
     
     class Config:
         from_attributes = True
+        use_enum_values = True  # Convertir les ENUMs en valeurs string
 
 class EmployeListResponse(BaseModel):
     total: int

@@ -36,6 +36,9 @@ class Conge(Base):
         # Calcul proportionnel: (jours_travailles / 30) * 2.5
         jours_conges = (jours_travailles / 30) * 2.5
         
+        # Plafonner à 2.5 jours maximum (30-31 jours = 2.5 jours)
+        jours_conges = min(jours_conges, 2.5)
+        
         # Arrondir à 1 décimale
         return round(jours_conges, 1)
     

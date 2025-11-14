@@ -124,8 +124,15 @@ class PDFGenerator:
         return elements
     
     def _create_footer(self) -> Paragraph:
-        """Créer le footer 'Powered by AIRBAND'"""
-        return Paragraph("Powered by AIRBAND", self.styles['Footer'])
+        """Créer le footer 'Powered by AIRBAND HR'"""
+        footer_style = ParagraphStyle(
+            name='PoweredBy',
+            parent=self.styles['Normal'],
+            fontSize=8,
+            textColor=colors.grey,
+            alignment=TA_CENTER
+        )
+        return Paragraph("Powered by AIRBAND HR", footer_style)
     
     def _generate_ordre_numero(self, mission_id: int, date_mission: str) -> str:
         """
@@ -251,6 +258,10 @@ class PDFGenerator:
             ('VALIGN', (0, 0), (-1, -1), 'TOP'),
         ]))
         story.append(sig_table)
+        
+        # Footer
+        story.append(Spacer(1, 0.5*cm))
+        story.append(self._create_footer())
         
         # Générer le PDF
         doc.build(story)
@@ -396,6 +407,10 @@ class PDFGenerator:
         
         table.setStyle(TableStyle(style_list))
         story.append(table)
+        
+        # Footer
+        story.append(Spacer(1, 0.5*cm))
+        story.append(self._create_footer())
         
         # Générer le PDF
         doc.build(story)
@@ -560,6 +575,10 @@ class PDFGenerator:
         )
         story.append(footer)
         
+        # Footer standard
+        story.append(Spacer(1, 0.3*cm))
+        story.append(self._create_footer())
+        
         # Générer le PDF
         doc.build(story)
         buffer.seek(0)
@@ -588,12 +607,16 @@ class PDFGenerator:
         
         story = []
         
-        # Générer QR Code avec salaire net
+        # Générer QR Code avec toutes les informations
         salaire_net_format = f"{float(salaire_data.get('salaire_net', 0)):,.2f}".replace(',', ' ')
+        salaire_brut_format = f"{float(salaire_data.get('salaire_brut', 0)):,.2f}".replace(',', ' ')
         qr_data = f"ID: {employe_data.get('id', '')}\n" \
                   f"Nom: {employe_data.get('prenom', '')} {employe_data.get('nom', '')}\n" \
+                  f"Poste: {employe_data.get('poste_travail', 'N/A')}\n" \
                   f"N°SS: {employe_data.get('numero_secu_sociale', 'N/A')}\n" \
-                  f"Recrutement: {employe_data.get('date_recrutement', 'N/A')}\n" \
+                  f"Date Recrutement: {employe_data.get('date_recrutement', 'N/A')}\n" \
+                  f"Mois: {salaire_data.get('mois', '')}/{salaire_data.get('annee', '')}\n" \
+                  f"Salaire Brut: {salaire_brut_format} DA\n" \
                   f"Salaire Net: {salaire_net_format} DA"
         
         qr = qrcode.QRCode(version=1, box_size=10, border=1)
@@ -1045,6 +1068,10 @@ class PDFGenerator:
         )
         story.append(footer)
         
+        # Footer standard
+        story.append(Spacer(1, 0.3*cm))
+        story.append(self._create_footer())
+        
         # Générer le PDF
         doc.build(story)
         buffer.seek(0)
@@ -1227,6 +1254,10 @@ class PDFGenerator:
         )
         story.append(footer)
         
+        # Footer standard
+        story.append(Spacer(1, 0.3*cm))
+        story.append(self._create_footer())
+        
         # Générer le PDF
         doc.build(story)
         buffer.seek(0)
@@ -1235,22 +1266,20 @@ class PDFGenerator:
 
     def generate_rapport_pointages(self, pointages_data: List[Dict], periode: Dict, company_info: Dict = None) -> BytesIO:
         """
-        Générer un rapport PDF des pointages par mois
+        Générer un rapport PDF des pointages par mois (format portrait)
         
         Args:
             pointages_data: Liste des pointages groupés par employé
             periode: {'mois': int, 'annee': int}
             company_info: Informations de l'entreprise (optionnel)
         """
-        from reportlab.lib.pagesizes import landscape
-        
         buffer = BytesIO()
         
         doc = SimpleDocTemplate(
             buffer,
-            pagesize=landscape(A4),
-            rightMargin=1.5*cm,
-            leftMargin=1.5*cm,
+            pagesize=A4,
+            rightMargin=1*cm,
+            leftMargin=1*cm,
             topMargin=1.5*cm,
             bottomMargin=1.5*cm
         )
@@ -1333,8 +1362,18 @@ class PDFGenerator:
                 p.get('statut', '-')
             ])
         
-        # Créer le tableau
-        col_widths = [1*cm, 2*cm, 5*cm, 4.5*cm, 2*cm, 2*cm, 2*cm, 2.5*cm]
+        # Créer le tableau avec colonnes dynamiques adaptées au format portrait
+        # Largeur disponible: A4 portrait = 21cm - 2cm marges = 19cm
+        col_widths = [
+            0.8*cm,   # N°
+            1.5*cm,   # Matricule
+            5.5*cm,   # Nom et Prénom
+            4.2*cm,   # Poste (tronqué à 20 chars)
+            1.5*cm,   # Jours Travaillés
+            1.5*cm,   # Absences
+            1.5*cm,   # Jours Congé
+            2.5*cm    # Statut
+        ]
         
         pointages_table = Table(table_data, colWidths=col_widths)
         
@@ -1379,6 +1418,10 @@ class PDFGenerator:
             )
         )
         story.append(footer)
+        
+        # Footer standard
+        story.append(Spacer(1, 0.3*cm))
+        story.append(self._create_footer())
         
         # Générer le PDF
         doc.build(story)
@@ -1520,6 +1563,10 @@ class PDFGenerator:
             )
         )
         story.append(footer)
+        
+        # Footer standard
+        story.append(Spacer(1, 0.3*cm))
+        story.append(self._create_footer())
         
         # Générer le PDF
         doc.build(story)
@@ -1686,6 +1733,10 @@ class PDFGenerator:
             )
         )
         story.append(footer)
+        
+        # Footer standard
+        story.append(Spacer(1, 0.3*cm))
+        story.append(self._create_footer())
         
         # Générer le PDF
         doc.build(story)

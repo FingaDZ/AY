@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Table, Button, Space, Input, Select, Tag, message, Modal, Tooltip } from 'antd';
-import { PlusOutlined, EditOutlined, DeleteOutlined, SearchOutlined, FilePdfOutlined, ExclamationCircleOutlined } from '@ant-design/icons';
+import { PlusOutlined, EditOutlined, DeleteOutlined, SearchOutlined, FilePdfOutlined, ExclamationCircleOutlined, CheckCircleOutlined } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
 import { employeService } from '../../services';
 import { format } from 'date-fns';
@@ -13,7 +13,7 @@ function EmployesList() {
   const [loading, setLoading] = useState(false);
   const [employes, setEmployes] = useState([]);
   const [filters, setFilters] = useState({
-    statut: '',
+    statut: 'Actif',
     recherche: '',
   });
 
@@ -27,6 +27,11 @@ function EmployesList() {
       const params = {};
       if (filters.statut) params.statut = filters.statut;
       if (filters.recherche) params.search = filters.recherche;
+      
+      // Inclure les inactifs si le filtre "Inactif" ou "Tous" est sélectionné
+      if (filters.statut === 'Inactif' || filters.statut === '') {
+        params.inclure_inactifs = true;
+      }
 
       const response = await employeService.getAll(params);
       setEmployes(response.data.employes || []);
@@ -110,6 +115,38 @@ function EmployesList() {
     }
   };
 
+  const handleReactivateClick = async (employe) => {
+    Modal.confirm({
+      title: 'Réactiver cet employé ?',
+      icon: <CheckCircleOutlined style={{ color: '#52c41a' }} />,
+      content: (
+        <div>
+          <p>Êtes-vous sûr de vouloir réactiver <strong>{employe.nom} {employe.prenom}</strong> ?</p>
+          <p style={{ fontSize: 12, color: '#666', marginTop: 8 }}>
+            L'employé redeviendra actif et visible dans les listes.
+          </p>
+        </div>
+      ),
+      okText: 'Réactiver',
+      okType: 'primary',
+      cancelText: 'Annuler',
+      onOk: async () => {
+        try {
+          await employeService.reactivate(employe.id);
+          message.success('Employé réactivé avec succès');
+          loadEmployes();
+        } catch (error) {
+          if (error.response?.status === 400) {
+            message.warning(error.response.data.detail);
+          } else {
+            message.error('Erreur lors de la réactivation');
+          }
+          console.error(error);
+        }
+      },
+    });
+  };
+
   const handleGenererRapport = async () => {
     try {
       setLoading(true);
@@ -138,6 +175,12 @@ function EmployesList() {
   };
 
   const columns = [
+    {
+      title: 'N°',
+      key: 'index',
+      width: 50,
+      render: (text, record, index) => index + 1,
+    },
     {
       title: 'ID',
       dataIndex: 'id',
@@ -201,14 +244,25 @@ function EmployesList() {
           >
             Modifier
           </Button>
-          <Tooltip title="Supprimer">
-            <Button
-              type="link"
-              danger
-              icon={<DeleteOutlined />}
-              onClick={() => handleDeleteClick(record)}
-            />
-          </Tooltip>
+          {record.actif ? (
+            <Tooltip title="Supprimer">
+              <Button
+                type="link"
+                danger
+                icon={<DeleteOutlined />}
+                onClick={() => handleDeleteClick(record)}
+              />
+            </Tooltip>
+          ) : (
+            <Tooltip title="Réactiver">
+              <Button
+                type="link"
+                style={{ color: '#52c41a' }}
+                icon={<CheckCircleOutlined />}
+                onClick={() => handleReactivateClick(record)}
+              />
+            </Tooltip>
+          )}
         </Space>
       ),
     },
@@ -249,9 +303,11 @@ function EmployesList() {
           style={{ width: 200 }}
           allowClear
           onChange={(value) => setFilters({ ...filters, statut: value || '' })}
+          defaultValue="Actif"
         >
           <Option value="Actif">Actif</Option>
           <Option value="Inactif">Inactif</Option>
+          <Option value="">Tous</Option>
         </Select>
       </Space>
 
