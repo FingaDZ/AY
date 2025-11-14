@@ -1,4 +1,4 @@
-# Guide Administrateur - AY HR Management v1.1.4
+# Guide Administrateur - AIRBAND HR v1.1.4
 
 ## 📋 Table des Matières
 

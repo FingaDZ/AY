@@ -1,4 +1,4 @@
-# Releases - AY HR Management System
+# Releases - AIRBAND HR System
 
 ## Comment créer une nouvelle release sur GitHub
 

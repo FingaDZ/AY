@@ -1,4 +1,4 @@
-# Guide de Démarrage Rapide - AY HR
+# Guide de Démarrage Rapide - AIRBAND HR
 
 ## 🚀 Lancement du Projet
 

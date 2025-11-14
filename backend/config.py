@@ -6,8 +6,8 @@ class Settings(BaseSettings):
     DATABASE_URL: str
     
     # Application
-    APP_NAME: str = "AY HR Management"
-    APP_VERSION: str = "1.0.0"
+    APP_NAME: str = "AIRBAND HR"
+    APP_VERSION: str = "2.0.0"
     DEBUG: bool = True
     
     # CORS
