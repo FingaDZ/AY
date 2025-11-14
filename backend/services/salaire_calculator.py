@@ -199,9 +199,14 @@ class SalaireCalculator:
     def _calculer_anciennete(self, date_recrutement: date, annee: int, mois: int) -> int:
         """Calculer l'ancienneté en années"""
         date_calcul = date(annee, mois, 1)
+        
+        # Si l'employé est recruté après la date de calcul, ancienneté = 0
+        if date_recrutement > date_calcul:
+            return 0
+        
         delta = date_calcul - date_recrutement
         annees = delta.days // 365
-        return annees
+        return max(0, annees)  # S'assurer que l'ancienneté est toujours >= 0
     
     def _calculer_prime_deplacement(self, employe_id: int, annee: int, mois: int) -> Decimal:
         """Calculer le total des primes de déplacement du mois"""
