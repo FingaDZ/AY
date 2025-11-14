@@ -182,6 +182,7 @@ function EmployesList() {
           placeholder="Rechercher par nom, prénom..."
           allowClear
           style={{ width: 300 }}
+          onChange={(e) => setFilters({ ...filters, recherche: e.target.value })}
           onSearch={(value) => setFilters({ ...filters, recherche: value })}
         />
         <Select
