@@ -22,11 +22,11 @@ function EmployesList() {
   }, [filters]);
 
   const loadEmployes = async () => {
-    try {
+    try:
       setLoading(true);
       const params = {};
       if (filters.statut) params.statut = filters.statut;
-      if (filters.recherche) params.recherche = filters.recherche;
+      if (filters.recherche) params.search = filters.recherche;  // Backend attend 'search' pas 'recherche'
 
       const response = await employeService.getAll(params);
       setEmployes(response.data.employes || []);
