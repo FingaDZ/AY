@@ -1,14 +1,15 @@
-# Application de Gestion des Ressources Humaines
+# AY HR Management System
 
-[![Version](https://img.shields.io/badge/version-1.1.3-blue.svg)](https://github.com/FingaDZ/AY/releases/tag/v1.1.3)
+[![Version](https://img.shields.io/badge/version-1.1.4-blue.svg)](https://github.com/FingaDZ/AY/releases/tag/v1.1.4)
 [![Status](https://img.shields.io/badge/status-production%20ready-success.svg)](https://github.com/FingaDZ/AY)
-[![Last Updated](https://img.shields.io/badge/updated-Nov%2013%2C%202025-orange.svg)](https://github.com/FingaDZ/AY/commits/main)
+[![Last Updated](https://img.shields.io/badge/updated-Nov%2015%2C%202025-orange.svg)](https://github.com/FingaDZ/AY/commits/main)
 [![License](https://img.shields.io/badge/license-Internal%20Use-red.svg)](https://github.com/FingaDZ/AY)
+[![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20Linux-lightgrey.svg)]()
 
-> **Version actuelle** : 1.1.3  
-> **Dernière mise à jour** : 13 novembre 2025  
-> **Statut** : ✅ Production Ready  
-> 📋 **[Voir le changelog complet](CHANGELOG.md)** | 📦 **[Release Notes v1.1.3](RELEASE_NOTES_V1.1.3.md)**
+> **Version actuelle** : 1.1.4  
+> **Dernière mise à jour** : 15 novembre 2025  
+> **Statut** : ✅ Production Ready avec Package de Déploiement  
+> 📋 **[Voir le changelog complet](CHANGELOG.md)** | 🚀 **[Guide d'installation Ubuntu](INSTALL_UBUNTU_22.04.md)**
 
 ## 📋 Description
 Application complète de gestion RH avec :
