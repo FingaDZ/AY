@@ -104,19 +104,24 @@ sudo update-alternatives --install /usr/bin/python3 python3 /usr/bin/python3.11 
 python3 --version  # Doit afficher Python 3.11.x
 ```
 
-### 3. Installation de Node.js 18
+### 3. Installation de Node.js 20 LTS
 
 ```bash
-# Télécharger et installer NodeSource repository
-curl -fsSL https://deb.nodesource.com/setup_18.x | sudo -E bash -
+# Corriger l'erreur apt_pkg si nécessaire
+sudo apt install --reinstall python3-apt -y
+
+# Télécharger et installer NodeSource repository (Node.js 20 LTS)
+curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
 
 # Installer Node.js
 sudo apt install -y nodejs
 
 # Vérifier
-node --version  # Doit afficher v18.x.x
-npm --version
+node --version  # Doit afficher v20.x.x
+npm --version   # Doit afficher 10.x.x
 ```
+
+**Note** : Node.js 18 n'est plus supporté. Nous utilisons Node.js 20 LTS.
 
 ### 4. Installation de MariaDB 10.11
 
@@ -173,7 +178,14 @@ sudo mkdir -p /opt/ay-hr
 cd /opt/ay-hr
 
 # Si vous avez le package, extraire ici
-# Sinon, cloner depuis Git (si vous avez accès)
+# Sinon, cloner depuis Git
+sudo git clone https://github.com/FingaDZ/AY.git .
+
+# Rendre les scripts exécutables
+sudo chmod +x *.sh
+
+# Corriger les permissions (important !)
+sudo chown -R $USER:$USER /opt/ay-hr
 
 # Créer l'environnement virtuel Python
 cd /opt/ay-hr/backend
@@ -183,6 +195,7 @@ source .venv/bin/activate
 # Installer les dépendances Python
 pip install --upgrade pip
 pip install -r requirements.txt
+deactivate
 ```
 
 ### 7. Installer les Dépendances Frontend
@@ -255,7 +268,13 @@ Entrer le mot de passe de `ayhr_user`.
 ```bash
 cd /opt/ay-hr
 mkdir -p logs backups uploads
+
+# Corriger toutes les permissions
 sudo chown -R $USER:$USER /opt/ay-hr
+chmod +x /opt/ay-hr/*.sh
+
+# Vérifier les permissions
+ls -la /opt/ay-hr/*.sh
 ```
 
 ---
@@ -564,6 +583,50 @@ mysql -u ayhr_user -p ay_hr -e "SELECT COUNT(*) FROM users;"
 ---
 
 ## 🔍 Dépannage
+
+### Problème apt_pkg (ModuleNotFoundError)
+
+```bash
+# Solution 1 : Réinstaller python3-apt
+sudo apt install --reinstall python3-apt -y
+
+# Solution 2 : Si la solution 1 ne fonctionne pas
+sudo apt remove --purge python3-apt -y
+sudo apt install python3-apt -y
+
+# Vérifier
+python3 -c "import apt_pkg; print('OK')"
+```
+
+### Scripts Non Exécutables (Permission Denied)
+
+```bash
+# Rendre tous les scripts exécutables
+cd /opt/ay-hr
+chmod +x *.sh
+
+# Vérifier
+ls -la *.sh
+```
+
+### Script Refuse de S'exécuter en Root
+
+```bash
+# NE PAS utiliser sudo pour install-linux.sh
+# Le script détecte automatiquement s'il est en root
+
+# Si vous êtes connecté en tant que root, créer un utilisateur
+adduser ayhr
+usermod -aG sudo ayhr
+
+# Changer de propriétaire
+chown -R ayhr:ayhr /opt/ay-hr
+
+# Se connecter avec le nouvel utilisateur
+su - ayhr
+cd /opt/ay-hr
+./install-linux.sh
+```
 
 ### Service ne Démarre Pas
 
