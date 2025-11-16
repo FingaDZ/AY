@@ -37,3 +37,4 @@ class Parametres(Base):
             'compte_bancaire': self.compte_bancaire,
             'banque': self.banque,
         }
+

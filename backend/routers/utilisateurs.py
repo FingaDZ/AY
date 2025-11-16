@@ -17,14 +17,16 @@ router = APIRouter(prefix="/utilisateurs", tags=["Utilisateurs"])
 
 class UserCreate(BaseModel):
     email: EmailStr
-    username: str
+    nom: str
+    prenom: str
     password: str
-    role: str = "user"
+    role: str = "Utilisateur"
 
 
 class UserUpdate(BaseModel):
     email: EmailStr | None = None
-    username: str | None = None
+    nom: str | None = None
+    prenom: str | None = None
     password: str | None = None
     role: str | None = None
     actif: bool | None = None
@@ -33,11 +35,12 @@ class UserUpdate(BaseModel):
 class UserResponse(BaseModel):
     id: int
     email: str
-    username: str
+    nom: str
+    prenom: str
     role: str
     actif: bool
-    created_at: str | None
-    updated_at: str | None
+    date_creation: str | None
+    derniere_connexion: str | None
 
     class Config:
         from_attributes = True
@@ -73,14 +76,15 @@ def create_user(user_data: UserCreate, db: Session = Depends(get_db), current_us
         )
     
     # Valider le rôle
-    if user_data.role not in [UserRole.Admin.value, UserRole.Utilisateur.value]:
+    if user_data.role not in [UserRole.admin.value, UserRole.utilisateur.value]:
         raise HTTPException(status_code=400, detail="Rôle invalide")
     
     # Créer l'utilisateur
     user = User(
         email=user_data.email,
-        username=user_data.username,
-        hashed_password=hash_password(user_data.password),
+        nom=user_data.nom,
+        prenom=user_data.prenom,
+        password_hash=hash_password(user_data.password),
         role=user_data.role,
         actif=True
     )
@@ -119,12 +123,14 @@ def update_user(user_id: int, user_data: UserUpdate, db: Session = Depends(get_d
             raise HTTPException(status_code=400, detail="Cet email est déjà utilisé")
         user.email = user_data.email
     
-    if user_data.username:
-        user.username = user_data.username
+    if user_data.nom:
+        user.nom = user_data.nom
+    if user_data.prenom:
+        user.prenom = user_data.prenom
     if user_data.password:
-        user.hashed_password = hash_password(user_data.password)
+        user.password_hash = hash_password(user_data.password)
     if user_data.role:
-        if user_data.role not in ['admin', 'manager', 'user']:
+        if user_data.role not in ['Admin', 'Utilisateur']:
             raise HTTPException(status_code=400, detail="Rôle invalide")
         user.role = user_data.role
     if user_data.actif is not None:
@@ -143,8 +149,8 @@ def delete_user(user_id: int, db: Session = Depends(get_db), current_user: User 
         raise HTTPException(status_code=404, detail="Utilisateur non trouvé")
     
     # Empêcher la suppression du dernier admin
-    if user.role == UserRole.Admin:
-        admin_count = db.query(User).filter(User.role == UserRole.Admin).count()
+    if user.role == "Admin":
+        admin_count = db.query(User).filter(User.role == "Admin").count()
         if admin_count <= 1:
             raise HTTPException(
                 status_code=400,
@@ -183,7 +189,7 @@ def login(credentials: LoginRequest, db: Session = Depends(get_db)):
             detail="Compte désactivé"
         )
     
-    if not verify_password(credentials.password, user.hashed_password):
+    if not verify_password(credentials.password, user.password_hash):
         raise HTTPException(
             status_code=401,
             detail="Email ou mot de passe incorrect"
@@ -191,7 +197,7 @@ def login(credentials: LoginRequest, db: Session = Depends(get_db)):
     
     # Mettre à jour la date de dernière connexion
     from datetime import datetime
-    user.updated_at = datetime.now()
+    user.derniere_connexion = datetime.now()
     db.commit()
     
     return {

@@ -26,7 +26,7 @@ class DatabaseConfig(Base):
             'port': self.port,
             'database_name': self.database_name,
             'username': self.username,
-            'password': '***HIDDEN***',  # Ne jamais exposer le mot de passe
+            'password': '***HIDDEN***',
             'charset': self.charset,
             'is_active': self.is_active,
             'date_creation': self.date_creation.isoformat() if self.date_creation else None,
@@ -34,6 +34,5 @@ class DatabaseConfig(Base):
         }
 
     def connection_string(self):
-        """Génère la chaîne de connexion MySQL avec encodage du mot de passe"""
         encoded_password = quote_plus(self.password)
         return f"mysql+pymysql://{self.username}:{encoded_password}@{self.host}:{self.port}/{self.database_name}?charset={self.charset}"
