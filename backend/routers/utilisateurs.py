@@ -2,11 +2,14 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from typing import List
 from pydantic import BaseModel, EmailStr
-import bcrypt
+from passlib.context import CryptContext
 
 from database import get_db
 from models import User, UserRole
 from middleware import require_admin
+
+# Configuration pour le hashing des mots de passe
+pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 
 router = APIRouter(prefix="/utilisateurs", tags=["Utilisateurs"])
@@ -14,16 +17,14 @@ router = APIRouter(prefix="/utilisateurs", tags=["Utilisateurs"])
 
 class UserCreate(BaseModel):
     email: EmailStr
-    nom: str
-    prenom: str
+    username: str
     password: str
-    role: str = "Utilisateur"
+    role: str = "user"
 
 
 class UserUpdate(BaseModel):
     email: EmailStr | None = None
-    nom: str | None = None
-    prenom: str | None = None
+    username: str | None = None
     password: str | None = None
     role: str | None = None
     actif: bool | None = None
@@ -32,25 +33,24 @@ class UserUpdate(BaseModel):
 class UserResponse(BaseModel):
     id: int
     email: str
-    nom: str
-    prenom: str
+    username: str
     role: str
     actif: bool
-    date_creation: str | None
-    derniere_connexion: str | None
+    created_at: str | None
+    updated_at: str | None
 
     class Config:
         from_attributes = True
 
 
 def hash_password(password: str) -> str:
-    """Hash un mot de passe avec bcrypt"""
-    return bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
+    """Hash un mot de passe avec bcrypt via passlib"""
+    return pwd_context.hash(password)
 
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
-    """Vérifie un mot de passe"""
-    return bcrypt.checkpw(plain_password.encode('utf-8'), hashed_password.encode('utf-8'))
+    """Vérifie un mot de passe avec passlib"""
+    return pwd_context.verify(plain_password, hashed_password)
 
 
 @router.get("/", response_model=List[UserResponse])
@@ -79,10 +79,9 @@ def create_user(user_data: UserCreate, db: Session = Depends(get_db), current_us
     # Créer l'utilisateur
     user = User(
         email=user_data.email,
-        nom=user_data.nom,
-        prenom=user_data.prenom,
-        password_hash=hash_password(user_data.password),
-        role=UserRole(user_data.role),
+        username=user_data.username,
+        hashed_password=hash_password(user_data.password),
+        role=user_data.role,
         actif=True
     )
     
@@ -120,16 +119,14 @@ def update_user(user_id: int, user_data: UserUpdate, db: Session = Depends(get_d
             raise HTTPException(status_code=400, detail="Cet email est déjà utilisé")
         user.email = user_data.email
     
-    if user_data.nom:
-        user.nom = user_data.nom
-    if user_data.prenom:
-        user.prenom = user_data.prenom
+    if user_data.username:
+        user.username = user_data.username
     if user_data.password:
-        user.password_hash = hash_password(user_data.password)
+        user.hashed_password = hash_password(user_data.password)
     if user_data.role:
-        if user_data.role not in [UserRole.Admin.value, UserRole.Utilisateur.value]:
+        if user_data.role not in ['admin', 'manager', 'user']:
             raise HTTPException(status_code=400, detail="Rôle invalide")
-        user.role = UserRole(user_data.role)
+        user.role = user_data.role
     if user_data.actif is not None:
         user.actif = user_data.actif
     
