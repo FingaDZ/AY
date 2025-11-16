@@ -54,7 +54,7 @@ async def require_admin(
     """
     Vérifie que l'utilisateur actuel est un administrateur
     """
-    if current_user.role != UserRole.Admin:
+    if current_user.role != "Admin":
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Accès refusé. Droits administrateur requis."
