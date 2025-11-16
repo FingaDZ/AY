@@ -34,10 +34,11 @@ cd "$BACKEND_DIR"
 source .venv/bin/activate
 
 echo "Installation des modules manquants..."
-pip install --quiet qrcode[pil] pillow
+pip install --quiet qrcode[pil] pillow email-validator
 
 echo "Vérification des imports critiques..."
 python -c "import qrcode; print('✓ qrcode OK')"
+python -c "import email_validator; print('✓ email_validator OK')"
 python -c "from config import settings; print('✓ config OK')"
 python -c "from main import app; print('✓ main.py OK')"
 
