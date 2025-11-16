@@ -36,6 +36,15 @@ source .venv/bin/activate
 echo "Installation des modules manquants..."
 pip install --quiet qrcode[pil] pillow email-validator
 
+echo "Correction du fichier .env (URL-encoding du mot de passe)..."
+SECRET_KEY=$(openssl rand -hex 32)
+cat > "$BACKEND_DIR/.env" << EOF
+# Configuration Backend AY HR - Format Pydantic Settings
+DATABASE_URL=mysql+pymysql://ayhr_user:%21Yara@2014@localhost/ay_hr
+SECRET_KEY=$SECRET_KEY
+CORS_ORIGINS=http://localhost:3000,http://192.168.20.53:3000
+EOF
+
 echo "Vérification des imports critiques..."
 python -c "import qrcode; print('✓ qrcode OK')"
 python -c "import email_validator; print('✓ email_validator OK')"
