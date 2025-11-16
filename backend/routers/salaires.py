@@ -123,7 +123,7 @@ def generer_bulletins_paie(
         raise HTTPException(status_code=404, detail="Aucun employé actif trouvé")
     
     calculator = SalaireCalculator(db)
-    pdf_generator = PDFGenerator()
+    pdf_generator = PDFGenerator(db=db)
     
     # Créer un fichier ZIP en mémoire
     zip_buffer = BytesIO()
@@ -299,7 +299,7 @@ def generer_rapport_pdf_salaires(
     }
     
     # Générer le PDF
-    pdf_generator = PDFGenerator()
+    pdf_generator = PDFGenerator(db=db)
     periode = {'mois': params.mois, 'annee': params.annee}
     
     pdf_buffer = pdf_generator.generate_rapport_salaires(
