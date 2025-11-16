@@ -654,10 +654,10 @@ class PDFGenerator:
         
         # Récupérer les paramètres de l'entreprise
         params = self._get_parametres()
-        company_name = params.raison_sociale or params.nom_entreprise or "AY HR Management" if params else "AY HR Management"
-        company_address = params.adresse or "Alger, Algérie" if params else "Alger, Algérie"
-        company_rc = params.rc or "N/A" if params else "N/A"
-        company_ss_employeur = params.numero_secu_employeur or "N/A" if params else "N/A"
+        company_name = (params.raison_sociale or params.nom_entreprise or "Entreprise") if params else "Entreprise"
+        company_address = params.adresse if params and params.adresse else "Adresse non définie"
+        company_rc = params.rc if params and params.rc else "Non défini"
+        company_ss_employeur = params.numero_secu_employeur if params and params.numero_secu_employeur else "Non défini"
         
         # Fusionner tableaux EMPLOYEUR et EMPLOYÉ côte à côte
         info_data = [
