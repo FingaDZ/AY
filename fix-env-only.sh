@@ -21,10 +21,10 @@ systemctl stop ayhr-backend 2>/dev/null || true
 # Générer une nouvelle clé secrète
 SECRET_KEY=$(openssl rand -hex 32)
 
-# Recréer le .env avec le bon format (mot de passe URL-encodé: ! = %21)
+# Recréer le .env avec le bon format (mot de passe URL-encodé: ! = %21, @ = %40)
 cat > "$BACKEND_DIR/.env" << EOF
 # Configuration Backend AY HR - Format Pydantic Settings
-DATABASE_URL=mysql+pymysql://ayhr_user:%21Yara@2014@localhost/ay_hr
+DATABASE_URL=mysql+pymysql://ayhr_user:%21Yara%402014@localhost/ay_hr
 SECRET_KEY=$SECRET_KEY
 CORS_ORIGINS=http://localhost:3000,http://192.168.20.53:3000
 EOF

@@ -217,10 +217,12 @@ success "Dépendances Python installées"
 SECRET_KEY=$(openssl rand -hex 32)
 
 # Créer le fichier .env
-# Créer le fichier .env avec le bon format Pydantic
+# Créer le fichier .env avec le bon format Pydantic (URL-encode le mot de passe)
+# ! devient %21, @ devient %40
+DB_PASS_ENCODED="%21Yara%402014"
 cat > .env <<EOF
 # Configuration Backend AY HR - Format Pydantic Settings
-DATABASE_URL=mysql+pymysql://${DB_USER}:${DB_PASS}@localhost/${DB_NAME}
+DATABASE_URL=mysql+pymysql://${DB_USER}:${DB_PASS_ENCODED}@localhost/${DB_NAME}
 SECRET_KEY=${SECRET_KEY}
 CORS_ORIGINS=http://localhost:3000,http://${SERVER_IP}:3000
 EOF
