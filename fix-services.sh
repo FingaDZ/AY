@@ -90,25 +90,20 @@ else
     echo -e "${GREEN}✓ Environnement virtuel OK${NC}"
 fi
 
-# Vérifier le fichier .env
-if [ ! -f "$BACKEND_DIR/.env" ]; then
-    echo -e "${RED}✗ Fichier .env backend manquant${NC}"
-    echo "Création du fichier .env..."
-    
-    SECRET_KEY=$(openssl rand -hex 32)
-    
-    cat > "$BACKEND_DIR/.env" << EOF
-# Configuration Backend AY HR
+# Vérifier et corriger le fichier .env
+echo "Vérification du fichier .env..."
+
+SECRET_KEY=$(openssl rand -hex 32)
+
+# Toujours recréer le .env avec le bon format
+cat > "$BACKEND_DIR/.env" << EOF
+# Configuration Backend AY HR - Format Pydantic Settings
 DATABASE_URL=mysql+pymysql://ayhr_user:!Yara@2014@localhost/ay_hr
 SECRET_KEY=$SECRET_KEY
-ALGORITHM=HS256
-ACCESS_TOKEN_EXPIRE_MINUTES=30
-CORS_ORIGINS=["http://localhost:3000","http://192.168.20.53:3000"]
+CORS_ORIGINS=http://localhost:3000,http://192.168.20.53:3000
 EOF
-    echo -e "${GREEN}✓ Fichier .env créé${NC}"
-else
-    echo -e "${GREEN}✓ Fichier .env existe${NC}"
-fi
+
+echo -e "${GREEN}✓ Fichier .env créé avec le bon format${NC}"
 
 # Tester le backend manuellement
 echo "Test du backend..."
