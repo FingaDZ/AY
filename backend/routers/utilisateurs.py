@@ -186,7 +186,7 @@ def login(credentials: LoginRequest, db: Session = Depends(get_db)):
             detail="Compte désactivé"
         )
     
-    if not verify_password(credentials.password, user.password_hash):
+    if not verify_password(credentials.password, user.hashed_password):
         raise HTTPException(
             status_code=401,
             detail="Email ou mot de passe incorrect"
@@ -194,7 +194,7 @@ def login(credentials: LoginRequest, db: Session = Depends(get_db)):
     
     # Mettre à jour la date de dernière connexion
     from datetime import datetime
-    user.derniere_connexion = datetime.now()
+    user.updated_at = datetime.now()
     db.commit()
     
     return {

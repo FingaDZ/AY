@@ -5,8 +5,9 @@ import enum
 
 
 class UserRole(str, enum.Enum):
-    Admin = "Admin"
-    Utilisateur = "Utilisateur"
+    admin = "admin"
+    manager = "manager"
+    user = "user"
 
 
 class User(Base):
@@ -14,24 +15,22 @@ class User(Base):
     __table_args__ = {'extend_existing': True}
 
     id = Column(Integer, primary_key=True, index=True, autoincrement=True)
-    email = Column(String(255), unique=True, nullable=False, index=True)
-    nom = Column(String(100), nullable=False)
-    prenom = Column(String(100), nullable=False)
-    password_hash = Column(String(255), nullable=False)
-    role = Column(Enum(UserRole), nullable=False, default=UserRole.Utilisateur)
+    username = Column(String(50), unique=True, nullable=False)
+    email = Column(String(100), unique=True, nullable=False, index=True)
+    hashed_password = Column(String(255), nullable=False)
+    role = Column(String(20), nullable=False, default='user')
     actif = Column(Boolean, default=True)
-    date_creation = Column(DateTime, default=datetime.now)
-    derniere_connexion = Column(DateTime, nullable=True)
+    created_at = Column(DateTime, default=datetime.now)
+    updated_at = Column(DateTime, default=datetime.now, onupdate=datetime.now)
 
     def to_dict(self):
-        """Convertir en dict sans password_hash"""
+        """Convertir en dict sans hashed_password"""
         return {
             'id': self.id,
+            'username': self.username,
             'email': self.email,
-            'nom': self.nom,
-            'prenom': self.prenom,
-            'role': self.role.value if isinstance(self.role, UserRole) else self.role,
+            'role': self.role,
             'actif': self.actif,
-            'date_creation': self.date_creation.isoformat() if self.date_creation else None,
-            'derniere_connexion': self.derniere_connexion.isoformat() if self.derniere_connexion else None,
+            'created_at': self.created_at.isoformat() if self.created_at else None,
+            'updated_at': self.updated_at.isoformat() if self.updated_at else None,
         }
