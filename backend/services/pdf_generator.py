@@ -665,13 +665,13 @@ class PDFGenerator:
             [Paragraph("<b>EMPLOYEUR</b>", self.styles['CustomBody']), '', 
              Paragraph("<b>EMPLOYÉ</b>", self.styles['CustomBody']), ''],
             # Lignes de données
-            ['Raison Sociale:', company_name,
+            ['Raison Sociale:', Paragraph(company_name, self.styles['CustomBody']),
              'Nom:', f"{employe_data.get('prenom', '')} {employe_data.get('nom', '')}"],
             ['RC:', company_rc,
              'Poste:', employe_data.get('poste_travail', '')],
             ['N° SS EMPLOYEUR:', company_ss_employeur,
              'N° Sécurité Sociale:', employe_data.get('numero_secu_sociale', 'N/A')],
-            ['Adresse:', company_address,
+            ['Adresse:', Paragraph(company_address, self.styles['CustomBody']),
              'Date de recrutement:', str(employe_data.get('date_recrutement', 'N/A'))],
         ]
         
