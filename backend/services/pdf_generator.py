@@ -1849,11 +1849,9 @@ class PDFGenerator:
             f"N° Sécurité Sociale : {employe_data.get('numero_secu_sociale', 'N/A')}",
             "",
             f"Est employé(e) au sein de notre entreprise depuis le <b>{date_recrutement.strftime('%d/%m/%Y')}</b>, "
-            f"soit une ancienneté de <b>{anciennete_str}</b>.",
+            f"<b>Jusqu'à ce jour</b>.",
             "",
-            f"Il/Elle occupe actuellement le poste de <b>{employe_data.get('poste_travail', 'N/A')}</b>.",
-            "",
-            "Cette attestation est délivrée à l'intéressé(e) pour servir et valoir ce que de droit.",
+            f"Poste de Travail : <b>{employe_data.get('poste_travail', 'N/A')}</b>.",
         ]
         
         for part in text_parts:
@@ -1862,7 +1860,19 @@ class PDFGenerator:
             else:
                 story.append(Spacer(1, 0.3*cm))
         
-        story.append(Spacer(1, 1.5*cm))
+        story.append(Spacer(1, 1*cm))
+        
+        # Texte centré final
+        centered_style = ParagraphStyle(
+            name='CenteredText',
+            parent=self.styles['Normal'],
+            fontSize=11,
+            alignment=TA_CENTER,
+            spaceAfter=12
+        )
+        story.append(Paragraph("Cette attestation est délivrée à l'intéressé(e) pour servir et valoir ce que de droit.", centered_style))
+        
+        story.append(Spacer(1, 1*cm))
         
         # Signature
         signature_style = ParagraphStyle(
@@ -1873,7 +1883,7 @@ class PDFGenerator:
             spaceAfter=8
         )
         
-        story.append(Paragraph(f"Fait à {company_address.split(',')[0] if company_address else '____'}, le {date_aujourdhui}", signature_style))
+        story.append(Paragraph(f"Fait à : Chelghoum Laid, le {date_aujourdhui}", signature_style))
         story.append(Spacer(1, 0.5*cm))
         story.append(Paragraph("<b>Le Responsable</b>", signature_style))
         story.append(Spacer(1, 2*cm))
@@ -1999,10 +2009,6 @@ class PDFGenerator:
             f"soit une durée totale de <b>{duree_str}</b>.",
             "",
             f"Durant cette période, il/elle a occupé le poste de <b>{employe_data.get('poste_travail', 'N/A')}</b>.",
-            "",
-            "Il/Elle quitte l'entreprise libre de tout engagement.",
-            "",
-            "Le présent certificat est délivré pour servir et valoir ce que de droit.",
         ]
         
         for part in text_parts:
@@ -2011,7 +2017,19 @@ class PDFGenerator:
             else:
                 story.append(Spacer(1, 0.3*cm))
         
-        story.append(Spacer(1, 1.5*cm))
+        story.append(Spacer(1, 1*cm))
+        
+        # Texte centré final
+        centered_style = ParagraphStyle(
+            name='CenteredText',
+            parent=self.styles['Normal'],
+            fontSize=11,
+            alignment=TA_CENTER,
+            spaceAfter=12
+        )
+        story.append(Paragraph("Le présent certificat est délivré pour servir et valoir ce que de droit.", centered_style))
+        
+        story.append(Spacer(1, 1*cm))
         
         # Signature
         signature_style = ParagraphStyle(
@@ -2022,7 +2040,7 @@ class PDFGenerator:
             spaceAfter=8
         )
         
-        story.append(Paragraph(f"Fait à {company_address.split(',')[0] if company_address else '____'}, le {date_aujourdhui}", signature_style))
+        story.append(Paragraph(f"Fait à : Chelghoum Laid, le {date_aujourdhui}", signature_style))
         story.append(Spacer(1, 0.5*cm))
         story.append(Paragraph("<b>Le Responsable</b>", signature_style))
         story.append(Spacer(1, 2*cm))
