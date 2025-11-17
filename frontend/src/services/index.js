@@ -36,6 +36,16 @@ export const employeService = {
     params: { annee, mois }, 
     responseType: 'blob' 
   }),
+  
+  // Générer attestation de travail (employé actif)
+  generateAttestation: (id) => api.get(`/employes/${id}/attestation-travail`, { 
+    responseType: 'blob' 
+  }),
+  
+  // Générer certificat de travail (employé inactif/parti)
+  generateCertificat: (id) => api.get(`/employes/${id}/certificat-travail`, { 
+    responseType: 'blob' 
+  }),
 };
 
 export const pointageService = {

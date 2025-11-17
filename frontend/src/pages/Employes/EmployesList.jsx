@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Table, Button, Space, Input, Select, Tag, message, Modal, Tooltip } from 'antd';
-import { PlusOutlined, EditOutlined, DeleteOutlined, SearchOutlined, FilePdfOutlined, ExclamationCircleOutlined, CheckCircleOutlined } from '@ant-design/icons';
+import { PlusOutlined, EditOutlined, DeleteOutlined, SearchOutlined, FilePdfOutlined, ExclamationCircleOutlined, CheckCircleOutlined, FileTextOutlined, SafetyCertificateOutlined } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
 import { employeService } from '../../services';
 import { format } from 'date-fns';
@@ -174,6 +174,58 @@ function EmployesList() {
     }
   };
 
+  const handleGenerateAttestation = async (employe) => {
+    try {
+      setLoading(true);
+      const response = await employeService.generateAttestation(employe.id);
+      
+      // Télécharger le PDF
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement('a');
+      link.href = url;
+      const today = new Date();
+      const dateStr = `${today.getDate().toString().padStart(2, '0')}${(today.getMonth() + 1).toString().padStart(2, '0')}${today.getFullYear()}`;
+      link.setAttribute('download', `attestation_travail_${employe.nom}_${employe.prenom}_${dateStr}.pdf`);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      
+      message.success('Attestation de travail générée avec succès');
+    } catch (error) {
+      const errorMsg = error.response?.data?.detail || 'Erreur lors de la génération de l\'attestation';
+      message.error(errorMsg);
+      console.error(error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleGenerateCertificat = async (employe) => {
+    try {
+      setLoading(true);
+      const response = await employeService.generateCertificat(employe.id);
+      
+      // Télécharger le PDF
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement('a');
+      link.href = url;
+      const today = new Date();
+      const dateStr = `${today.getDate().toString().padStart(2, '0')}${(today.getMonth() + 1).toString().padStart(2, '0')}${today.getFullYear()}`;
+      link.setAttribute('download', `certificat_travail_${employe.nom}_${employe.prenom}_${dateStr}.pdf`);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      
+      message.success('Certificat de travail généré avec succès');
+    } catch (error) {
+      const errorMsg = error.response?.data?.detail || 'Erreur lors de la génération du certificat';
+      message.error(errorMsg);
+      console.error(error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const columns = [
     {
       title: 'N°',
@@ -235,33 +287,60 @@ function EmployesList() {
     {
       title: 'Actions',
       key: 'actions',
+      width: 300,
       render: (_, record) => (
-        <Space>
-          <Button
-            type="link"
-            icon={<EditOutlined />}
-            onClick={() => navigate(`/employes/${record.id}`)}
-          >
-            Modifier
-          </Button>
+        <Space size="small" wrap>
+          <Tooltip title="Modifier">
+            <Button
+              type="link"
+              icon={<EditOutlined />}
+              onClick={() => navigate(`/employes/${record.id}`)}
+              size="small"
+            />
+          </Tooltip>
+          
           {record.actif ? (
-            <Tooltip title="Supprimer">
-              <Button
-                type="link"
-                danger
-                icon={<DeleteOutlined />}
-                onClick={() => handleDeleteClick(record)}
-              />
-            </Tooltip>
+            <>
+              <Tooltip title="Générer attestation de travail">
+                <Button
+                  type="link"
+                  icon={<FileTextOutlined />}
+                  onClick={() => handleGenerateAttestation(record)}
+                  size="small"
+                  style={{ color: '#1890ff' }}
+                />
+              </Tooltip>
+              <Tooltip title="Supprimer">
+                <Button
+                  type="link"
+                  danger
+                  icon={<DeleteOutlined />}
+                  onClick={() => handleDeleteClick(record)}
+                  size="small"
+                />
+              </Tooltip>
+            </>
           ) : (
-            <Tooltip title="Réactiver">
-              <Button
-                type="link"
-                style={{ color: '#52c41a' }}
-                icon={<CheckCircleOutlined />}
-                onClick={() => handleReactivateClick(record)}
-              />
-            </Tooltip>
+            <>
+              <Tooltip title="Générer certificat de travail">
+                <Button
+                  type="link"
+                  icon={<SafetyCertificateOutlined />}
+                  onClick={() => handleGenerateCertificat(record)}
+                  size="small"
+                  style={{ color: '#52c41a' }}
+                />
+              </Tooltip>
+              <Tooltip title="Réactiver">
+                <Button
+                  type="link"
+                  style={{ color: '#52c41a' }}
+                  icon={<CheckCircleOutlined />}
+                  onClick={() => handleReactivateClick(record)}
+                  size="small"
+                />
+              </Tooltip>
+            </>
           )}
         </Space>
       ),
