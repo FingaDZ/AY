@@ -5,6 +5,37 @@ Tous les changements notables de ce projet seront documentés dans ce fichier.
 Le format est basé sur [Keep a Changelog](https://keepachangelog.com/fr/1.0.0/),
 et ce projet adhère à [Semantic Versioning](https://semver.org/lang/fr/).
 
+## [1.1.4] - 2025-01-XX 🆕 EN DÉVELOPPEMENT
+
+### ✨ Nouvelles Fonctionnalités
+- **Génération Attestation de Travail** : Document PDF pour employés actifs
+  - Méthode `PDFGenerator.generate_attestation_travail()`
+  - Endpoint API : `GET /api/employes/{employe_id}/attestation-travail`
+  - Calcul automatique de l'ancienneté (années et mois)
+  - Utilise les paramètres entreprise de la base de données
+  - Document avec en-tête entreprise, détails employé, signature
+  
+- **Génération Certificat de Travail** : Document PDF pour employés ayant quitté l'entreprise
+  - Méthode `PDFGenerator.generate_certificat_travail()`
+  - Endpoint API : `GET /api/employes/{employe_id}/certificat-travail`
+  - Calcul automatique de la durée d'emploi totale
+  - Mention "libre de tout engagement"
+  - Validation : employé doit avoir date_fin_contrat ou être inactif
+
+### 🔧 Améliorations Techniques
+- **Validation logique** : Attestation uniquement pour employés actifs, certificat pour employés inactifs/avec date_fin
+- **Logging automatique** : Toutes les générations de documents sont loggées avec ActionType.EXPORT
+- **Noms de fichiers descriptifs** : Format `attestation_travail_NOM_PRENOM_DDMMYYYY.pdf`
+- **Gestion erreurs robuste** : HTTPException avec messages explicites
+
+### 📄 Fichiers Modifiés
+- `backend/services/pdf_generator.py` - Ajout 2 nouvelles méthodes (~300 lignes)
+- `backend/routers/employes.py` - Ajout 2 nouveaux endpoints
+
+### 📚 Documentation
+- Code documenté avec docstrings détaillées
+- Spécification des paramètres attendus dans employe_data dict
+
 ## [1.1.3] - 2025-11-13 ✅ ACTUELLE
 
 ### ✨ Nouvelles Fonctionnalités

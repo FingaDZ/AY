@@ -523,3 +523,129 @@ def generer_rapport_employes_actifs(
             "Content-Disposition": f"attachment; filename={filename}"
         }
     )
+
+@router.get("/{employe_id}/attestation-travail")
+def generate_attestation_travail(employe_id: int, request: Request, db: Session = Depends(get_db), current_user: User = Depends(require_auth)):
+    """Générer une attestation de travail pour un employé actif"""
+    try:
+        # Récupérer l'employé
+        employe = db.query(Employe).filter(Employe.id == employe_id).first()
+        
+        if not employe:
+            raise HTTPException(status_code=404, detail="Employé non trouvé")
+        
+        # Vérifier que l'employé est actif
+        if not employe.actif:
+            raise HTTPException(
+                status_code=400, 
+                detail="Impossible de générer une attestation de travail pour un employé inactif. Utilisez le certificat de travail."
+            )
+        
+        # Préparer les données
+        employe_data = {
+            'nom': employe.nom,
+            'prenom': employe.prenom,
+            'date_naissance': employe.date_naissance.strftime('%d/%m/%Y') if employe.date_naissance else 'N/A',
+            'lieu_naissance': employe.lieu_naissance or 'N/A',
+            'adresse': employe.adresse or 'N/A',
+            'numero_secu_sociale': employe.numero_secu_sociale or 'N/A',
+            'poste_travail': employe.poste_travail or 'N/A',
+            'date_recrutement': employe.date_recrutement,
+            'salaire_base': employe.salaire_base
+        }
+        
+        # Générer le PDF
+        pdf_generator = PDFGenerator(db=db)
+        pdf_buffer = pdf_generator.generate_attestation_travail(employe_data)
+        
+        # Logger l'action
+        log_action(
+            db=db,
+            utilisateur_id=current_user.id,
+            action_type=ActionType.EXPORT,
+            table_name='Employes',
+            record_id=employe_id,
+            description=f"Génération attestation de travail pour {employe.prenom} {employe.nom}",
+            request=request
+        )
+        
+        # Nom du fichier
+        filename = f"attestation_travail_{employe.nom}_{employe.prenom}_{date.today().strftime('%d%m%Y')}.pdf"
+        
+        # Retourner le PDF
+        return StreamingResponse(
+            pdf_buffer,
+            media_type="application/pdf",
+            headers={
+                "Content-Disposition": f"attachment; filename={filename}"
+            }
+        )
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@router.get("/{employe_id}/certificat-travail")
+def generate_certificat_travail(employe_id: int, request: Request, db: Session = Depends(get_db), current_user: User = Depends(require_auth)):
+    """Générer un certificat de travail pour un employé ayant quitté l'entreprise"""
+    try:
+        # Récupérer l'employé
+        employe = db.query(Employe).filter(Employe.id == employe_id).first()
+        
+        if not employe:
+            raise HTTPException(status_code=404, detail="Employé non trouvé")
+        
+        # Vérifier que l'employé a une date de fin de contrat ou est inactif
+        if employe.actif and not employe.date_fin_contrat:
+            raise HTTPException(
+                status_code=400, 
+                detail="Impossible de générer un certificat de travail pour un employé actif. Utilisez l'attestation de travail."
+            )
+        
+        # Préparer les données
+        employe_data = {
+            'nom': employe.nom,
+            'prenom': employe.prenom,
+            'date_naissance': employe.date_naissance.strftime('%d/%m/%Y') if employe.date_naissance else 'N/A',
+            'lieu_naissance': employe.lieu_naissance or 'N/A',
+            'adresse': employe.adresse or 'N/A',
+            'numero_secu_sociale': employe.numero_secu_sociale or 'N/A',
+            'poste_travail': employe.poste_travail or 'N/A',
+            'date_recrutement': employe.date_recrutement,
+            'date_fin_contrat': employe.date_fin_contrat,
+            'salaire_base': employe.salaire_base
+        }
+        
+        # Générer le PDF
+        pdf_generator = PDFGenerator(db=db)
+        pdf_buffer = pdf_generator.generate_certificat_travail(employe_data)
+        
+        # Logger l'action
+        log_action(
+            db=db,
+            utilisateur_id=current_user.id,
+            action_type=ActionType.EXPORT,
+            table_name='Employes',
+            record_id=employe_id,
+            description=f"Génération certificat de travail pour {employe.prenom} {employe.nom}",
+            request=request
+        )
+        
+        # Nom du fichier
+        filename = f"certificat_travail_{employe.nom}_{employe.prenom}_{date.today().strftime('%d%m%Y')}.pdf"
+        
+        # Retourner le PDF
+        return StreamingResponse(
+            pdf_buffer,
+            media_type="application/pdf",
+            headers={
+                "Content-Disposition": f"attachment; filename={filename}"
+            }
+        )
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+

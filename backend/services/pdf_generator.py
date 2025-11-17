@@ -1743,6 +1743,298 @@ class PDFGenerator:
         buffer.seek(0)
         
         return buffer
+    
+    def generate_attestation_travail(self, employe_data: Dict) -> BytesIO:
+        """
+        Générer une attestation de travail pour un employé actif
+        
+        Args:
+            employe_data: Dictionnaire contenant les informations de l'employé
+                - nom, prenom, date_naissance, lieu_naissance
+                - adresse, numero_secu_sociale
+                - poste_travail, date_recrutement
+                - salaire_base
+        """
+        buffer = BytesIO()
+        doc = SimpleDocTemplate(buffer, pagesize=A4, topMargin=2*cm, bottomMargin=2*cm)
+        story = []
+        
+        # Récupérer les paramètres entreprise
+        params = self._get_parametres()
+        company_name = (params.raison_sociale or params.nom_entreprise or "Entreprise") if params else "Entreprise"
+        company_address = params.adresse if params and params.adresse else ""
+        company_rc = params.rc if params and params.rc else ""
+        company_nif = params.nif if params and params.nif else ""
+        
+        # En-tête entreprise
+        header_style = ParagraphStyle(
+            name='CompanyHeader',
+            parent=self.styles['Normal'],
+            fontSize=12,
+            textColor=colors.HexColor('#1a1a1a'),
+            alignment=TA_CENTER,
+            spaceAfter=5
+        )
+        
+        story.append(Paragraph(f"<b>{company_name}</b>", header_style))
+        if company_address:
+            addr_style = ParagraphStyle(name='Address', parent=self.styles['Normal'], 
+                                       fontSize=9, alignment=TA_CENTER, spaceAfter=3)
+            story.append(Paragraph(company_address, addr_style))
+        
+        if company_rc or company_nif:
+            details = []
+            if company_rc:
+                details.append(f"RC: {company_rc}")
+            if company_nif:
+                details.append(f"NIF: {company_nif}")
+            detail_style = ParagraphStyle(name='Details', parent=self.styles['Normal'],
+                                         fontSize=8, alignment=TA_CENTER, spaceAfter=20)
+            story.append(Paragraph(" | ".join(details), detail_style))
+        else:
+            story.append(Spacer(1, 0.5*cm))
+        
+        story.append(Spacer(1, 1*cm))
+        
+        # Titre du document
+        title_style = ParagraphStyle(
+            name='DocTitle',
+            parent=self.styles['Heading1'],
+            fontSize=16,
+            textColor=colors.black,
+            alignment=TA_CENTER,
+            spaceAfter=30,
+            spaceBefore=10
+        )
+        story.append(Paragraph("<b>ATTESTATION DE TRAVAIL</b>", title_style))
+        story.append(Spacer(1, 1*cm))
+        
+        # Corps du texte
+        body_style = ParagraphStyle(
+            name='BodyText',
+            parent=self.styles['Normal'],
+            fontSize=11,
+            leading=18,
+            alignment=TA_LEFT,
+            spaceAfter=12
+        )
+        
+        # Date du jour
+        date_aujourdhui = datetime.now().strftime("%d/%m/%Y")
+        
+        # Calcul de l'ancienneté
+        date_recrutement = employe_data.get('date_recrutement')
+        if isinstance(date_recrutement, str):
+            date_recrutement = datetime.strptime(date_recrutement, "%Y-%m-%d").date()
+        
+        today = datetime.now().date()
+        anciennete_jours = (today - date_recrutement).days
+        anciennete_annees = anciennete_jours // 365
+        anciennete_mois = (anciennete_jours % 365) // 30
+        
+        anciennete_text = []
+        if anciennete_annees > 0:
+            anciennete_text.append(f"{anciennete_annees} an{'s' if anciennete_annees > 1 else ''}")
+        if anciennete_mois > 0:
+            anciennete_text.append(f"{anciennete_mois} mois")
+        anciennete_str = " et ".join(anciennete_text) if anciennete_text else "moins d'un mois"
+        
+        # Contenu de l'attestation
+        text_parts = [
+            f"Je soussigné(e), représentant(e) de <b>{company_name}</b>, atteste par la présente que :",
+            "",
+            f"<b>Monsieur/Madame {employe_data.get('prenom', '')} {employe_data.get('nom', '')}</b>",
+            f"Né(e) le {employe_data.get('date_naissance', 'N/A')} à {employe_data.get('lieu_naissance', 'N/A')}",
+            f"Demeurant à : {employe_data.get('adresse', 'N/A')}",
+            f"N° Sécurité Sociale : {employe_data.get('numero_secu_sociale', 'N/A')}",
+            "",
+            f"Est employé(e) au sein de notre entreprise depuis le <b>{date_recrutement.strftime('%d/%m/%Y')}</b>, "
+            f"soit une ancienneté de <b>{anciennete_str}</b>.",
+            "",
+            f"Il/Elle occupe actuellement le poste de <b>{employe_data.get('poste_travail', 'N/A')}</b>.",
+            "",
+            "Cette attestation est délivrée à l'intéressé(e) pour servir et valoir ce que de droit.",
+        ]
+        
+        for part in text_parts:
+            if part:
+                story.append(Paragraph(part, body_style))
+            else:
+                story.append(Spacer(1, 0.3*cm))
+        
+        story.append(Spacer(1, 1.5*cm))
+        
+        # Signature
+        signature_style = ParagraphStyle(
+            name='Signature',
+            parent=self.styles['Normal'],
+            fontSize=11,
+            alignment=TA_RIGHT,
+            spaceAfter=8
+        )
+        
+        story.append(Paragraph(f"Fait à {company_address.split(',')[0] if company_address else '____'}, le {date_aujourdhui}", signature_style))
+        story.append(Spacer(1, 0.5*cm))
+        story.append(Paragraph("<b>Le Responsable</b>", signature_style))
+        story.append(Spacer(1, 2*cm))
+        story.append(Paragraph("(Signature et cachet)", signature_style))
+        
+        # Générer le PDF
+        doc.build(story)
+        buffer.seek(0)
+        return buffer
+    
+    def generate_certificat_travail(self, employe_data: Dict) -> BytesIO:
+        """
+        Générer un certificat de travail pour un employé ayant cessé ses fonctions
+        
+        Args:
+            employe_data: Dictionnaire contenant les informations de l'employé
+                - nom, prenom, date_naissance, lieu_naissance
+                - adresse, numero_secu_sociale
+                - poste_travail, date_recrutement, date_fin_contrat
+                - salaire_base
+        """
+        buffer = BytesIO()
+        doc = SimpleDocTemplate(buffer, pagesize=A4, topMargin=2*cm, bottomMargin=2*cm)
+        story = []
+        
+        # Récupérer les paramètres entreprise
+        params = self._get_parametres()
+        company_name = (params.raison_sociale or params.nom_entreprise or "Entreprise") if params else "Entreprise"
+        company_address = params.adresse if params and params.adresse else ""
+        company_rc = params.rc if params and params.rc else ""
+        company_nif = params.nif if params and params.nif else ""
+        
+        # En-tête entreprise
+        header_style = ParagraphStyle(
+            name='CompanyHeader',
+            parent=self.styles['Normal'],
+            fontSize=12,
+            textColor=colors.HexColor('#1a1a1a'),
+            alignment=TA_CENTER,
+            spaceAfter=5
+        )
+        
+        story.append(Paragraph(f"<b>{company_name}</b>", header_style))
+        if company_address:
+            addr_style = ParagraphStyle(name='Address', parent=self.styles['Normal'], 
+                                       fontSize=9, alignment=TA_CENTER, spaceAfter=3)
+            story.append(Paragraph(company_address, addr_style))
+        
+        if company_rc or company_nif:
+            details = []
+            if company_rc:
+                details.append(f"RC: {company_rc}")
+            if company_nif:
+                details.append(f"NIF: {company_nif}")
+            detail_style = ParagraphStyle(name='Details', parent=self.styles['Normal'],
+                                         fontSize=8, alignment=TA_CENTER, spaceAfter=20)
+            story.append(Paragraph(" | ".join(details), detail_style))
+        else:
+            story.append(Spacer(1, 0.5*cm))
+        
+        story.append(Spacer(1, 1*cm))
+        
+        # Titre du document
+        title_style = ParagraphStyle(
+            name='DocTitle',
+            parent=self.styles['Heading1'],
+            fontSize=16,
+            textColor=colors.black,
+            alignment=TA_CENTER,
+            spaceAfter=30,
+            spaceBefore=10
+        )
+        story.append(Paragraph("<b>CERTIFICAT DE TRAVAIL</b>", title_style))
+        story.append(Spacer(1, 1*cm))
+        
+        # Corps du texte
+        body_style = ParagraphStyle(
+            name='BodyText',
+            parent=self.styles['Normal'],
+            fontSize=11,
+            leading=18,
+            alignment=TA_LEFT,
+            spaceAfter=12
+        )
+        
+        # Date du jour
+        date_aujourdhui = datetime.now().strftime("%d/%m/%Y")
+        
+        # Dates de début et fin
+        date_recrutement = employe_data.get('date_recrutement')
+        if isinstance(date_recrutement, str):
+            date_recrutement = datetime.strptime(date_recrutement, "%Y-%m-%d").date()
+        
+        date_fin_contrat = employe_data.get('date_fin_contrat')
+        if isinstance(date_fin_contrat, str):
+            date_fin_contrat = datetime.strptime(date_fin_contrat, "%Y-%m-%d").date()
+        elif date_fin_contrat is None:
+            date_fin_contrat = datetime.now().date()
+        
+        # Calcul de la durée totale
+        duree_jours = (date_fin_contrat - date_recrutement).days
+        duree_annees = duree_jours // 365
+        duree_mois = (duree_jours % 365) // 30
+        
+        duree_text = []
+        if duree_annees > 0:
+            duree_text.append(f"{duree_annees} an{'s' if duree_annees > 1 else ''}")
+        if duree_mois > 0:
+            duree_text.append(f"{duree_mois} mois")
+        duree_str = " et ".join(duree_text) if duree_text else "moins d'un mois"
+        
+        # Contenu du certificat
+        text_parts = [
+            f"Je soussigné(e), représentant(e) de <b>{company_name}</b>, certifie par la présente que :",
+            "",
+            f"<b>Monsieur/Madame {employe_data.get('prenom', '')} {employe_data.get('nom', '')}</b>",
+            f"Né(e) le {employe_data.get('date_naissance', 'N/A')} à {employe_data.get('lieu_naissance', 'N/A')}",
+            f"Demeurant à : {employe_data.get('adresse', 'N/A')}",
+            f"N° Sécurité Sociale : {employe_data.get('numero_secu_sociale', 'N/A')}",
+            "",
+            f"A été employé(e) au sein de notre entreprise du <b>{date_recrutement.strftime('%d/%m/%Y')}</b> "
+            f"au <b>{date_fin_contrat.strftime('%d/%m/%Y')}</b>, "
+            f"soit une durée totale de <b>{duree_str}</b>.",
+            "",
+            f"Durant cette période, il/elle a occupé le poste de <b>{employe_data.get('poste_travail', 'N/A')}</b>.",
+            "",
+            "Il/Elle quitte l'entreprise libre de tout engagement.",
+            "",
+            "Le présent certificat est délivré pour servir et valoir ce que de droit.",
+        ]
+        
+        for part in text_parts:
+            if part:
+                story.append(Paragraph(part, body_style))
+            else:
+                story.append(Spacer(1, 0.3*cm))
+        
+        story.append(Spacer(1, 1.5*cm))
+        
+        # Signature
+        signature_style = ParagraphStyle(
+            name='Signature',
+            parent=self.styles['Normal'],
+            fontSize=11,
+            alignment=TA_RIGHT,
+            spaceAfter=8
+        )
+        
+        story.append(Paragraph(f"Fait à {company_address.split(',')[0] if company_address else '____'}, le {date_aujourdhui}", signature_style))
+        story.append(Spacer(1, 0.5*cm))
+        story.append(Paragraph("<b>Le Responsable</b>", signature_style))
+        story.append(Spacer(1, 2*cm))
+        story.append(Paragraph("(Signature et cachet)", signature_style))
+        
+        # Générer le PDF
+        doc.build(story)
+        buffer.seek(0)
+        return buffer
+
+
+
 
 
 
