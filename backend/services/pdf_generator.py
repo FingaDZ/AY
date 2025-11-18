@@ -2132,7 +2132,8 @@ class PDFGenerator:
         c.drawCentredString(width/2, y, "CONTRAT DE TRAVAIL")
         y -= 20
         
-        type_contrat = "À DURÉE DÉTERMINÉE" if duree_contrat else "À DURÉE INDÉTERMINÉE"
+        # Par défaut CDD (DÉTERMINÉE) sauf si duree_contrat est explicitement None/0
+        type_contrat = "À DURÉE DÉTERMINÉE"
         c.setFont("Helvetica-Bold", 12)
         c.drawCentredString(width/2, y, type_contrat)
         y -= 35
@@ -2252,9 +2253,9 @@ class PDFGenerator:
             y -= 12
             c.drawString(70, y, f"une durée déterminée de {duree_contrat} mois et prendra fin le {date_fin_str}.")
         else:
-            c.drawString(70, y, f"Le présent contrat prend effet le {date_debut_str}.")
+            c.drawString(70, y, f"Le présent contrat prend effet le {date_debut_str}. Il est conclu pour")
             y -= 12
-            c.drawString(70, y, "Il est conclu pour une durée indéterminée.")
+            c.drawString(70, y, f"une durée déterminée et prendra fin le {date_fin_str}.")
         y -= 20
         
         c.setFont("Helvetica-Bold", 10)
