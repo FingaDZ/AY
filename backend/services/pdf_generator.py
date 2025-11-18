@@ -2209,174 +2209,288 @@ class PDFGenerator:
     
     def _generate_simple_contrat(self, employe_data: Dict) -> BytesIO:
         """
-        Générer un contrat de travail simple sans template
+        Générer un contrat de travail complet conforme au modèle arabe original
         """
+        from reportlab.lib.enums import TA_RIGHT, TA_LEFT, TA_CENTER, TA_JUSTIFY
+        import arabic_reshaper
+        from bidi.algorithm import get_display
+        
         buffer = BytesIO()
-        doc = SimpleDocTemplate(buffer, pagesize=A4, topMargin=2*cm, bottomMargin=2*cm)
+        doc = SimpleDocTemplate(buffer, pagesize=A4, 
+                               topMargin=1*cm, bottomMargin=1*cm,
+                               leftMargin=1.5*cm, rightMargin=1.5*cm)
         story = []
+        
+        # Fonction pour le texte arabe
+        def arabic_text(text):
+            if text:
+                reshaped = arabic_reshaper.reshape(str(text))
+                return get_display(reshaped)
+            return ""
         
         # Récupérer les paramètres entreprise
         params = self._get_parametres()
-        company_name = (params.raison_sociale or params.nom_entreprise or "Entreprise") if params else "Entreprise"
-        company_address = params.adresse if params and params.adresse else ""
+        company_name = (params.raison_sociale or params.nom_entreprise or "ENTREPRISE") if params else "ENTREPRISE"
+        company_name_ar = arabic_text("ش.م.ذ.م.ع عبد القهار يورت")  # À adapter selon l'entreprise
+        company_address = params.adresse if params and params.adresse else "Chelghoum Laid"
         company_rc = params.rc if params and params.rc else ""
         company_nif = params.nif if params and params.nif else ""
         company_nis = params.nis if params and params.nis else ""
         
-        # En-tête entreprise
-        header_style = ParagraphStyle(
-            name='CompanyHeader',
-            parent=self.styles['Normal'],
-            fontSize=12,
-            textColor=colors.HexColor('#1a1a1a'),
-            alignment=TA_CENTER,
-            spaceAfter=5
-        )
-        
-        story.append(Paragraph(f"<b>{company_name}</b>", header_style))
-        if company_address:
-            addr_style = ParagraphStyle(name='Address', parent=self.styles['Normal'], 
-                                       fontSize=9, alignment=TA_CENTER, spaceAfter=3)
-            story.append(Paragraph(company_address, addr_style))
-        
-        if company_rc or company_nif or company_nis:
-            details = []
-            if company_rc:
-                details.append(f"RC: {company_rc}")
-            if company_nif:
-                details.append(f"NIF: {company_nif}")
-            if company_nis:
-                details.append(f"NIS: {company_nis}")
-            detail_style = ParagraphStyle(name='Details', parent=self.styles['Normal'],
-                                         fontSize=8, alignment=TA_CENTER, spaceAfter=20)
-            story.append(Paragraph(" | ".join(details), detail_style))
-        else:
-            story.append(Spacer(1, 0.5*cm))
-        
-        story.append(Spacer(1, 1*cm))
-        
-        # Titre du document
-        title_style = ParagraphStyle(
-            name='DocTitle',
-            parent=self.styles['Heading1'],
-            fontSize=16,
-            textColor=colors.black,
-            alignment=TA_CENTER,
-            spaceAfter=30,
-            spaceBefore=10
-        )
-        story.append(Paragraph("<b>CONTRAT DE TRAVAIL</b>", title_style))
-        story.append(Spacer(1, 1*cm))
-        
-        # Corps du texte
-        body_style = ParagraphStyle(
-            name='BodyText',
-            parent=self.styles['Normal'],
-            fontSize=11,
-            leading=18,
-            alignment=TA_LEFT,
-            spaceAfter=12
-        )
-        
-        # Date du jour
+        # Données employé
+        nom = employe_data.get('nom', 'N/A')
+        prenom = employe_data.get('prenom', 'N/A')
+        date_naissance_str = employe_data.get('date_naissance', 'N/A')
+        lieu_naissance = employe_data.get('lieu_naissance', 'N/A')
+        adresse = employe_data.get('adresse', 'N/A')
+        numero_ss = employe_data.get('numero_secu_sociale', 'N/A')
+        poste = employe_data.get('poste_travail', 'N/A')
+        date_debut = employe_data.get('date_recrutement', 'N/A')
+        duree_contrat = employe_data.get('duree_contrat', None)
+        date_fin = employe_data.get('date_fin_contrat', None)
+        salaire = employe_data.get('salaire_base', 0)
         date_aujourdhui = datetime.now().strftime("%d/%m/%Y")
         
-        # Contenu du contrat
-        text_parts = [
-            f"<b>Entre les soussignés :</b>",
-            "",
-            f"<b>{company_name}</b>",
-            f"Adresse : {company_address}",
-            f"RC : {company_rc} | NIF : {company_nif} | NIS : {company_nis}",
-            "",
-            "Représentée par son gérant, ci-après dénommée « l'employeur »,",
-            "",
-            "<b>D'une part,</b>",
-            "",
-            "<b>Et :</b>",
-            "",
-            f"<b>{employe_data.get('prenom', '')} {employe_data.get('nom', '')}</b>",
-            f"Né(e) le {employe_data.get('date_naissance', 'N/A')} à {employe_data.get('lieu_naissance', 'N/A')}",
-            f"Demeurant à : {employe_data.get('adresse', 'N/A')}",
-            f"N° Sécurité Sociale : {employe_data.get('numero_secu_sociale', 'N/A')}",
-            "",
-            "Ci-après dénommé(e) « le salarié »,",
-            "",
-            "<b>D'autre part,</b>",
-            "",
-            "<b>IL A ÉTÉ CONVENU ET ARRÊTÉ CE QUI SUIT :</b>",
-            "",
-            "<b>Article 1 : Engagement</b>",
-            f"L'employeur engage le salarié en qualité de <b>{employe_data.get('poste_travail', 'N/A')}</b>.",
-            "",
-            "<b>Article 2 : Date d'effet</b>",
-            f"Le présent contrat prend effet à compter du <b>{employe_data.get('date_recrutement', 'N/A')}</b>.",
-        ]
-        
-        # Ajouter la durée si spécifiée
-        duree_contrat = employe_data.get('duree_contrat')
-        if duree_contrat:
-            text_parts.extend([
-                "",
-                f"Le contrat est conclu pour une durée déterminée de <b>{duree_contrat} mois</b>.",
-            ])
-        else:
-            text_parts.extend([
-                "",
-                "Le contrat est conclu pour une durée indéterminée.",
-            ])
-        
-        text_parts.extend([
-            "",
-            "<b>Article 3 : Rémunération</b>",
-            f"Le salaire mensuel brut du salarié est fixé à <b>{employe_data.get('salaire_base', 0):,.2f} DA</b>.",
-            "",
-            "<b>Article 4 : Lieu de travail</b>",
-            f"Le salarié exercera ses fonctions à : {company_address}",
-            "",
-            "<b>Article 5 : Obligations du salarié</b>",
-            "Le salarié s'engage à respecter le règlement intérieur de l'entreprise et à exécuter ses tâches avec diligence et professionnalisme.",
-            "",
-            "<b>Article 6 : Durée du travail</b>",
-            "La durée du travail est fixée conformément à la législation en vigueur.",
-        ])
-        
-        for part in text_parts:
-            if part:
-                story.append(Paragraph(part, body_style))
-            else:
-                story.append(Spacer(1, 0.3*cm))
-        
-        story.append(Spacer(1, 2*cm))
-        
-        # Signatures
-        signature_style = ParagraphStyle(
-            name='Signature',
+        # Style pour en-tête (français + arabe)
+        header_style = ParagraphStyle(
+            name='Header',
             parent=self.styles['Normal'],
             fontSize=11,
             alignment=TA_CENTER,
+            spaceAfter=3,
+            fontName='Helvetica-Bold'
+        )
+        
+        # Style pour titre
+        title_style = ParagraphStyle(
+            name='Title',
+            parent=self.styles['Normal'],
+            fontSize=14,
+            alignment=TA_CENTER,
+            fontName='Helvetica-Bold',
+            spaceAfter=10,
+            spaceBefore=10
+        )
+        
+        # Style pour section
+        section_style = ParagraphStyle(
+            name='Section',
+            parent=self.styles['Normal'],
+            fontSize=10,
+            alignment=TA_LEFT,
+            leading=14,
             spaceAfter=8
         )
         
-        story.append(Paragraph(f"Fait à : Chelghoum Laid, le {date_aujourdhui}", signature_style))
-        story.append(Spacer(1, 1*cm))
+        # Style pour labels
+        label_style = ParagraphStyle(
+            name='Label',
+            parent=self.styles['Normal'],
+            fontSize=9,
+            alignment=TA_RIGHT,
+            rightIndent=10
+        )
         
-        # Tableau pour les signatures
+        # Style pour données
+        data_style = ParagraphStyle(
+            name='Data',
+            parent=self.styles['Normal'],
+            fontSize=10,
+            alignment=TA_LEFT,
+            fontName='Helvetica-Bold'
+        )
+        
+        # ======= EN-TÊTE =======
+        story.append(Paragraph(f"<b>{company_name}</b> {company_name_ar}", header_style))
+        story.append(Paragraph(f"Siège social : {company_address}", section_style))
+        if company_rc or company_nif or company_nis:
+            info_parts = []
+            if company_rc:
+                info_parts.append(f"RC: {company_rc}")
+            if company_nif:
+                info_parts.append(f"NIF: {company_nif}")
+            if company_nis:
+                info_parts.append(f"NIS: {company_nis}")
+            story.append(Paragraph(" | ".join(info_parts), section_style))
+        
+        story.append(Spacer(1, 0.5*cm))
+        
+        # ======= TITRE =======
+        story.append(Paragraph(f"<b>CONTRAT DE TRAVAIL À DURÉE {'DÉTERMINÉE' if duree_contrat else 'INDÉTERMINÉE'}</b>", title_style))
+        story.append(Paragraph(arabic_text("عقد عمل لمدة محددة" if duree_contrat else "عقد عمل لمدة غير محددة"), title_style))
+        
+        story.append(Spacer(1, 0.5*cm))
+        
+        # ======= PARTIES CONTRACTANTES =======
+        # L'employeur
+        story.append(Paragraph("<b>L'EMPLOYEUR :</b> " + arabic_text("الهيئة المستخدمة"), section_style))
+        story.append(Paragraph(f"<b>{company_name}</b>", data_style))
+        story.append(Paragraph(f"Siège social : {company_address}", section_style))
+        story.append(Paragraph(f"Représentée par son gérant", section_style))
+        story.append(Paragraph("<b>D'une part,</b> " + arabic_text("من جهة"), section_style))
+        
+        story.append(Spacer(1, 0.3*cm))
+        
+        # Le salarié
+        story.append(Paragraph("<b>LE SALARIÉ :</b> " + arabic_text("السيد(ة) المستفيد"), section_style))
+        
+        # Tableau pour les informations du salarié
+        employe_data_table = [
+            [Paragraph("<b>Nom et Prénom :</b> " + arabic_text("اللقب : الاسم"), label_style), 
+             Paragraph(f"<b>{nom} {prenom}</b>", data_style)],
+            [Paragraph("<b>Date de naissance :</b> " + arabic_text("تاريخ الميلاد"), label_style),
+             Paragraph(f"{date_naissance_str}", data_style)],
+            [Paragraph("<b>Lieu de naissance :</b> " + arabic_text("مكان الميلاد"), label_style),
+             Paragraph(f"{lieu_naissance}", data_style)],
+            [Paragraph("<b>Adresse :</b> " + arabic_text("العنوان"), label_style),
+             Paragraph(f"{adresse}", data_style)],
+            [Paragraph("<b>N° Sécurité Sociale :</b> " + arabic_text("رقم الضمان الاجتماعي"), label_style),
+             Paragraph(f"{numero_ss}", data_style)],
+        ]
+        
+        employe_table = Table(employe_data_table, colWidths=[7*cm, 9*cm])
+        employe_table.setStyle(TableStyle([
+            ('VALIGN', (0, 0), (-1, -1), 'TOP'),
+            ('TOPPADDING', (0, 0), (-1, -1), 3),
+            ('BOTTOMPADDING', (0, 0), (-1, -1), 3),
+        ]))
+        story.append(employe_table)
+        
+        story.append(Paragraph("<b>D'autre part,</b> " + arabic_text("من جهة أخرى"), section_style))
+        
+        story.append(Spacer(1, 0.5*cm))
+        
+        # ======= CLAUSES DU CONTRAT =======
+        story.append(Paragraph("<b>IL A ÉTÉ CONVENU ET ARRÊTÉ CE QUI SUIT :</b> " + 
+                              arabic_text("تماتم الاتفاق على ما يلي"), section_style))
+        
+        story.append(Spacer(1, 0.3*cm))
+        
+        # Tableau pour les conditions
+        conditions_data = [
+            [Paragraph("<b>1. Date de début du contrat :</b><br/>" + arabic_text("تاريخ ابتداء العقد"), label_style),
+             Paragraph(f"<b>{date_debut}</b>", data_style)],
+            [Paragraph("<b>2. Date de fin du contrat :</b><br/>" + arabic_text("تاريخ انتهاء العقد"), label_style),
+             Paragraph(f"<b>{date_fin if date_fin else 'Indéterminée'}</b>", data_style)],
+            [Paragraph("<b>3. Durée contractuelle :</b><br/>" + arabic_text("المدة التجريبية"), label_style),
+             Paragraph(f"<b>{duree_contrat} mois</b>" if duree_contrat else "<b>Indéterminée</b>", data_style)],
+            [Paragraph("<b>4. Poste occupé :</b><br/>" + arabic_text("المنصب"), label_style),
+             Paragraph(f"<b>{poste}</b>", data_style)],
+            [Paragraph("<b>5. Salaire de base :</b><br/>" + arabic_text("الأجر القاعدي"), label_style),
+             Paragraph(f"<b>{salaire:,.2f} DA</b>", data_style)],
+        ]
+        
+        conditions_table = Table(conditions_data, colWidths=[7*cm, 9*cm])
+        conditions_table.setStyle(TableStyle([
+            ('VALIGN', (0, 0), (-1, -1), 'TOP'),
+            ('TOPPADDING', (0, 0), (-1, -1), 5),
+            ('BOTTOMPADDING', (0, 0), (-1, -1), 5),
+            ('LINEBELOW', (0, 0), (-1, -2), 0.5, colors.grey),
+        ]))
+        story.append(conditions_table)
+        
+        story.append(Spacer(1, 0.4*cm))
+        
+        # ======= ARTICLES DÉTAILLÉS =======
+        articles = [
+            ("<b>Article 6 : Horaires de travail</b>", 
+             "Les horaires de travail sont fixés selon la législation en vigueur en Algérie, soit 173,33 heures de travail par mois (base de calcul)."),
+            
+            ("<b>Article 7 : Primes et indemnités</b>",
+             "Les primes légales et conventionnelles sont calculées dans le cadre de la loi et du règlement intérieur de l'entreprise :<br/>" +
+             "• <b>Prime de rendement :</b> 5% du salaire de base selon nombre de jours travaillés<br/>" +
+             "• <b>Prime de fidélité/ancienneté :</b> 5% du salaire de base selon nombre de jours travaillés<br/>" +
+             "• <b>Prime de travail nocturne :</b> 750 DA/mois pour gardien de nuit uniquement<br/>" +
+             "• <b>Prime d'expérience :</b> 1% du salaire de base par année d'ancienneté<br/>" +
+             "• <b>Prime de panier :</b> 100 DA/jour (déductible en cas d'absence)<br/>"),
+            
+            ("<b>Article 8 : Congés payés</b>",
+             "Les congés payés sont accordés conformément aux dispositions de la loi 90-11 notamment les articles 39 et 40, " +
+             "ainsi qu'au règlement intérieur de l'entreprise et aux dispositions réglementaires en vigueur."),
+            
+            ("<b>Article 9 : Obligations du salarié</b>",
+             "Le salarié s'engage à respecter ses obligations professionnelles et à effectuer le travail qui lui est demandé " +
+             "conformément aux termes de l'emploi et au règlement intérieur de l'entreprise."),
+            
+            ("<b>Article 10 : Préavis de départ</b>",
+             "En cas de départ du poste, un préavis d'un (01) mois est obligatoire. En l'absence de ce préavis, " +
+             "une retenue équivalente sera effectuée sur les indemnités dues (STC - Solde de Tout Compte)."),
+            
+            ("<b>Article 11 : Fin de la relation de travail</b>",
+             "À l'expiration du contrat, la relation de travail prend fin conformément à la loi 90-11 modifiée et complétée, " +
+             "ainsi qu'à la convention collective et au règlement intérieur. Les documents de travail relatifs à l'activité " +
+             "dans le poste occupé seront remis au salarié."),
+            
+            ("<b>Article 12 : Litiges</b>",
+             "Tout litige survenant à propos de ce contrat sera résolu conformément aux dispositions du règlement intérieur, " +
+             "de la convention collective et de la législation en vigueur."),
+            
+            ("<b>Article 13 : Entrée en vigueur</b>",
+             f"Le présent contrat entre en vigueur à partir de sa date de signature."),
+        ]
+        
+        for titre, contenu in articles:
+            story.append(Paragraph(titre, section_style))
+            story.append(Paragraph(contenu, section_style))
+            story.append(Spacer(1, 0.2*cm))
+        
+        story.append(Spacer(1, 0.3*cm))
+        
+        # ======= CLAUSE DE RÉSILIATION =======
+        story.append(Paragraph("<b>CLAUSE IMPORTANTE :</b>", section_style))
+        story.append(Paragraph(
+            "<b>Motifs de résiliation sans indemnité :</b><br/>" +
+            "• Non-exécution du travail demandé<br/>" +
+            "• Disputes au sein de l'entreprise<br/>" +
+            "• Usage de langage inapproprié ou comportement non éthique<br/>" +
+            "• Absences injustifiées (totales ou partielles)<br/>" +
+            "• Incapacité du travailleur à remplir ses fonctions<br/>" +
+            "• Incompétence pour le travail assigné",
+            section_style))
+        
+        story.append(Spacer(1, 0.5*cm))
+        
+        # ======= NOTE IMPORTANTE =======
+        story.append(Paragraph(
+            "<b>Note :</b> Les travailleurs bénéficiant de transport fourni par l'entreprise n'ont pas droit " +
+            "aux primes de panier et de transport mentionnées ci-dessus.",
+            section_style))
+        
+        story.append(Spacer(1, 0.3*cm))
+        
+        story.append(Paragraph(
+            "À la fin de ce contrat, toutes les garanties accordées au travailleur cessent, " +
+            "et aucune période supplémentaire ne sera accordée sauf accord préalable de l'entreprise.",
+            section_style))
+        
+        story.append(Spacer(1, 0.5*cm))
+        
+        # ======= LIEU ET DATE =======
+        story.append(Paragraph(f"<b>Fait à : Chelghoum Laid, le {date_aujourdhui}</b>", 
+                              ParagraphStyle(name='Location', parent=section_style, alignment=TA_CENTER)))
+        
+        story.append(Spacer(1, 0.8*cm))
+        
+        # ======= SIGNATURES =======
         signatures_data = [
-            ['L\'Employeur', 'Le Salarié'],
+            [Paragraph("<b>L'EMPLOYEUR</b><br/>" + arabic_text("الهيئة المستخدمة"), 
+                      ParagraphStyle(name='Sig1', parent=section_style, alignment=TA_CENTER)),
+             Paragraph("<b>LE SALARIÉ</b><br/>" + arabic_text("السيد المستفيد"), 
+                      ParagraphStyle(name='Sig2', parent=section_style, alignment=TA_CENTER))],
             ['', ''],
             ['', ''],
-            ['(Signature et cachet)', '(Signature)']
+            ['', ''],
+            [Paragraph("Lu et approuvé<br/>(Signature et cachet)<br/>" + arabic_text("مطلع عليه ومقبول الإمضاء الختم"), 
+                      ParagraphStyle(name='Sig3', parent=section_style, alignment=TA_CENTER, fontSize=8)),
+             Paragraph("Lu et approuvé<br/>(Signature)<br/>" + arabic_text("مطلع عليه ومقبول الإمضاء"), 
+                      ParagraphStyle(name='Sig4', parent=section_style, alignment=TA_CENTER, fontSize=8))],
         ]
         
         signatures_table = Table(signatures_data, colWidths=[8*cm, 8*cm])
         signatures_table.setStyle(TableStyle([
             ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
             ('VALIGN', (0, 0), (-1, -1), 'TOP'),
-            ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
-            ('FONTSIZE', (0, 0), (-1, -1), 10),
-            ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
-            ('TOPPADDING', (0, 1), (-1, 2), 30),
+            ('TOPPADDING', (0, 1), (-1, 3), 25),
         ]))
         
         story.append(signatures_table)
@@ -2385,6 +2499,7 @@ class PDFGenerator:
         doc.build(story)
         buffer.seek(0)
         return buffer
+
 
 
 
