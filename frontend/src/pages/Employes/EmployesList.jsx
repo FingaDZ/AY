@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Table, Button, Space, Input, Select, Tag, message, Modal, Tooltip } from 'antd';
-import { PlusOutlined, EditOutlined, DeleteOutlined, SearchOutlined, FilePdfOutlined, ExclamationCircleOutlined, CheckCircleOutlined, FileTextOutlined, SafetyCertificateOutlined } from '@ant-design/icons';
+import { PlusOutlined, EditOutlined, DeleteOutlined, SearchOutlined, FilePdfOutlined, ExclamationCircleOutlined, CheckCircleOutlined, FileTextOutlined, SafetyCertificateOutlined, FileProtectOutlined } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
 import { employeService } from '../../services';
 import { format } from 'date-fns';
@@ -226,6 +226,32 @@ function EmployesList() {
     }
   };
 
+  const handleGenerateContrat = async (employe) => {
+    try {
+      setLoading(true);
+      const response = await employeService.generateContrat(employe.id);
+      
+      // Télécharger le PDF
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement('a');
+      link.href = url;
+      const today = new Date();
+      const dateStr = `${today.getDate().toString().padStart(2, '0')}${(today.getMonth() + 1).toString().padStart(2, '0')}${today.getFullYear()}`;
+      link.setAttribute('download', `contrat_travail_${employe.nom}_${employe.prenom}_${dateStr}.pdf`);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      
+      message.success('Contrat de travail généré avec succès');
+    } catch (error) {
+      const errorMsg = error.response?.data?.detail || 'Erreur lors de la génération du contrat';
+      message.error(errorMsg);
+      console.error(error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const columns = [
     {
       title: 'N°',
@@ -310,6 +336,15 @@ function EmployesList() {
                   style={{ color: '#1890ff' }}
                 />
               </Tooltip>
+              <Tooltip title="Générer contrat de travail">
+                <Button
+                  type="link"
+                  icon={<FileProtectOutlined />}
+                  onClick={() => handleGenerateContrat(record)}
+                  size="small"
+                  style={{ color: '#722ed1' }}
+                />
+              </Tooltip>
               <Tooltip title="Supprimer">
                 <Button
                   type="link"
@@ -329,6 +364,15 @@ function EmployesList() {
                   onClick={() => handleGenerateCertificat(record)}
                   size="small"
                   style={{ color: '#52c41a' }}
+                />
+              </Tooltip>
+              <Tooltip title="Générer contrat de travail">
+                <Button
+                  type="link"
+                  icon={<FileProtectOutlined />}
+                  onClick={() => handleGenerateContrat(record)}
+                  size="small"
+                  style={{ color: '#722ed1' }}
                 />
               </Tooltip>
               <Tooltip title="Réactiver">

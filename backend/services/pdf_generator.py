@@ -2050,6 +2050,341 @@ class PDFGenerator:
         doc.build(story)
         buffer.seek(0)
         return buffer
+    
+    def generate_contrat_travail(self, employe_data: Dict) -> BytesIO:
+        """
+        Générer un contrat de travail pour un employé
+        
+        Args:
+            employe_data: Dictionnaire contenant les informations de l'employé
+                - nom, prenom, date_naissance, lieu_naissance
+                - adresse, mobile, numero_secu_sociale
+                - poste_travail, date_recrutement, salaire_base
+                - duree_contrat (optionnel)
+        """
+        from PyPDF2 import PdfReader, PdfWriter
+        from reportlab.pdfgen import canvas
+        from reportlab.lib.pagesizes import A4
+        import arabic_reshaper
+        from bidi.algorithm import get_display
+        
+        buffer = BytesIO()
+        
+        # Charger le modèle de contrat
+        template_path = "files/contrat Arabe.pdf"
+        
+        try:
+            # Lire le PDF template
+            reader = PdfReader(template_path)
+            writer = PdfWriter()
+            
+            # Récupérer les paramètres entreprise
+            params = self._get_parametres()
+            
+            # Créer un PDF temporaire avec les informations
+            packet = BytesIO()
+            can = canvas.Canvas(packet, pagesize=A4)
+            width, height = A4
+            
+            # Fonction pour formater le texte arabe
+            def format_arabic(text):
+                if text:
+                    reshaped_text = arabic_reshaper.reshape(str(text))
+                    return get_display(reshaped_text)
+                return ""
+            
+            # Informations de l'entreprise (en haut du document)
+            if params:
+                y_position = height - 100
+                
+                # Raison sociale
+                if params.raison_sociale:
+                    can.setFont("Helvetica-Bold", 12)
+                    can.drawString(50, y_position, params.raison_sociale or "")
+                    y_position -= 20
+                
+                # Adresse
+                if params.adresse:
+                    can.setFont("Helvetica", 10)
+                    can.drawString(50, y_position, f"Adresse: {params.adresse or ''}")
+                    y_position -= 15
+                
+                # RC, NIF, NIS
+                info_parts = []
+                if params.rc:
+                    info_parts.append(f"RC: {params.rc}")
+                if params.nif:
+                    info_parts.append(f"NIF: {params.nif}")
+                if params.nis:
+                    info_parts.append(f"NIS: {params.nis}")
+                
+                if info_parts:
+                    can.drawString(50, y_position, " | ".join(info_parts))
+            
+            # Informations de l'employé (positions approximatives - à ajuster selon le template)
+            # Ces positions doivent être ajustées en fonction de l'emplacement réel dans le PDF
+            
+            # Date du contrat
+            date_aujourdhui = datetime.now().strftime("%d/%m/%Y")
+            can.setFont("Helvetica", 10)
+            can.drawString(400, height - 200, f"Date: {date_aujourdhui}")
+            
+            # Nom et prénom
+            nom_complet = f"{employe_data.get('prenom', '')} {employe_data.get('nom', '')}"
+            can.setFont("Helvetica-Bold", 11)
+            can.drawString(200, height - 300, nom_complet)
+            
+            # Date de naissance
+            date_naissance = employe_data.get('date_naissance', '')
+            if isinstance(date_naissance, str):
+                date_naissance_str = date_naissance
+            else:
+                date_naissance_str = date_naissance.strftime('%d/%m/%Y') if date_naissance else ''
+            can.setFont("Helvetica", 10)
+            can.drawString(200, height - 330, f"Né(e) le: {date_naissance_str}")
+            
+            # Lieu de naissance
+            lieu_naissance = employe_data.get('lieu_naissance', '')
+            can.drawString(200, height - 350, f"À: {lieu_naissance}")
+            
+            # Adresse
+            adresse = employe_data.get('adresse', '')
+            can.drawString(200, height - 380, f"Adresse: {adresse}")
+            
+            # N° Sécurité Sociale
+            numero_secu = employe_data.get('numero_secu_sociale', '')
+            can.drawString(200, height - 410, f"N° SS: {numero_secu}")
+            
+            # Poste de travail
+            poste = employe_data.get('poste_travail', '')
+            can.setFont("Helvetica-Bold", 11)
+            can.drawString(200, height - 450, f"Poste: {poste}")
+            
+            # Date de recrutement
+            date_recrutement = employe_data.get('date_recrutement', '')
+            if isinstance(date_recrutement, str):
+                date_debut_str = date_recrutement
+            else:
+                date_debut_str = date_recrutement.strftime('%d/%m/%Y') if date_recrutement else ''
+            can.setFont("Helvetica", 10)
+            can.drawString(200, height - 480, f"Date de début: {date_debut_str}")
+            
+            # Durée du contrat (si spécifié)
+            duree_contrat = employe_data.get('duree_contrat')
+            if duree_contrat:
+                can.drawString(200, height - 510, f"Durée: {duree_contrat} mois")
+            
+            # Salaire
+            salaire = employe_data.get('salaire_base', 0)
+            can.setFont("Helvetica-Bold", 11)
+            can.drawString(200, height - 550, f"Salaire: {salaire:,.2f} DA")
+            
+            can.save()
+            
+            # Déplacer au début du buffer
+            packet.seek(0)
+            
+            # Créer un nouveau PDF avec les informations
+            overlay_pdf = PdfReader(packet)
+            
+            # Fusionner chaque page
+            for page_num in range(len(reader.pages)):
+                page = reader.pages[page_num]
+                if page_num < len(overlay_pdf.pages):
+                    page.merge_page(overlay_pdf.pages[page_num])
+                writer.add_page(page)
+            
+            # Écrire le résultat final
+            writer.write(buffer)
+            buffer.seek(0)
+            
+            return buffer
+            
+        except FileNotFoundError:
+            # Si le template n'existe pas, générer un contrat simple avec ReportLab
+            return self._generate_simple_contrat(employe_data)
+        except Exception as e:
+            print(f"Erreur lors de la génération du contrat: {e}")
+            return self._generate_simple_contrat(employe_data)
+    
+    def _generate_simple_contrat(self, employe_data: Dict) -> BytesIO:
+        """
+        Générer un contrat de travail simple sans template
+        """
+        buffer = BytesIO()
+        doc = SimpleDocTemplate(buffer, pagesize=A4, topMargin=2*cm, bottomMargin=2*cm)
+        story = []
+        
+        # Récupérer les paramètres entreprise
+        params = self._get_parametres()
+        company_name = (params.raison_sociale or params.nom_entreprise or "Entreprise") if params else "Entreprise"
+        company_address = params.adresse if params and params.adresse else ""
+        company_rc = params.rc if params and params.rc else ""
+        company_nif = params.nif if params and params.nif else ""
+        company_nis = params.nis if params and params.nis else ""
+        
+        # En-tête entreprise
+        header_style = ParagraphStyle(
+            name='CompanyHeader',
+            parent=self.styles['Normal'],
+            fontSize=12,
+            textColor=colors.HexColor('#1a1a1a'),
+            alignment=TA_CENTER,
+            spaceAfter=5
+        )
+        
+        story.append(Paragraph(f"<b>{company_name}</b>", header_style))
+        if company_address:
+            addr_style = ParagraphStyle(name='Address', parent=self.styles['Normal'], 
+                                       fontSize=9, alignment=TA_CENTER, spaceAfter=3)
+            story.append(Paragraph(company_address, addr_style))
+        
+        if company_rc or company_nif or company_nis:
+            details = []
+            if company_rc:
+                details.append(f"RC: {company_rc}")
+            if company_nif:
+                details.append(f"NIF: {company_nif}")
+            if company_nis:
+                details.append(f"NIS: {company_nis}")
+            detail_style = ParagraphStyle(name='Details', parent=self.styles['Normal'],
+                                         fontSize=8, alignment=TA_CENTER, spaceAfter=20)
+            story.append(Paragraph(" | ".join(details), detail_style))
+        else:
+            story.append(Spacer(1, 0.5*cm))
+        
+        story.append(Spacer(1, 1*cm))
+        
+        # Titre du document
+        title_style = ParagraphStyle(
+            name='DocTitle',
+            parent=self.styles['Heading1'],
+            fontSize=16,
+            textColor=colors.black,
+            alignment=TA_CENTER,
+            spaceAfter=30,
+            spaceBefore=10
+        )
+        story.append(Paragraph("<b>CONTRAT DE TRAVAIL</b>", title_style))
+        story.append(Spacer(1, 1*cm))
+        
+        # Corps du texte
+        body_style = ParagraphStyle(
+            name='BodyText',
+            parent=self.styles['Normal'],
+            fontSize=11,
+            leading=18,
+            alignment=TA_LEFT,
+            spaceAfter=12
+        )
+        
+        # Date du jour
+        date_aujourdhui = datetime.now().strftime("%d/%m/%Y")
+        
+        # Contenu du contrat
+        text_parts = [
+            f"<b>Entre les soussignés :</b>",
+            "",
+            f"<b>{company_name}</b>",
+            f"Adresse : {company_address}",
+            f"RC : {company_rc} | NIF : {company_nif} | NIS : {company_nis}",
+            "",
+            "Représentée par son gérant, ci-après dénommée « l'employeur »,",
+            "",
+            "<b>D'une part,</b>",
+            "",
+            "<b>Et :</b>",
+            "",
+            f"<b>{employe_data.get('prenom', '')} {employe_data.get('nom', '')}</b>",
+            f"Né(e) le {employe_data.get('date_naissance', 'N/A')} à {employe_data.get('lieu_naissance', 'N/A')}",
+            f"Demeurant à : {employe_data.get('adresse', 'N/A')}",
+            f"N° Sécurité Sociale : {employe_data.get('numero_secu_sociale', 'N/A')}",
+            "",
+            "Ci-après dénommé(e) « le salarié »,",
+            "",
+            "<b>D'autre part,</b>",
+            "",
+            "<b>IL A ÉTÉ CONVENU ET ARRÊTÉ CE QUI SUIT :</b>",
+            "",
+            "<b>Article 1 : Engagement</b>",
+            f"L'employeur engage le salarié en qualité de <b>{employe_data.get('poste_travail', 'N/A')}</b>.",
+            "",
+            "<b>Article 2 : Date d'effet</b>",
+            f"Le présent contrat prend effet à compter du <b>{employe_data.get('date_recrutement', 'N/A')}</b>.",
+        ]
+        
+        # Ajouter la durée si spécifiée
+        duree_contrat = employe_data.get('duree_contrat')
+        if duree_contrat:
+            text_parts.extend([
+                "",
+                f"Le contrat est conclu pour une durée déterminée de <b>{duree_contrat} mois</b>.",
+            ])
+        else:
+            text_parts.extend([
+                "",
+                "Le contrat est conclu pour une durée indéterminée.",
+            ])
+        
+        text_parts.extend([
+            "",
+            "<b>Article 3 : Rémunération</b>",
+            f"Le salaire mensuel brut du salarié est fixé à <b>{employe_data.get('salaire_base', 0):,.2f} DA</b>.",
+            "",
+            "<b>Article 4 : Lieu de travail</b>",
+            f"Le salarié exercera ses fonctions à : {company_address}",
+            "",
+            "<b>Article 5 : Obligations du salarié</b>",
+            "Le salarié s'engage à respecter le règlement intérieur de l'entreprise et à exécuter ses tâches avec diligence et professionnalisme.",
+            "",
+            "<b>Article 6 : Durée du travail</b>",
+            "La durée du travail est fixée conformément à la législation en vigueur.",
+        ])
+        
+        for part in text_parts:
+            if part:
+                story.append(Paragraph(part, body_style))
+            else:
+                story.append(Spacer(1, 0.3*cm))
+        
+        story.append(Spacer(1, 2*cm))
+        
+        # Signatures
+        signature_style = ParagraphStyle(
+            name='Signature',
+            parent=self.styles['Normal'],
+            fontSize=11,
+            alignment=TA_CENTER,
+            spaceAfter=8
+        )
+        
+        story.append(Paragraph(f"Fait à : Chelghoum Laid, le {date_aujourdhui}", signature_style))
+        story.append(Spacer(1, 1*cm))
+        
+        # Tableau pour les signatures
+        signatures_data = [
+            ['L\'Employeur', 'Le Salarié'],
+            ['', ''],
+            ['', ''],
+            ['(Signature et cachet)', '(Signature)']
+        ]
+        
+        signatures_table = Table(signatures_data, colWidths=[8*cm, 8*cm])
+        signatures_table.setStyle(TableStyle([
+            ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+            ('VALIGN', (0, 0), (-1, -1), 'TOP'),
+            ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+            ('FONTSIZE', (0, 0), (-1, -1), 10),
+            ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
+            ('TOPPADDING', (0, 1), (-1, 2), 30),
+        ]))
+        
+        story.append(signatures_table)
+        
+        # Générer le PDF
+        doc.build(story)
+        buffer.seek(0)
+        return buffer
 
 
 

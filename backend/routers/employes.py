@@ -623,3 +623,51 @@ def generate_certificat_travail(
         }
     )
 
+@router.get("/{employe_id}/contrat-travail")
+def generate_contrat_travail(
+    employe_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_auth)
+):
+    """Générer un contrat de travail pour un employé"""
+    # Récupérer l'employé
+    employe = db.query(Employe).filter(Employe.id == employe_id).first()
+    
+    if not employe:
+        raise HTTPException(status_code=404, detail="Employé non trouvé")
+    
+    # Préparer les données
+    employe_data = {
+        'nom': employe.nom,
+        'prenom': employe.prenom,
+        'date_naissance': employe.date_naissance.strftime('%d/%m/%Y') if employe.date_naissance else 'N/A',
+        'lieu_naissance': employe.lieu_naissance or 'N/A',
+        'adresse': employe.adresse or 'N/A',
+        'mobile': employe.mobile or 'N/A',
+        'numero_secu_sociale': employe.numero_secu_sociale or 'N/A',
+        'numero_compte_bancaire': employe.numero_compte_bancaire or 'N/A',
+        'situation_familiale': employe.situation_familiale or 'N/A',
+        'poste_travail': employe.poste_travail or 'N/A',
+        'date_recrutement': employe.date_recrutement.strftime('%d/%m/%Y') if employe.date_recrutement else 'N/A',
+        'duree_contrat': employe.duree_contrat,
+        'date_fin_contrat': employe.date_fin_contrat.strftime('%d/%m/%Y') if employe.date_fin_contrat else None,
+        'salaire_base': employe.salaire_base
+    }
+    
+    # Générer le PDF
+    pdf_generator = PDFGenerator(db=db)
+    pdf_buffer = pdf_generator.generate_contrat_travail(employe_data)
+    
+    # Nom du fichier
+    filename = f"contrat_travail_{employe.nom}_{employe.prenom}_{date.today().strftime('%d%m%Y')}.pdf"
+    
+    # Retourner le PDF
+    return StreamingResponse(
+        pdf_buffer,
+        media_type="application/pdf",
+        headers={
+            "Content-Disposition": f"attachment; filename={filename}"
+        }
+    )
+
+

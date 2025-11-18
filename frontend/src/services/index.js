@@ -46,6 +46,11 @@ export const employeService = {
   generateCertificat: (id) => api.get(`/employes/${id}/certificat-travail`, { 
     responseType: 'blob' 
   }),
+  
+  // Générer contrat de travail
+  generateContrat: (id) => api.get(`/employes/${id}/contrat-travail`, { 
+    responseType: 'blob' 
+  }),
 };
 
 export const pointageService = {
