@@ -2053,12 +2053,9 @@ class PDFGenerator:
     
     def generate_contrat_travail(self, employe_data: Dict) -> BytesIO:
         """
-        Générer un contrat de travail pour un employé
+        Générer un contrat de travail pour un employé - Nouveau modèle propre
         """
         buffer = BytesIO()
-        doc = SimpleDocTemplate(buffer, pagesize=A4, topMargin=1.5*cm, bottomMargin=1.5*cm,
-                               leftMargin=2*cm, rightMargin=2*cm)
-        story = []
         
         # Récupérer les paramètres entreprise
         params = self._get_parametres()
@@ -2081,7 +2078,7 @@ class PDFGenerator:
         date_fin = employe_data.get('date_fin_contrat')
         salaire = employe_data.get('salaire_base', 0)
         
-        # Date formatées
+        # Formater les dates
         if isinstance(date_debut, str):
             date_debut_str = date_debut
         else:
@@ -2093,52 +2090,29 @@ class PDFGenerator:
             date_fin_str = date_fin.strftime('%d/%m/%Y')
         else:
             date_fin_str = "Indéterminée"
+        
+        if isinstance(date_naissance, str):
+            date_naissance_str = date_naissance
+        else:
+            date_naissance_str = date_naissance.strftime('%d/%m/%Y') if date_naissance else ''
             
         date_aujourdhui = datetime.now().strftime("%d/%m/%Y")
         
-        # Style en-tête
-        header_style = ParagraphStyle(
-            name='Header',
-            parent=self.styles['Normal'],
-            fontSize=11,
-            alignment=TA_CENTER,
-            spaceAfter=3,
-            fontName='Helvetica-Bold'
-        )
+        # Créer le PDF avec ReportLab
+        c = canvas.Canvas(buffer, pagesize=A4)
+        width, height = A4
         
-        # Style titre
-        title_style = ParagraphStyle(
-            name='Title',
-            parent=self.styles['Normal'],
-            fontSize=14,
-            alignment=TA_CENTER,
-            fontName='Helvetica-Bold',
-            spaceAfter=15,
-            spaceBefore=10
-        )
-        
-        # Style section
-        section_style = ParagraphStyle(
-            name='Section',
-            parent=self.styles['Normal'],
-            fontSize=10,
-            alignment=TA_LEFT,
-            leading=14,
-            spaceAfter=8
-        )
-        
-        # Style données
-        data_style = ParagraphStyle(
-            name='Data',
-            parent=self.styles['Normal'],
-            fontSize=10,
-            alignment=TA_LEFT,
-            fontName='Helvetica-Bold'
-        )
+        y = height - 50
         
         # ========== EN-TÊTE ==========
-        story.append(Paragraph(f"<b>{company_name}</b>", header_style))
-        story.append(Paragraph(f"{company_address}", section_style))
+        c.setFont("Helvetica-Bold", 13)
+        c.drawCentredString(width/2, y, company_name)
+        y -= 20
+        
+        c.setFont("Helvetica", 9)
+        c.drawCentredString(width/2, y, company_address)
+        y -= 15
+        
         if company_rc or company_nif or company_nis:
             info_parts = []
             if company_rc:
@@ -2147,182 +2121,237 @@ class PDFGenerator:
                 info_parts.append(f"NIF: {company_nif}")
             if company_nis:
                 info_parts.append(f"NIS: {company_nis}")
-            story.append(Paragraph(" | ".join(info_parts), 
-                                  ParagraphStyle(name='Info', parent=section_style, alignment=TA_CENTER, fontSize=9)))
-        
-        story.append(Spacer(1, 0.8*cm))
+            c.drawCentredString(width/2, y, " | ".join(info_parts))
+            y -= 30
+        else:
+            y -= 20
         
         # ========== TITRE ==========
-        type_contrat = "À DURÉE DÉTERMINÉE (CDD)" if duree_contrat else "À DURÉE INDÉTERMINÉE (CDI)"
-        story.append(Paragraph(f"<b>CONTRAT DE TRAVAIL<br/>{type_contrat}</b>", title_style))
+        c.setFont("Helvetica-Bold", 16)
+        c.drawCentredString(width/2, y, "CONTRAT DE TRAVAIL")
+        y -= 20
         
-        story.append(Spacer(1, 0.5*cm))
+        type_contrat = "À DURÉE DÉTERMINÉE" if duree_contrat else "À DURÉE INDÉTERMINÉE"
+        c.setFont("Helvetica-Bold", 12)
+        c.drawCentredString(width/2, y, type_contrat)
+        y -= 35
         
         # ========== ENTRE LES SOUSSIGNÉS ==========
-        story.append(Paragraph("<b>ENTRE LES SOUSSIGNÉS :</b>", section_style))
-        story.append(Spacer(1, 0.2*cm))
+        c.setFont("Helvetica-Bold", 11)
+        c.drawString(50, y, "ENTRE LES SOUSSIGNÉS :")
+        y -= 25
         
-        # Employeur
-        story.append(Paragraph("<b>L'EMPLOYEUR :</b>", section_style))
-        story.append(Paragraph(f"<b>{company_name}</b>", data_style))
-        story.append(Paragraph(f"Siège social : {company_address}", section_style))
+        # L'EMPLOYEUR
+        c.setFont("Helvetica-Bold", 10)
+        c.drawString(70, y, "L'EMPLOYEUR :")
+        y -= 18
+        
+        c.setFont("Helvetica-Bold", 11)
+        c.drawString(90, y, company_name)
+        y -= 16
+        
+        c.setFont("Helvetica", 10)
+        c.drawString(90, y, f"Siège social : {company_address}")
+        y -= 14
+        
         if company_rc:
-            story.append(Paragraph(f"RC : {company_rc}", section_style))
+            c.drawString(90, y, f"RC : {company_rc}")
+            y -= 14
         if company_nif:
-            story.append(Paragraph(f"NIF : {company_nif}", section_style))
+            c.drawString(90, y, f"NIF : {company_nif}")
+            y -= 14
         if company_nis:
-            story.append(Paragraph(f"NIS : {company_nis}", section_style))
-        story.append(Paragraph("Représentée par son gérant légalement habilité", section_style))
-        story.append(Paragraph("<b>D'UNE PART,</b>", section_style))
+            c.drawString(90, y, f"NIS : {company_nis}")
+            y -= 14
         
-        story.append(Spacer(1, 0.3*cm))
+        c.drawString(90, y, "Représentée par son gérant légalement habilité")
+        y -= 18
         
-        # Salarié
-        story.append(Paragraph("<b>LE SALARIÉ :</b>", section_style))
+        c.setFont("Helvetica-Bold", 10)
+        c.drawString(70, y, "D'UNE PART,")
+        y -= 25
         
-        # Tableau info salarié
-        employe_info = [
-            ["<b>Nom et Prénom :</b>", f"<b>{nom} {prenom}</b>"],
-            ["<b>Date de naissance :</b>", date_naissance],
-            ["<b>Lieu de naissance :</b>", lieu_naissance],
-            ["<b>Adresse :</b>", adresse],
-            ["<b>N° Sécurité Sociale :</b>", numero_ss],
-        ]
+        # LE SALARIÉ
+        c.setFont("Helvetica-Bold", 10)
+        c.drawString(70, y, "LE SALARIÉ :")
+        y -= 18
         
-        employe_table = Table(employe_info, colWidths=[5*cm, 10*cm])
-        employe_table.setStyle(TableStyle([
-            ('VALIGN', (0, 0), (-1, -1), 'TOP'),
-            ('TOPPADDING', (0, 0), (-1, -1), 3),
-            ('BOTTOMPADDING', (0, 0), (-1, -1), 3),
-            ('FONTNAME', (0, 0), (0, -1), 'Helvetica-Bold'),
-            ('FONTNAME', (1, 0), (1, 0), 'Helvetica-Bold'),
-        ]))
-        story.append(employe_table)
+        c.setFont("Helvetica", 10)
+        c.drawString(90, y, f"Nom et Prénom : ")
+        c.setFont("Helvetica-Bold", 10)
+        c.drawString(180, y, f"{nom} {prenom}")
+        y -= 14
         
-        story.append(Paragraph("<b>D'AUTRE PART,</b>", section_style))
+        c.setFont("Helvetica", 10)
+        c.drawString(90, y, f"Date de naissance : {date_naissance_str}")
+        y -= 14
+        c.drawString(90, y, f"Lieu de naissance : {lieu_naissance}")
+        y -= 14
+        c.drawString(90, y, f"Adresse : {adresse}")
+        y -= 14
+        c.drawString(90, y, f"N° Sécurité Sociale : {numero_ss}")
+        y -= 18
         
-        story.append(Spacer(1, 0.5*cm))
+        c.setFont("Helvetica-Bold", 10)
+        c.drawString(70, y, "D'AUTRE PART,")
+        y -= 30
         
         # ========== CONDITIONS ==========
-        story.append(Paragraph("<b>IL A ÉTÉ CONVENU ET ARRÊTÉ CE QUI SUIT :</b>", section_style))
-        story.append(Spacer(1, 0.3*cm))
+        c.setFont("Helvetica-Bold", 11)
+        c.drawString(50, y, "IL A ÉTÉ CONVENU ET ARRÊTÉ CE QUI SUIT :")
+        y -= 25
         
-        # Tableau conditions
-        conditions = [
-            ["<b>Date de début :</b>", date_debut_str],
-            ["<b>Date de fin :</b>", date_fin_str],
-            ["<b>Durée :</b>", f"{duree_contrat} mois" if duree_contrat else "Indéterminée"],
-            ["<b>Poste :</b>", poste],
-            ["<b>Salaire de base :</b>", f"{salaire:,.2f} DA"],
-        ]
+        c.setFont("Helvetica-Bold", 10)
+        c.drawString(70, y, "Date de début :")
+        c.setFont("Helvetica", 10)
+        c.drawString(200, y, date_debut_str)
+        y -= 16
         
-        conditions_table = Table(conditions, colWidths=[5*cm, 10*cm])
-        conditions_table.setStyle(TableStyle([
-            ('VALIGN', (0, 0), (-1, -1), 'TOP'),
-            ('TOPPADDING', (0, 0), (-1, -1), 5),
-            ('BOTTOMPADDING', (0, 0), (-1, -1), 5),
-            ('FONTNAME', (0, 0), (0, -1), 'Helvetica-Bold'),
-            ('FONTNAME', (1, 3), (1, 4), 'Helvetica-Bold'),
-            ('LINEBELOW', (0, 0), (-1, -2), 0.5, colors.grey),
-        ]))
-        story.append(conditions_table)
+        c.setFont("Helvetica-Bold", 10)
+        c.drawString(70, y, "Date de fin :")
+        c.setFont("Helvetica", 10)
+        c.drawString(200, y, date_fin_str)
+        y -= 16
         
-        story.append(Spacer(1, 0.4*cm))
+        c.setFont("Helvetica-Bold", 10)
+        c.drawString(70, y, "Durée :")
+        c.setFont("Helvetica", 10)
+        duree_text = f"{duree_contrat} mois" if duree_contrat else "Indéterminée"
+        c.drawString(200, y, duree_text)
+        y -= 16
+        
+        c.setFont("Helvetica-Bold", 10)
+        c.drawString(70, y, "Poste :")
+        c.setFont("Helvetica", 10)
+        c.drawString(200, y, poste)
+        y -= 16
+        
+        c.setFont("Helvetica-Bold", 10)
+        c.drawString(70, y, "Salaire de base :")
+        c.setFont("Helvetica-Bold", 11)
+        c.drawString(200, y, f"{salaire:,.2f} DA")
+        y -= 30
         
         # ========== ARTICLES ==========
-        articles = [
-            ("<b>Article 1 : Objet du contrat</b>",
-             f"Le salarié est engagé en qualité de <b>{poste}</b> et s'engage à exécuter les tâches qui lui seront confiées dans le cadre de cette fonction."),
-            
-            ("<b>Article 2 : Durée du contrat</b>",
-             f"Le présent contrat prend effet le <b>{date_debut_str}</b>." + 
-             (f" Il est conclu pour une durée déterminée de <b>{duree_contrat} mois</b> et prendra fin le <b>{date_fin_str}</b>." if duree_contrat 
-              else " Il est conclu pour une durée indéterminée.")),
-            
-            ("<b>Article 3 : Lieu de travail</b>",
-             f"Le salarié exercera ses fonctions à <b>{company_address}</b>."),
-            
-            ("<b>Article 4 : Horaires de travail</b>",
-             "La durée du travail est fixée conformément à la législation algérienne en vigueur, " +
-             "soit <b>173,33 heures</b> par mois (base de calcul légale)."),
-            
-            ("<b>Article 5 : Rémunération</b>",
-             f"Le salaire mensuel brut du salarié est fixé à <b>{salaire:,.2f} DA</b>.<br/>" +
-             "Ce salaire pourra être complété par les primes et indemnités prévues par la convention collective, " +
-             "le règlement intérieur et la législation en vigueur."),
-            
-            ("<b>Article 6 : Primes et indemnités</b>",
-             "Le salarié pourra bénéficier des primes suivantes, calculées selon les dispositions légales :<br/>" +
-             "• Prime de rendement : 5% du salaire de base (selon jours travaillés)<br/>" +
-             "• Prime de fidélité : 5% du salaire de base (selon jours travaillés)<br/>" +
-             "• Prime d'expérience : 1% du salaire de base par année d'ancienneté<br/>" +
-             "• Prime de panier : 100 DA/jour travaillé<br/>" +
-             "• Autres primes selon règlement intérieur"),
-            
-            ("<b>Article 7 : Congés payés</b>",
-             "Le salarié bénéficiera des congés payés conformément aux dispositions de la loi 90-11 " +
-             "et du règlement intérieur de l'entreprise."),
-            
-            ("<b>Article 8 : Obligations du salarié</b>",
-             "Le salarié s'engage à :<br/>" +
-             "• Respecter le règlement intérieur de l'entreprise<br/>" +
-             "• Exécuter avec soin et diligence les tâches qui lui sont confiées<br/>" +
-             "• Se conformer aux instructions de la hiérarchie<br/>" +
-             "• Respecter les horaires de travail<br/>" +
-             "• Préserver la confidentialité des informations de l'entreprise"),
-            
-            ("<b>Article 9 : Préavis</b>",
-             "En cas de rupture du contrat, sauf faute grave, un préavis d'<b>un (1) mois</b> devra être respecté " +
-             "par la partie qui prend l'initiative de la rupture."),
-            
-            ("<b>Article 10 : Litiges</b>",
-             "Tout différend relatif à l'interprétation ou à l'exécution du présent contrat sera soumis " +
-             "aux juridictions compétentes, conformément à la législation algérienne."),
-        ]
+        c.setFont("Helvetica-Bold", 10)
+        c.drawString(50, y, "Article 1 : Objet du contrat")
+        y -= 14
+        c.setFont("Helvetica", 9)
+        c.drawString(70, y, f"Le salarié est engagé en qualité de {poste} et s'engage à exécuter")
+        y -= 12
+        c.drawString(70, y, "les tâches qui lui seront confiées dans le cadre de cette fonction.")
+        y -= 20
         
-        for titre, contenu in articles:
-            story.append(Paragraph(titre, 
-                                  ParagraphStyle(name='ArticleTitle', parent=section_style, 
-                                               fontName='Helvetica-Bold', spaceAfter=4)))
-            story.append(Paragraph(contenu, section_style))
-            story.append(Spacer(1, 0.2*cm))
+        c.setFont("Helvetica-Bold", 10)
+        c.drawString(50, y, "Article 2 : Durée du contrat")
+        y -= 14
+        c.setFont("Helvetica", 9)
+        if duree_contrat:
+            c.drawString(70, y, f"Le présent contrat prend effet le {date_debut_str}. Il est conclu pour")
+            y -= 12
+            c.drawString(70, y, f"une durée déterminée de {duree_contrat} mois et prendra fin le {date_fin_str}.")
+        else:
+            c.drawString(70, y, f"Le présent contrat prend effet le {date_debut_str}.")
+            y -= 12
+            c.drawString(70, y, "Il est conclu pour une durée indéterminée.")
+        y -= 20
         
-        story.append(Spacer(1, 0.5*cm))
+        c.setFont("Helvetica-Bold", 10)
+        c.drawString(50, y, "Article 3 : Lieu de travail")
+        y -= 14
+        c.setFont("Helvetica", 9)
+        c.drawString(70, y, f"Le salarié exercera ses fonctions à {company_address}.")
+        y -= 20
         
-        # ========== LIEU ET DATE ==========
-        story.append(Paragraph(f"<b>Fait à Chelghoum Laid, le {date_aujourdhui}</b>", 
-                              ParagraphStyle(name='Location', parent=section_style, alignment=TA_CENTER)))
-        story.append(Paragraph("En deux exemplaires originaux", 
-                              ParagraphStyle(name='Copies', parent=section_style, alignment=TA_CENTER, fontSize=9)))
+        c.setFont("Helvetica-Bold", 10)
+        c.drawString(50, y, "Article 4 : Horaires de travail")
+        y -= 14
+        c.setFont("Helvetica", 9)
+        c.drawString(70, y, "La durée du travail est fixée à 173,33 heures par mois")
+        y -= 12
+        c.drawString(70, y, "(base de calcul légale conformément à la législation algérienne).")
+        y -= 20
         
-        story.append(Spacer(1, 0.8*cm))
+        c.setFont("Helvetica-Bold", 10)
+        c.drawString(50, y, "Article 5 : Rémunération")
+        y -= 14
+        c.setFont("Helvetica", 9)
+        c.drawString(70, y, f"Le salaire mensuel brut est fixé à {salaire:,.2f} DA.")
+        y -= 12
+        c.drawString(70, y, "Ce salaire pourra être complété par les primes prévues")
+        y -= 12
+        c.drawString(70, y, "par le règlement intérieur et la législation en vigueur.")
+        y -= 20
         
-        # ========== SIGNATURES ==========
-        signatures = [
-            [Paragraph("<b>L'EMPLOYEUR</b>", 
-                      ParagraphStyle(name='SigTitle1', parent=section_style, alignment=TA_CENTER, fontName='Helvetica-Bold')),
-             Paragraph("<b>LE SALARIÉ</b>", 
-                      ParagraphStyle(name='SigTitle2', parent=section_style, alignment=TA_CENTER, fontName='Helvetica-Bold'))],
-            ['', ''],
-            ['', ''],
-            ['', ''],
-            [Paragraph("(Signature et cachet)", 
-                      ParagraphStyle(name='SigLabel1', parent=section_style, alignment=TA_CENTER, fontSize=8)),
-             Paragraph("(Signature)", 
-                      ParagraphStyle(name='SigLabel2', parent=section_style, alignment=TA_CENTER, fontSize=8))],
-        ]
+        c.setFont("Helvetica-Bold", 10)
+        c.drawString(50, y, "Article 6 : Primes et indemnités")
+        y -= 14
+        c.setFont("Helvetica", 9)
+        c.drawString(70, y, "Le salarié pourra bénéficier des primes suivantes :")
+        y -= 12
+        c.drawString(85, y, "• Prime de rendement : 5% du salaire de base")
+        y -= 12
+        c.drawString(85, y, "• Prime de fidélité : 5% du salaire de base")
+        y -= 12
+        c.drawString(85, y, "• Prime d'expérience : 1% par année d'ancienneté")
+        y -= 12
+        c.drawString(85, y, "• Prime de panier : 100 DA/jour travaillé")
+        y -= 20
         
-        sig_table = Table(signatures, colWidths=[8*cm, 8*cm])
-        sig_table.setStyle(TableStyle([
-            ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
-            ('VALIGN', (0, 0), (-1, -1), 'TOP'),
-            ('TOPPADDING', (0, 1), (-1, 3), 20),
-        ]))
+        c.setFont("Helvetica-Bold", 10)
+        c.drawString(50, y, "Article 7 : Congés payés")
+        y -= 14
+        c.setFont("Helvetica", 9)
+        c.drawString(70, y, "Le salarié bénéficiera des congés payés conformément")
+        y -= 12
+        c.drawString(70, y, "aux dispositions de la loi 90-11 et du règlement intérieur.")
+        y -= 20
         
-        story.append(sig_table)
+        c.setFont("Helvetica-Bold", 10)
+        c.drawString(50, y, "Article 8 : Obligations du salarié")
+        y -= 14
+        c.setFont("Helvetica", 9)
+        c.drawString(70, y, "Le salarié s'engage à respecter le règlement intérieur,")
+        y -= 12
+        c.drawString(70, y, "exécuter ses tâches avec soin et préserver la confidentialité.")
+        y -= 20
         
-        # Générer le PDF
-        doc.build(story)
+        c.setFont("Helvetica-Bold", 10)
+        c.drawString(50, y, "Article 9 : Préavis")
+        y -= 14
+        c.setFont("Helvetica", 9)
+        c.drawString(70, y, "En cas de rupture, un préavis d'un (1) mois devra être respecté,")
+        y -= 12
+        c.drawString(70, y, "sauf en cas de faute grave.")
+        y -= 20
+        
+        c.setFont("Helvetica-Bold", 10)
+        c.drawString(50, y, "Article 10 : Litiges")
+        y -= 14
+        c.setFont("Helvetica", 9)
+        c.drawString(70, y, "Tout différend sera soumis aux juridictions compétentes.")
+        y -= 30
+        
+        # ========== DATE ET SIGNATURES ==========
+        c.setFont("Helvetica-Bold", 10)
+        c.drawCentredString(width/2, y, f"Fait à Chelghoum Laid, le {date_aujourdhui}")
+        y -= 14
+        c.setFont("Helvetica", 8)
+        c.drawCentredString(width/2, y, "En deux exemplaires originaux")
+        y -= 40
+        
+        # Signatures
+        c.setFont("Helvetica-Bold", 10)
+        c.drawCentredString(150, y, "L'EMPLOYEUR")
+        c.drawCentredString(width - 150, y, "LE SALARIÉ")
+        y -= 50
+        
+        c.setFont("Helvetica", 8)
+        c.drawCentredString(150, y, "(Signature et cachet)")
+        c.drawCentredString(width - 150, y, "(Signature)")
+        
+        # Finaliser le PDF
+        c.save()
         buffer.seek(0)
         return buffer
     
