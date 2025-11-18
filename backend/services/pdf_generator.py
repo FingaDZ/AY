@@ -2103,6 +2103,13 @@ class PDFGenerator:
         c = canvas.Canvas(buffer, pagesize=A4)
         width, height = A4
         
+        # Fonction pour créer une nouvelle page si nécessaire
+        def check_new_page(y_position, needed_space=100):
+            if y_position < needed_space:
+                c.showPage()
+                return height - 50
+            return y_position
+        
         y = height - 50
         
         # ========== EN-TÊTE ==========
@@ -2132,41 +2139,24 @@ class PDFGenerator:
         c.drawCentredString(width/2, y, "CONTRAT DE TRAVAIL")
         y -= 20
         
-        # Par défaut CDD (DÉTERMINÉE) sauf si duree_contrat est explicitement None/0
-        type_contrat = "À DURÉE DÉTERMINÉE"
         c.setFont("Helvetica-Bold", 12)
-        c.drawCentredString(width/2, y, type_contrat)
+        c.drawCentredString(width/2, y, "À DURÉE DÉTERMINÉE")
         y -= 35
         
         # ========== ENTRE LES SOUSSIGNÉS ==========
+        y = check_new_page(y, 150)
+        
         c.setFont("Helvetica-Bold", 11)
         c.drawString(50, y, "ENTRE LES SOUSSIGNÉS :")
         y -= 25
         
-        # L'EMPLOYEUR
+        # L'EMPLOYEUR (simplifié - déjà dans l'en-tête)
         c.setFont("Helvetica-Bold", 10)
         c.drawString(70, y, "L'EMPLOYEUR :")
         y -= 18
         
-        c.setFont("Helvetica-Bold", 11)
-        c.drawString(90, y, company_name)
-        y -= 16
-        
         c.setFont("Helvetica", 10)
-        c.drawString(90, y, f"Siège social : {company_address}")
-        y -= 14
-        
-        if company_rc:
-            c.drawString(90, y, f"RC : {company_rc}")
-            y -= 14
-        if company_nif:
-            c.drawString(90, y, f"NIF : {company_nif}")
-            y -= 14
-        if company_nis:
-            c.drawString(90, y, f"NIS : {company_nis}")
-            y -= 14
-        
-        c.drawString(90, y, "Représentée par son gérant légalement habilité")
+        c.drawString(90, y, "Représenté par son gérant légalement habilité")
         y -= 18
         
         c.setFont("Helvetica-Bold", 10)
@@ -2199,6 +2189,8 @@ class PDFGenerator:
         y -= 30
         
         # ========== CONDITIONS ==========
+        y = check_new_page(y, 100)
+        
         c.setFont("Helvetica-Bold", 11)
         c.drawString(50, y, "IL A ÉTÉ CONVENU ET ARRÊTÉ CE QUI SUIT :")
         y -= 25
@@ -2207,34 +2199,23 @@ class PDFGenerator:
         c.drawString(70, y, "Date de début :")
         c.setFont("Helvetica", 10)
         c.drawString(200, y, date_debut_str)
-        y -= 16
         
         c.setFont("Helvetica-Bold", 10)
-        c.drawString(70, y, "Date de fin :")
+        c.drawString(350, y, "Date de fin :")
         c.setFont("Helvetica", 10)
-        c.drawString(200, y, date_fin_str)
+        c.drawString(450, y, date_fin_str)
         y -= 16
         
         c.setFont("Helvetica-Bold", 10)
         c.drawString(70, y, "Durée :")
         c.setFont("Helvetica", 10)
-        duree_text = f"{duree_contrat} mois" if duree_contrat else "Indéterminée"
+        duree_text = f"{duree_contrat} mois" if duree_contrat else "À déterminer"
         c.drawString(200, y, duree_text)
-        y -= 16
-        
-        c.setFont("Helvetica-Bold", 10)
-        c.drawString(70, y, "Poste :")
-        c.setFont("Helvetica", 10)
-        c.drawString(200, y, poste)
-        y -= 16
-        
-        c.setFont("Helvetica-Bold", 10)
-        c.drawString(70, y, "Salaire de base :")
-        c.setFont("Helvetica-Bold", 11)
-        c.drawString(200, y, f"{salaire:,.2f} DA")
         y -= 30
         
         # ========== ARTICLES ==========
+        y = check_new_page(y, 150)
+        
         c.setFont("Helvetica-Bold", 10)
         c.drawString(50, y, "Article 1 : Objet du contrat")
         y -= 14
@@ -2243,6 +2224,8 @@ class PDFGenerator:
         y -= 12
         c.drawString(70, y, "les tâches qui lui seront confiées dans le cadre de cette fonction.")
         y -= 20
+        
+        y = check_new_page(y)
         
         c.setFont("Helvetica-Bold", 10)
         c.drawString(50, y, "Article 2 : Durée du contrat")
@@ -2258,12 +2241,16 @@ class PDFGenerator:
             c.drawString(70, y, f"une durée déterminée et prendra fin le {date_fin_str}.")
         y -= 20
         
+        y = check_new_page(y)
+        
         c.setFont("Helvetica-Bold", 10)
         c.drawString(50, y, "Article 3 : Lieu de travail")
         y -= 14
         c.setFont("Helvetica", 9)
         c.drawString(70, y, f"Le salarié exercera ses fonctions à {company_address}.")
         y -= 20
+        
+        y = check_new_page(y)
         
         c.setFont("Helvetica-Bold", 10)
         c.drawString(50, y, "Article 4 : Horaires de travail")
@@ -2273,6 +2260,8 @@ class PDFGenerator:
         y -= 12
         c.drawString(70, y, "(base de calcul légale conformément à la législation algérienne).")
         y -= 20
+        
+        y = check_new_page(y)
         
         c.setFont("Helvetica-Bold", 10)
         c.drawString(50, y, "Article 5 : Rémunération")
@@ -2284,6 +2273,8 @@ class PDFGenerator:
         y -= 12
         c.drawString(70, y, "par le règlement intérieur et la législation en vigueur.")
         y -= 20
+        
+        y = check_new_page(y, 120)
         
         c.setFont("Helvetica-Bold", 10)
         c.drawString(50, y, "Article 6 : Primes et indemnités")
@@ -2300,6 +2291,8 @@ class PDFGenerator:
         c.drawString(85, y, "• Prime de panier : 100 DA/jour travaillé")
         y -= 20
         
+        y = check_new_page(y)
+        
         c.setFont("Helvetica-Bold", 10)
         c.drawString(50, y, "Article 7 : Congés payés")
         y -= 14
@@ -2308,6 +2301,8 @@ class PDFGenerator:
         y -= 12
         c.drawString(70, y, "aux dispositions de la loi 90-11 et du règlement intérieur.")
         y -= 20
+        
+        y = check_new_page(y)
         
         c.setFont("Helvetica-Bold", 10)
         c.drawString(50, y, "Article 8 : Obligations du salarié")
@@ -2318,6 +2313,8 @@ class PDFGenerator:
         c.drawString(70, y, "exécuter ses tâches avec soin et préserver la confidentialité.")
         y -= 20
         
+        y = check_new_page(y)
+        
         c.setFont("Helvetica-Bold", 10)
         c.drawString(50, y, "Article 9 : Préavis")
         y -= 14
@@ -2327,6 +2324,8 @@ class PDFGenerator:
         c.drawString(70, y, "sauf en cas de faute grave.")
         y -= 20
         
+        y = check_new_page(y)
+        
         c.setFont("Helvetica-Bold", 10)
         c.drawString(50, y, "Article 10 : Litiges")
         y -= 14
@@ -2335,6 +2334,8 @@ class PDFGenerator:
         y -= 30
         
         # ========== DATE ET SIGNATURES ==========
+        y = check_new_page(y, 120)
+        
         c.setFont("Helvetica-Bold", 10)
         c.drawCentredString(width/2, y, f"Fait à Chelghoum Laid, le {date_aujourdhui}")
         y -= 14
