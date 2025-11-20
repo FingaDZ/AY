@@ -18,7 +18,6 @@ import ParametresPage from './pages/Parametres/ParametresPage';
 import DatabaseConfigPage from './pages/DatabaseConfig/DatabaseConfigPage';
 import UtilisateursPage from './pages/Utilisateurs/UtilisateursPage';
 import LogsPage from './pages/Logs/LogsPage';
-import './styles/responsive.css';
 import LoginPage from './pages/Login/LoginPage';
 
 // Composant pour protéger les routes
