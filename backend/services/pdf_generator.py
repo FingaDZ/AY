@@ -1,6 +1,6 @@
 """Service pour générer des PDFs pour les ordres de mission et rapports"""
 
-from reportlab.lib.pagesizes import A4, A5
+from reportlab.lib.pagesizes import A4, A5, landscape
 from reportlab.lib import colors
 from reportlab.lib.units import cm
 from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer, PageBreak, Image
@@ -2357,6 +2357,344 @@ class PDFGenerator:
         c.save()
         buffer.seek(0)
         return buffer
+    
+    def generate_g29(self, annee: int, g29_data) -> bytes:
+        """
+        Génère le document G29 complet (2 pages en format paysage)
+        
+        Args:
+            annee: Année du rapport
+            g29_data: Données G29Response avec recap et employes
+        
+        Returns:
+            Bytes du PDF généré
+        """
+        buffer = BytesIO()
+        doc = SimpleDocTemplate(
+            buffer,
+            pagesize=landscape(A4),
+            rightMargin=1.5*cm,
+            leftMargin=1.5*cm,
+            topMargin=1.5*cm,
+            bottomMargin=1.5*cm
+        )
+        
+        story = []
+        
+        # Page 1: Récapitulatif mensuel
+        story.extend(self._build_g29_page1(annee, g29_data.recap))
+        story.append(PageBreak())
+        
+        # Page 2: Détails employés
+        story.extend(self._build_g29_page2(annee, g29_data.employes))
+        
+        # Générer le PDF
+        doc.build(story)
+        buffer.seek(0)
+        return buffer.getvalue()
+    
+    
+    def _build_g29_page1(self, annee: int, recap):
+        """Construit la page 1 du G29 (récapitulatif mensuel)"""
+        elements = []
+        parametres = self._get_parametres()
+        
+        # En-tête administratif
+        header_style = ParagraphStyle(
+            'HeaderStyle',
+            parent=self.styles['Normal'],
+            fontSize=9,
+            leading=11
+        )
+        
+        elements.append(Paragraph("<b>ADMINISTRATION DES IMPOTS</b>", header_style))
+        elements.append(Paragraph("WILAYA DE: MILA", header_style))
+        elements.append(Paragraph("COMMUNE DE: CHELGHOUM LAID", header_style))
+        elements.append(Spacer(1, 0.5*cm))
+        
+        # Titre
+        title_style = ParagraphStyle(
+            'G29Title',
+            parent=self.styles['Normal'],
+            fontSize=12,
+            fontName='Helvetica-Bold',
+            alignment=TA_CENTER,
+            spaceAfter=10
+        )
+        
+        elements.append(Paragraph(f"DÉCLARATION ANNUELLE DES SALAIRES - série G29", title_style))
+        elements.append(Paragraph(f"<b>ANNÉE {annee}</b>", title_style))
+        elements.append(Spacer(1, 0.5*cm))
+        
+        # Informations entreprise
+        if parametres:
+            info_style = ParagraphStyle(
+                'InfoStyle',
+                parent=self.styles['Normal'],
+                fontSize=9,
+                leading=12
+            )
+            elements.append(Paragraph("<b>ENTREPRISE:</b>", info_style))
+            elements.append(Paragraph(f"&nbsp;&nbsp;&nbsp;&nbsp;{parametres.nom_entreprise or ''}", info_style))
+            elements.append(Paragraph(f"&nbsp;&nbsp;&nbsp;&nbsp;NIF: {parametres.nif or ''}", info_style))
+            elements.append(Paragraph(f"&nbsp;&nbsp;&nbsp;&nbsp;N° ART. IMPOS.: {parametres.numero_article_imposition or ''}", info_style))
+            elements.append(Paragraph(f"&nbsp;&nbsp;&nbsp;&nbsp;Activité: {parametres.activite or ''}", info_style))
+            elements.append(Paragraph(f"&nbsp;&nbsp;&nbsp;&nbsp;Adresse: {parametres.adresse or ''}", info_style))
+        
+        elements.append(Spacer(1, 0.7*cm))
+        
+        # Tableau récapitulatif
+        elements.append(Paragraph("<b>RÉCAPITULATIF MENSUEL:</b>", self.styles['Normal']))
+        elements.append(Spacer(1, 0.3*cm))
+        
+        # Données du tableau
+        mois_noms = [
+            "Janvier", "Février", "Mars", "Avril", "Mai", "Juin",
+            "Juillet", "Août", "Septembre", "Octobre", "Novembre", "Décembre"
+        ]
+        
+        mois_fields = [
+            "janvier", "fevrier", "mars", "avril", "mai", "juin",
+            "juillet", "aout", "septembre", "octobre", "novembre", "decembre"
+        ]
+        
+        table_data = [["MOIS", "SALAIRES BRUTS (DA)", "IRG RETENU (DA)"]]
+        
+        total_brut = 0
+        total_irg = 0
+        
+        for mois_nom, mois_field in zip(mois_noms, mois_fields):
+            brut = float(getattr(recap, f"{mois_field}_brut", 0))
+            irg = float(getattr(recap, f"{mois_field}_irg", 0))
+            total_brut += brut
+            total_irg += irg
+            
+            table_data.append([
+                mois_nom,
+                f"{brut:,.2f}",
+                f"{irg:,.2f}"
+            ])
+        
+        # Ligne de total
+        table_data.append([
+            Paragraph("<b>TOTAL ANNUEL</b>", self.styles['Normal']),
+            Paragraph(f"<b>{total_brut:,.2f}</b>", self.styles['Normal']),
+            Paragraph(f"<b>{total_irg:,.2f}</b>", self.styles['Normal'])
+        ])
+        
+        # Créer le tableau avec quadrillage (largeurs ajustées pour paysage)
+        table = Table(table_data, colWidths=[5*cm, 6*cm, 6*cm])
+        table.setStyle(TableStyle([
+            # En-têtes
+            ('BACKGROUND', (0, 0), (-1, 0), colors.lightgrey),
+            ('TEXTCOLOR', (0, 0), (-1, 0), colors.black),
+            ('ALIGN', (0, 0), (-1, 0), 'CENTER'),
+            ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+            ('FONTSIZE', (0, 0), (-1, 0), 9),
+            ('BOTTOMPADDING', (0, 0), (-1, 0), 8),
+            
+            # Données
+            ('ALIGN', (0, 1), (0, -1), 'LEFT'),
+            ('ALIGN', (1, 1), (-1, -1), 'RIGHT'),
+            ('FONTNAME', (0, 1), (-1, -2), 'Helvetica'),
+            ('FONTSIZE', (0, 1), (-1, -1), 8),
+            ('TOPPADDING', (0, 1), (-1, -1), 4),
+            ('BOTTOMPADDING', (0, 1), (-1, -1), 4),
+            
+            # Ligne de total
+            ('BACKGROUND', (0, -1), (-1, -1), colors.lightgrey),
+            ('FONTNAME', (0, -1), (-1, -1), 'Helvetica-Bold'),
+            
+            # Quadrillage complet
+            ('GRID', (0, 0), (-1, -1), 0.5, colors.black),
+            ('BOX', (0, 0), (-1, -1), 1, colors.black),
+        ]))
+        
+        elements.append(table)
+        elements.append(Spacer(1, 1*cm))
+        
+        # Pied de page
+        footer_style = ParagraphStyle(
+            'FooterStyle',
+            parent=self.styles['Normal'],
+            fontSize=8
+        )
+        elements.append(Paragraph(f"Date d'établissement: {datetime.now().strftime('%d/%m/%Y')}", footer_style))
+        elements.append(Spacer(1, 0.3*cm))
+        elements.append(Paragraph("Signature et cachet de l'entreprise:", footer_style))
+        
+        return elements
+    
+    
+    def _build_g29_page2(self, annee: int, employes: list):
+        """Construit la page 2 du G29 (détails par employé)"""
+        elements = []
+        
+        # Titre
+        title_style = ParagraphStyle(
+            'G29Page2Title',
+            parent=self.styles['Normal'],
+            fontSize=10,
+            fontName='Helvetica-Bold',
+            alignment=TA_CENTER,
+            spaceAfter=10
+        )
+        
+        elements.append(Paragraph(f"DÉTAIL DES SALAIRES PAR EMPLOYÉ - ANNÉE {annee}", title_style))
+        elements.append(Spacer(1, 0.3*cm))
+        
+        # Préparer les données du tableau
+        mois_abbr = ["Jan", "Fév", "Mar", "Avr", "Mai", "Jun", "Jul", "Aoû", "Sep", "Oct", "Nov", "Déc"]
+        mois_fields = [
+            "janvier", "fevrier", "mars", "avril", "mai", "juin",
+            "juillet", "aout", "septembre", "octobre", "novembre", "decembre"
+        ]
+        
+        table_data = []
+        
+        # Première ligne d'en-têtes: Nom, SF, les 12 mois, TOTAUX
+        header_row1 = ["NOM ET PRÉNOM", "SF"]
+        for mois in mois_abbr:
+            header_row1.extend([mois, ""])  # Chaque mois occupe 2 colonnes (Net + IRG)
+        header_row1.extend(["TOTAUX", ""])
+        table_data.append(header_row1)
+        
+        # Deuxième ligne: Net/IRG pour chaque mois + Net/IRG pour totaux
+        header_row2 = ["", ""]  # Vides sous Nom et SF
+        for _ in range(12):  # 12 mois
+            header_row2.extend(["Net", "IRG"])
+        header_row2.extend(["Net", "IRG"])  # Totaux
+        table_data.append(header_row2)
+        
+        # Initialiser uniquement les totaux généraux
+        total_general_net = 0
+        total_general_irg = 0
+        
+        # Données des employés
+        for employe in employes:
+            row = []
+            
+            # Nom et prénom (ajusté pour colonne 3.2cm)
+            nom_complet = f"{employe.nom} {employe.prenom}"
+            if len(nom_complet) > 24:
+                nom_complet = nom_complet[:21] + "..."
+            row.append(nom_complet)
+            
+            # Situation familiale
+            row.append(employe.situation_familiale or "")
+            
+            # Valeurs mensuelles
+            for mois_field in mois_fields:
+                net = float(getattr(employe, f"{mois_field}_net", 0))
+                irg = float(getattr(employe, f"{mois_field}_irg", 0))
+                
+                row.append(f"{net:,.0f}" if net > 0 else "-")
+                row.append(f"{irg:,.0f}" if irg > 0 else "-")
+            
+            # Totaux individuels
+            emp_total_net = float(employe.total_imposable)
+            emp_total_irg = float(employe.total_irg)
+            total_general_net += emp_total_net
+            total_general_irg += emp_total_irg
+            
+            row.append(f"{emp_total_net:,.0f}")
+            row.append(f"{emp_total_irg:,.0f}")
+            
+            table_data.append(row)
+        
+        # Ligne de totaux (seulement colonne TOTAUX, pas les mois)
+        totaux_row = ["<b>TOTAL GÉNÉRAL</b>", ""]  # Texte simple sans Paragraph
+        # Colonnes mensuelles vides (24 colonnes pour 12 mois)
+        for _ in range(24):
+            totaux_row.append("")
+        # Totaux généraux (2 colonnes)
+        totaux_row.append(f"{total_general_net:,.0f}")
+        totaux_row.append(f"{total_general_irg:,.0f}")
+        table_data.append(totaux_row)
+        
+        # Créer le tableau avec largeurs de colonnes optimisées pour format paysage
+        # Largeur disponible: A4 paysage (29.7cm) - marges (3cm) = 26.7cm
+        col_widths = [3.2*cm, 0.7*cm]  # Nom, SF
+        col_widths.extend([0.85*cm, 0.7*cm] * 12)  # 12 mois × (Net + IRG) = 18.6cm
+        col_widths.extend([1.3*cm, 1.3*cm])  # Totaux = 2.6cm
+        # Total: 3.2 + 0.7 + 18.6 + 2.6 = 25.1cm (reste 1.6cm de marge interne)
+        
+        table = Table(table_data, colWidths=col_widths, repeatRows=2)
+        
+        # Style du tableau avec quadrillage complet
+        table_style = [
+            # En-têtes
+            ('BACKGROUND', (0, 0), (-1, 1), colors.lightgrey),
+            ('TEXTCOLOR', (0, 0), (-1, 1), colors.black),
+            ('ALIGN', (0, 0), (-1, 1), 'CENTER'),
+            ('FONTNAME', (0, 0), (-1, 1), 'Helvetica-Bold'),
+            ('FONTSIZE', (0, 0), (-1, 1), 6.5),  # Optimisé pour colonnes compactes
+            ('BOTTOMPADDING', (0, 0), (-1, 1), 3),
+            ('TOPPADDING', (0, 0), (-1, 1), 3),
+            
+            # Fusion de cellules pour l'en-tête des mois (ligne 1)
+            ('SPAN', (0, 0), (0, 1)),  # Nom
+            ('SPAN', (1, 0), (1, 1)),  # SF
+            ('SPAN', (26, 0), (27, 0)),  # TOTAUX
+        ]
+        
+        # Fusion des en-têtes de mois
+        for i in range(12):
+            col = 2 + (i * 2)
+            table_style.append(('SPAN', (col, 0), (col + 1, 0)))
+        
+        # Style des données
+        table_style.extend([
+            ('ALIGN', (0, 2), (0, -1), 'LEFT'),  # Noms à gauche
+            ('ALIGN', (1, 2), (1, -1), 'CENTER'),  # SF centré
+            ('ALIGN', (2, 2), (-1, -1), 'RIGHT'),  # Valeurs à droite
+            ('FONTNAME', (0, 2), (-1, -1), 'Helvetica'),
+            ('FONTSIZE', (0, 2), (-1, -1), 5.5),  # Optimisé pour largeurs réduites
+            ('TOPPADDING', (0, 2), (-1, -1), 2),
+            ('BOTTOMPADDING', (0, 2), (-1, -1), 2),
+            ('LEFTPADDING', (0, 2), (-1, -1), 1.5),
+            ('RIGHTPADDING', (0, 2), (-1, -1), 1.5),
+            
+            # Colonnes totaux individuels en gras (2 dernières colonnes)
+            ('FONTNAME', (-2, 2), (-1, -2), 'Helvetica-Bold'),
+            ('BACKGROUND', (-2, 2), (-1, -2), colors.beige),
+            
+            # Ligne de total général (dernière ligne)
+            ('BACKGROUND', (0, -1), (-1, -1), colors.lightgrey),
+            ('FONTNAME', (0, -1), (-1, -1), 'Helvetica-Bold'),
+            ('FONTSIZE', (0, -1), (-1, -1), 6),
+            ('ALIGN', (0, -1), (-1, -1), 'RIGHT'),
+            ('LINEABOVE', (0, -1), (-1, -1), 1.5, colors.black),
+            ('TOPPADDING', (0, -1), (-1, -1), 4),
+            ('BOTTOMPADDING', (0, -1), (-1, -1), 4),
+            
+            # Quadrillage complet
+            ('GRID', (0, 0), (-1, -1), 0.25, colors.black),
+            ('BOX', (0, 0), (-1, -1), 0.75, colors.black),
+            
+            # Lignes horizontales plus épaisses tous les 5 employés
+            ('LINEBELOW', (0, 1), (-1, 1), 1, colors.black),
+        ])
+        
+        # Ajouter des lignes de séparation tous les 5 employés (sauf dernière ligne qui est le total)
+        for i in range(2, len(table_data) - 1, 5):
+            if i < len(table_data) - 1:
+                table_style.append(('LINEBELOW', (0, i), (-1, i), 0.5, colors.grey))
+        
+        table.setStyle(TableStyle(table_style))
+        
+        elements.append(table)
+        elements.append(Spacer(1, 0.5*cm))
+        
+        # Pied de page
+        footer_style = ParagraphStyle(
+            'FooterStyle',
+            parent=self.styles['Normal'],
+            fontSize=7
+        )
+        elements.append(Paragraph(f"Date d'établissement: {datetime.now().strftime('%d/%m/%Y')} | Total: {len(employes)} employé(s)", footer_style))
+        
+        return elements
     
 
 

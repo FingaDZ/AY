@@ -1,0 +1,233 @@
+/* Responsive Utilities */
+
+/* Base styles */
+html {
+  -webkit-text-size-adjust: 100%;
+  -ms-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Disable pull-to-refresh on mobile */
+body {
+  overscroll-behavior-y: contain;
+}
+
+/* Mobile (< 768px) */
+@media (max-width: 767px) {
+  /* Réduire les paddings sur mobile */
+  .ant-card-body {
+    padding: 12px !important;
+  }
+
+  .ant-modal {
+    max-width: calc(100vw - 32px) !important;
+    margin: 16px !important;
+  }
+
+  .ant-modal-body {
+    padding: 16px !important;
+  }
+
+  .ant-form-item {
+    margin-bottom: 16px !important;
+  }
+
+  /* Tables responsive */
+  .ant-table-wrapper {
+    overflow-x: auto;
+  }
+
+  .ant-table {
+    font-size: 12px;
+  }
+
+  .ant-table-thead > tr > th {
+    padding: 8px 4px !important;
+    font-size: 12px;
+  }
+
+  .ant-table-tbody > tr > td {
+    padding: 8px 4px !important;
+    font-size: 12px;
+  }
+
+  .ant-table-cell {
+    word-break: break-word;
+  }
+
+  /* Buttons responsive */
+  .ant-btn {
+    font-size: 13px;
+    height: 32px;
+    padding: 4px 12px;
+  }
+
+  .ant-btn-sm {
+    font-size: 12px;
+    height: 24px;
+    padding: 0px 8px;
+  }
+
+  .ant-space {
+    gap: 8px !important;
+  }
+
+  /* Stats cards */
+  .ant-statistic {
+    text-align: center;
+  }
+
+  .ant-statistic-title {
+    font-size: 12px !important;
+  }
+
+  .ant-statistic-content {
+    font-size: 18px !important;
+  }
+
+  /* Forms */
+  .ant-form-item-label > label {
+    font-size: 13px;
+  }
+
+  .ant-input,
+  .ant-select-selector,
+  .ant-picker {
+    font-size: 14px !important;
+  }
+
+  /* Descriptions */
+  .ant-descriptions-item-label {
+    font-size: 12px !important;
+  }
+
+  .ant-descriptions-item-content {
+    font-size: 13px !important;
+  }
+
+  /* Select dropdown */
+  .ant-select-dropdown {
+    max-width: calc(100vw - 32px) !important;
+  }
+
+  /* DatePicker */
+  .ant-picker-dropdown {
+    max-width: calc(100vw - 16px) !important;
+  }
+
+  /* Tabs */
+  .ant-tabs-tab {
+    font-size: 13px !important;
+    padding: 8px 12px !important;
+  }
+
+  /* Typography */
+  h1.ant-typography {
+    font-size: 20px !important;
+  }
+
+  h2.ant-typography {
+    font-size: 18px !important;
+  }
+
+  h3.ant-typography {
+    font-size: 16px !important;
+  }
+
+  h4.ant-typography {
+    font-size: 14px !important;
+  }
+}
+
+/* Tablette (768px - 992px) */
+@media (min-width: 768px) and (max-width: 991px) {
+  .ant-card-body {
+    padding: 16px !important;
+  }
+
+  .ant-table {
+    font-size: 13px;
+  }
+
+  .ant-table-thead > tr > th,
+  .ant-table-tbody > tr > td {
+    padding: 10px 8px !important;
+  }
+
+  .ant-btn {
+    font-size: 14px;
+  }
+}
+
+/* Landscape phone */
+@media (max-height: 500px) and (orientation: landscape) {
+  .ant-layout-content {
+    padding: 8px !important;
+  }
+
+  .ant-card {
+    margin-bottom: 8px !important;
+  }
+}
+
+/* Utilitaires responsive */
+.mobile-only {
+  display: none;
+}
+
+.desktop-only {
+  display: block;
+}
+
+@media (max-width: 767px) {
+  .mobile-only {
+    display: block;
+  }
+
+  .desktop-only {
+    display: none;
+  }
+
+  .mobile-full-width {
+    width: 100% !important;
+  }
+
+  .mobile-text-center {
+    text-align: center !important;
+  }
+}
+
+/* Amélioration de la scrollabilité sur mobile */
+@media (max-width: 767px) {
+  .ant-table-body {
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .ant-table-content {
+    overflow-x: auto !important;
+  }
+}
+
+/* Fix pour les modals en plein écran sur mobile */
+@media (max-width: 767px) {
+  .ant-modal-wrap {
+    overflow: auto !important;
+  }
+
+  .ant-modal {
+    top: 0 !important;
+    padding-bottom: 0 !important;
+  }
+
+  .ant-modal-content {
+    border-radius: 0 !important;
+  }
+}

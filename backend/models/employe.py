@@ -59,6 +59,7 @@ class Employe(Base):
     credits = relationship("Credit", back_populates="employe", cascade="all, delete-orphan")
     missions = relationship("Mission", back_populates="chauffeur", cascade="all, delete-orphan")
     conges = relationship("Conge", back_populates="employe", cascade="all, delete-orphan")
+    salaires = relationship("Salaire", back_populates="employe", cascade="all, delete-orphan")
     
     def __repr__(self):
         return f"<Employe {self.id}: {self.prenom} {self.nom}>"

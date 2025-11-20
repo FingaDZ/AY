@@ -320,3 +320,248 @@ def generer_rapport_pdf_salaires(
         }
     )
 
+
+# ============= SAUVEGARDE DES SALAIRES DANS LA TABLE =============
+
+@router.post("/sauvegarder/{employe_id}/{annee}/{mois}")
+async def sauvegarder_salaire(
+    employe_id: int,
+    annee: int,
+    mois: int,
+    statut: str = "validé",
+    db: Session = Depends(get_db)
+):
+    """
+    Calcule et sauvegarde le salaire d'un employé pour un mois donné.
+    Si le salaire existe déjà, il sera mis à jour.
+    """
+    from models.salaire import Salaire
+    
+    try:
+        # Calculer le salaire
+        calculator = SalaireCalculator(db)
+        resultat = calculator.calculer_salaire(employe_id, annee, mois)
+        
+        # Vérifier si le salaire existe déjà
+        salaire_existant = db.query(Salaire).filter(
+            Salaire.employe_id == employe_id,
+            Salaire.annee == annee,
+            Salaire.mois == mois
+        ).first()
+        
+        if salaire_existant:
+            # Mise à jour
+            salaire_existant.jours_travailles = resultat["jours_travailles"]
+            salaire_existant.jours_ouvrables = resultat["jours_ouvrables"]
+            salaire_existant.salaire_base_proratis = resultat["salaire_base_proratis"]
+            salaire_existant.heures_supplementaires = resultat["heures_supplementaires"]
+            salaire_existant.indemnite_nuisance = resultat["indemnite_nuisance"]
+            salaire_existant.ifsp = resultat["ifsp"]
+            salaire_existant.iep = resultat["iep"]
+            salaire_existant.prime_encouragement = resultat["prime_encouragement"]
+            salaire_existant.prime_chauffeur = resultat["prime_chauffeur"]
+            salaire_existant.prime_nuit_agent_securite = resultat["prime_nuit_agent_securite"]
+            salaire_existant.prime_deplacement = resultat["prime_deplacement"]
+            salaire_existant.prime_objectif = resultat["prime_objectif"]
+            salaire_existant.prime_variable = resultat["prime_variable"]
+            salaire_existant.salaire_cotisable = resultat["salaire_cotisable"]
+            salaire_existant.retenue_securite_sociale = resultat["retenue_securite_sociale"]
+            salaire_existant.panier = resultat["panier"]
+            salaire_existant.prime_transport = resultat["prime_transport"]
+            salaire_existant.salaire_imposable = resultat["salaire_imposable"]
+            salaire_existant.irg = resultat["irg"]
+            salaire_existant.total_avances = resultat["total_avances"]
+            salaire_existant.retenue_credit = resultat["retenue_credit"]
+            salaire_existant.prime_femme_foyer = resultat["prime_femme_foyer"]
+            salaire_existant.salaire_net = resultat["salaire_net"]
+            salaire_existant.statut = statut
+            
+            db.commit()
+            db.refresh(salaire_existant)
+            return {
+                "message": "Salaire mis à jour avec succès",
+                "salaire_id": salaire_existant.id,
+                "action": "update",
+                "salaire_net": float(salaire_existant.salaire_net)
+            }
+        else:
+            # Création
+            nouveau_salaire = Salaire(
+                employe_id=employe_id,
+                annee=annee,
+                mois=mois,
+                jours_travailles=resultat["jours_travailles"],
+                jours_ouvrables=resultat["jours_ouvrables"],
+                salaire_base_proratis=resultat["salaire_base_proratis"],
+                heures_supplementaires=resultat["heures_supplementaires"],
+                indemnite_nuisance=resultat["indemnite_nuisance"],
+                ifsp=resultat["ifsp"],
+                iep=resultat["iep"],
+                prime_encouragement=resultat["prime_encouragement"],
+                prime_chauffeur=resultat["prime_chauffeur"],
+                prime_nuit_agent_securite=resultat["prime_nuit_agent_securite"],
+                prime_deplacement=resultat["prime_deplacement"],
+                prime_objectif=resultat["prime_objectif"],
+                prime_variable=resultat["prime_variable"],
+                salaire_cotisable=resultat["salaire_cotisable"],
+                retenue_securite_sociale=resultat["retenue_securite_sociale"],
+                panier=resultat["panier"],
+                prime_transport=resultat["prime_transport"],
+                salaire_imposable=resultat["salaire_imposable"],
+                irg=resultat["irg"],
+                total_avances=resultat["total_avances"],
+                retenue_credit=resultat["retenue_credit"],
+                prime_femme_foyer=resultat["prime_femme_foyer"],
+                salaire_net=resultat["salaire_net"],
+                statut=statut
+            )
+            
+            db.add(nouveau_salaire)
+            db.commit()
+            db.refresh(nouveau_salaire)
+            
+            return {
+                "message": "Salaire sauvegardé avec succès",
+                "salaire_id": nouveau_salaire.id,
+                "action": "create",
+                "salaire_net": float(nouveau_salaire.salaire_net)
+            }
+            
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail=f"Erreur lors de la sauvegarde: {str(e)}")
+
+
+@router.post("/sauvegarder-batch/{annee}/{mois}")
+async def sauvegarder_salaires_mois(
+    annee: int,
+    mois: int,
+    employe_ids: Optional[List[int]] = None,
+    statut: str = "validé",
+    db: Session = Depends(get_db)
+):
+    """
+    Calcule et sauvegarde les salaires de tous les employés (ou une liste spécifique) pour un mois donné
+    """
+    from models.salaire import Salaire
+    
+    try:
+        # Si aucune liste fournie, prendre tous les employés actifs
+        if employe_ids is None:
+            employes = db.query(Employe).filter(Employe.actif == True).all()
+            employe_ids = [e.id for e in employes]
+        
+        resultats = {
+            "total": len(employe_ids),
+            "succes": 0,
+            "erreurs": 0,
+            "details": []
+        }
+        
+        calculator = SalaireCalculator(db)
+        
+        for employe_id in employe_ids:
+            try:
+                # Calculer le salaire
+                resultat = calculator.calculer_salaire(employe_id, annee, mois)
+                
+                # Vérifier si le salaire existe déjà
+                salaire_existant = db.query(Salaire).filter(
+                    Salaire.employe_id == employe_id,
+                    Salaire.annee == annee,
+                    Salaire.mois == mois
+                ).first()
+                
+                if salaire_existant:
+                    # Mise à jour
+                    salaire_existant.jours_travailles = resultat["jours_travailles"]
+                    salaire_existant.jours_ouvrables = resultat["jours_ouvrables"]
+                    salaire_existant.salaire_base_proratis = resultat["salaire_base_proratis"]
+                    salaire_existant.heures_supplementaires = resultat["heures_supplementaires"]
+                    salaire_existant.indemnite_nuisance = resultat["indemnite_nuisance"]
+                    salaire_existant.ifsp = resultat["ifsp"]
+                    salaire_existant.iep = resultat["iep"]
+                    salaire_existant.prime_encouragement = resultat["prime_encouragement"]
+                    salaire_existant.prime_chauffeur = resultat["prime_chauffeur"]
+                    salaire_existant.prime_nuit_agent_securite = resultat["prime_nuit_agent_securite"]
+                    salaire_existant.prime_deplacement = resultat["prime_deplacement"]
+                    salaire_existant.prime_objectif = resultat["prime_objectif"]
+                    salaire_existant.prime_variable = resultat["prime_variable"]
+                    salaire_existant.salaire_cotisable = resultat["salaire_cotisable"]
+                    salaire_existant.retenue_securite_sociale = resultat["retenue_securite_sociale"]
+                    salaire_existant.panier = resultat["panier"]
+                    salaire_existant.prime_transport = resultat["prime_transport"]
+                    salaire_existant.salaire_imposable = resultat["salaire_imposable"]
+                    salaire_existant.irg = resultat["irg"]
+                    salaire_existant.total_avances = resultat["total_avances"]
+                    salaire_existant.retenue_credit = resultat["retenue_credit"]
+                    salaire_existant.prime_femme_foyer = resultat["prime_femme_foyer"]
+                    salaire_existant.salaire_net = resultat["salaire_net"]
+                    salaire_existant.statut = statut
+                    
+                    action = "update"
+                    salaire_id = salaire_existant.id
+                    salaire_net = float(salaire_existant.salaire_net)
+                else:
+                    # Création
+                    nouveau_salaire = Salaire(
+                        employe_id=employe_id,
+                        annee=annee,
+                        mois=mois,
+                        jours_travailles=resultat["jours_travailles"],
+                        jours_ouvrables=resultat["jours_ouvrables"],
+                        salaire_base_proratis=resultat["salaire_base_proratis"],
+                        heures_supplementaires=resultat["heures_supplementaires"],
+                        indemnite_nuisance=resultat["indemnite_nuisance"],
+                        ifsp=resultat["ifsp"],
+                        iep=resultat["iep"],
+                        prime_encouragement=resultat["prime_encouragement"],
+                        prime_chauffeur=resultat["prime_chauffeur"],
+                        prime_nuit_agent_securite=resultat["prime_nuit_agent_securite"],
+                        prime_deplacement=resultat["prime_deplacement"],
+                        prime_objectif=resultat["prime_objectif"],
+                        prime_variable=resultat["prime_variable"],
+                        salaire_cotisable=resultat["salaire_cotisable"],
+                        retenue_securite_sociale=resultat["retenue_securite_sociale"],
+                        panier=resultat["panier"],
+                        prime_transport=resultat["prime_transport"],
+                        salaire_imposable=resultat["salaire_imposable"],
+                        irg=resultat["irg"],
+                        total_avances=resultat["total_avances"],
+                        retenue_credit=resultat["retenue_credit"],
+                        prime_femme_foyer=resultat["prime_femme_foyer"],
+                        salaire_net=resultat["salaire_net"],
+                        statut=statut
+                    )
+                    db.add(nouveau_salaire)
+                    action = "create"
+                    salaire_id = None
+                    salaire_net = float(resultat["salaire_net"])
+                
+                resultats["succes"] += 1
+                resultats["details"].append({
+                    "employe_id": employe_id,
+                    "status": "ok",
+                    "action": action,
+                    "salaire_net": salaire_net
+                })
+                
+            except Exception as e:
+                resultats["erreurs"] += 1
+                resultats["details"].append({
+                    "employe_id": employe_id,
+                    "status": "erreur",
+                    "message": str(e)
+                })
+        
+        # COMMIT FINAL pour toutes les opérations
+        db.commit()
+        
+        return resultats
+        
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail=f"Erreur batch: {str(e)}")
+

@@ -12,12 +12,13 @@ import MissionsList from './pages/Missions/MissionsList';
 import AvancesList from './pages/Avances/AvancesList';
 import CreditsList from './pages/Credits/CreditsList';
 import SalaireCalcul from './pages/Salaires/SalaireCalcul';
-import Rapports from './pages/Rapports/Rapports';
+import Rapports from './pages/Rapports';
 import RapportsPage from './pages/Rapports/RapportsPage';
 import ParametresPage from './pages/Parametres/ParametresPage';
 import DatabaseConfigPage from './pages/DatabaseConfig/DatabaseConfigPage';
 import UtilisateursPage from './pages/Utilisateurs/UtilisateursPage';
 import LogsPage from './pages/Logs/LogsPage';
+import './styles/responsive.css';
 import LoginPage from './pages/Login/LoginPage';
 
 // Composant pour protéger les routes

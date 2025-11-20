@@ -9,6 +9,7 @@ from .parametres import Parametres
 from .user import User, UserRole
 from .database_config import DatabaseConfig
 from .logging import Logging, ActionType
+from .salaire import Salaire
 
 __all__ = [
     "Employe",
@@ -30,4 +31,5 @@ __all__ = [
     "DatabaseConfig",
     "Logging",
     "ActionType",
+    "Salaire",
 ]

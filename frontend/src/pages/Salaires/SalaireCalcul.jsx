@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Card, Select, Button, Table, message, Spin, Descriptions, InputNumber, Tag, Space } from 'antd';
-import { CalculatorOutlined, EyeOutlined, FilePdfOutlined, FileZipOutlined } from '@ant-design/icons';
+import { CalculatorOutlined, EyeOutlined, FilePdfOutlined, FileZipOutlined, SaveOutlined } from '@ant-design/icons';
 import { salaireService, employeService } from '../../services';
 
 const { Option } = Select;
@@ -11,6 +11,7 @@ const currentMonth = new Date().getMonth() + 1;
 function SalaireCalcul() {
   const [loading, setLoading] = useState(false);
   const [calculating, setCalculating] = useState(false);
+  const [saving, setSaving] = useState(false);
   const [employes, setEmployes] = useState([]);
   const [salaires, setSalaires] = useState([]);
   const [totaux, setTotaux] = useState(null);
@@ -50,6 +51,42 @@ function SalaireCalcul() {
       console.error(error);
     } finally {
       setCalculating(false);
+    }
+  };
+
+  const handleSauvegarder = async () => {
+    if (!filters.annee || !filters.mois) {
+      message.warning('Veuillez sélectionner une année et un mois');
+      return;
+    }
+    
+    if (salaires.length === 0) {
+      message.warning('Veuillez d\'abord calculer les salaires');
+      return;
+    }
+    
+    try {
+      setSaving(true);
+      const response = await salaireService.sauvegarderBatch(filters.annee, filters.mois);
+      
+      message.success(
+        `${response.data.succes} salaire(s) sauvegardé(s) avec succès`,
+        5
+      );
+      
+      if (response.data.erreurs > 0) {
+        message.warning(
+          `${response.data.erreurs} erreur(s) lors de la sauvegarde`,
+          5
+        );
+      }
+      
+      console.log('Détails de sauvegarde:', response.data.details);
+    } catch (error) {
+      message.error('Erreur lors de la sauvegarde des salaires');
+      console.error(error);
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -380,6 +417,17 @@ function SalaireCalcul() {
 
           {salaires.length > 0 && (
             <>
+              <Button
+                type="primary"
+                size="large"
+                icon={<SaveOutlined />}
+                onClick={handleSauvegarder}
+                loading={saving}
+                style={{ backgroundColor: '#1890ff', borderColor: '#1890ff' }}
+              >
+                Sauvegarder dans la Base
+              </Button>
+              
               <Button
                 type="default"
                 size="large"

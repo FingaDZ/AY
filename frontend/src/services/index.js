@@ -138,6 +138,7 @@ export const creditService = {
 export const salaireService = {
   calculer: (data) => api.post('/salaires/calculer', data),
   calculerTous: (data) => api.post('/salaires/calculer-tous', data),
+  sauvegarderBatch: (annee, mois) => api.post(`/salaires/sauvegarder-batch/${annee}/${mois}`),
   genererBulletins: (data) => api.post('/salaires/bulletins-paie/generer', data, { responseType: 'blob' }),
   genererRapport: (data) => api.post('/salaires/rapport-pdf', data, { responseType: 'blob' }),
   getRapport: (annee, mois) => api.get(`/salaires/rapport/${annee}/${mois}`),
@@ -168,4 +169,6 @@ export const rapportService = {
     params, 
     responseType: 'blob' 
   }),
+  getG29Data: (annee) => api.get(`/rapports/g29/${annee}`),
+  getG29Pdf: (annee) => api.get(`/rapports/g29/${annee}/pdf`, { responseType: 'blob' }),
 };

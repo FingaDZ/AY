@@ -1,12 +1,15 @@
 import { useState, useEffect } from 'react';
-import { Table, Button, Space, Input, Select, Tag, message, Modal, Tooltip } from 'antd';
-import { PlusOutlined, EditOutlined, DeleteOutlined, SearchOutlined, FilePdfOutlined, ExclamationCircleOutlined, CheckCircleOutlined, FileTextOutlined, SafetyCertificateOutlined, FileProtectOutlined } from '@ant-design/icons';
+import { Table, Button, Space, Input, Select, Tag, message, Modal, Tooltip, Avatar, Card, Typography } from 'antd';
+import { PlusOutlined, EditOutlined, DeleteOutlined, SearchOutlined, FilePdfOutlined, ExclamationCircleOutlined, CheckCircleOutlined, FileTextOutlined, SafetyCertificateOutlined, FileProtectOutlined, UserOutlined } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
 import { employeService } from '../../services';
 import { format } from 'date-fns';
+import ResponsiveTable from '../../components/Common/ResponsiveTable';
+import useResponsive from '../../hooks/useResponsive';
 
 const { Search } = Input;
 const { Option } = Select;
+const { Text } = Typography;
 
 function EmployesList() {
   const navigate = useNavigate();
@@ -16,6 +19,7 @@ function EmployesList() {
     statut: 'Actif',
     recherche: '',
   });
+  const { isMobile } = useResponsive();
 
   useEffect(() => {
     loadEmployes();
@@ -258,47 +262,66 @@ function EmployesList() {
       key: 'index',
       width: 50,
       render: (text, record, index) => index + 1,
+      responsive: ['md'],
     },
     {
       title: 'ID',
       dataIndex: 'id',
       key: 'id',
       width: 60,
+      responsive: ['lg'],
     },
     {
       title: 'Nom',
       dataIndex: 'nom',
       key: 'nom',
       sorter: (a, b) => a.nom.localeCompare(b.nom),
+      responsive: ['md'],
     },
     {
       title: 'Prénom',
       dataIndex: 'prenom',
       key: 'prenom',
       sorter: (a, b) => a.prenom.localeCompare(b.prenom),
+      responsive: ['md'],
+    },
+    {
+      title: 'Employé',
+      key: 'fullname',
+      responsive: ['xs', 'sm'],
+      render: (_, record) => (
+        <Space direction="vertical" size={0}>
+          <Text strong>{record.nom} {record.prenom}</Text>
+          <Text type="secondary" style={{ fontSize: 12 }}>{record.poste_travail}</Text>
+        </Space>
+      ),
     },
     {
       title: 'N° ANEM',
       dataIndex: 'numero_anem',
       key: 'numero_anem',
       render: (value) => value || '-',
+      responsive: ['lg'],
     },
     {
       title: 'Poste',
       dataIndex: 'poste_travail',
       key: 'poste_travail',
+      responsive: ['md'],
     },
     {
       title: 'Salaire Base',
       dataIndex: 'salaire_base',
       key: 'salaire_base',
       render: (value) => `${parseFloat(value).toLocaleString('fr-FR')} DA`,
+      responsive: ['lg'],
     },
     {
       title: 'Date Recrutement',
       dataIndex: 'date_recrutement',
       key: 'date_recrutement',
       render: (date) => format(new Date(date), 'dd/MM/yyyy'),
+      responsive: ['lg'],
     },
     {
       title: 'Statut',
@@ -313,7 +336,8 @@ function EmployesList() {
     {
       title: 'Actions',
       key: 'actions',
-      width: 300,
+      width: isMobile ? undefined : 300,
+      fixed: isMobile ? false : 'right',
       render: (_, record) => (
         <Space size="small" wrap>
           <Tooltip title="Modifier">
@@ -322,12 +346,14 @@ function EmployesList() {
               icon={<EditOutlined />}
               onClick={() => navigate(`/employes/${record.id}`)}
               size="small"
-            />
+            >
+              {isMobile && 'Modifier'}
+            </Button>
           </Tooltip>
           
           {record.actif ? (
             <>
-              <Tooltip title="Générer attestation de travail">
+              <Tooltip title="Attestation">
                 <Button
                   type="link"
                   icon={<FileTextOutlined />}
@@ -336,7 +362,7 @@ function EmployesList() {
                   style={{ color: '#1890ff' }}
                 />
               </Tooltip>
-              <Tooltip title="Générer contrat de travail">
+              <Tooltip title="Contrat">
                 <Button
                   type="link"
                   icon={<FileProtectOutlined />}
@@ -357,7 +383,7 @@ function EmployesList() {
             </>
           ) : (
             <>
-              <Tooltip title="Générer certificat de travail">
+              <Tooltip title="Certificat">
                 <Button
                   type="link"
                   icon={<SafetyCertificateOutlined />}
@@ -366,7 +392,7 @@ function EmployesList() {
                   style={{ color: '#52c41a' }}
                 />
               </Tooltip>
-              <Tooltip title="Générer contrat de travail">
+              <Tooltip title="Contrat">
                 <Button
                   type="link"
                   icon={<FileProtectOutlined />}
@@ -391,15 +417,111 @@ function EmployesList() {
     },
   ];
 
+  // Rendu mobile personnalisé
+  const mobileRenderItem = (employe) => (
+    <Card 
+      size="small"
+      style={{ marginBottom: 12 }}
+      hoverable
+    >
+      <Space direction="vertical" style={{ width: '100%' }} size="small">
+        <Space>
+          <Avatar size={48} icon={<UserOutlined />} />
+          <div>
+            <Text strong>{employe.nom} {employe.prenom}</Text>
+            <br />
+            <Text type="secondary" style={{ fontSize: 12 }}>{employe.poste_travail}</Text>
+          </div>
+          <Tag color={employe.statut_contrat === 'Actif' ? 'green' : 'red'}>
+            {employe.statut_contrat}
+          </Tag>
+        </Space>
+
+        <Space wrap size="small" style={{ width: '100%', justifyContent: 'flex-start' }}>
+          <Button
+            type="primary"
+            size="small"
+            icon={<EditOutlined />}
+            onClick={() => navigate(`/employes/${employe.id}`)}
+          >
+            Modifier
+          </Button>
+          {employe.actif ? (
+            <>
+              <Button
+                size="small"
+                icon={<FileTextOutlined />}
+                onClick={() => handleGenerateAttestation(employe)}
+                style={{ color: '#1890ff' }}
+              >
+                Attestation
+              </Button>
+              <Button
+                size="small"
+                icon={<FileProtectOutlined />}
+                onClick={() => handleGenerateContrat(employe)}
+                style={{ color: '#722ed1' }}
+              >
+                Contrat
+              </Button>
+              <Button
+                size="small"
+                danger
+                icon={<DeleteOutlined />}
+                onClick={() => handleDeleteClick(employe)}
+              >
+                Supprimer
+              </Button>
+            </>
+          ) : (
+            <>
+              <Button
+                size="small"
+                icon={<SafetyCertificateOutlined />}
+                onClick={() => handleGenerateCertificat(employe)}
+                style={{ color: '#52c41a' }}
+              >
+                Certificat
+              </Button>
+              <Button
+                size="small"
+                icon={<FileProtectOutlined />}
+                onClick={() => handleGenerateContrat(employe)}
+                style={{ color: '#722ed1' }}
+              >
+                Contrat
+              </Button>
+              <Button
+                size="small"
+                icon={<CheckCircleOutlined />}
+                onClick={() => handleReactivateClick(employe)}
+                style={{ color: '#52c41a' }}
+              >
+                Réactiver
+              </Button>
+            </>
+          )}
+        </Space>
+      </Space>
+    </Card>
+  );
+
   return (
     <div>
-      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 16 }}>
-        <h2>Liste des Employés</h2>
-        <Space>
+      <div style={{ 
+        display: 'flex', 
+        flexDirection: isMobile ? 'column' : 'row',
+        justifyContent: 'space-between', 
+        marginBottom: 16,
+        gap: isMobile ? 12 : 0
+      }}>
+        <h2 style={{ margin: 0 }}>Liste des Employés</h2>
+        <Space direction={isMobile ? 'vertical' : 'horizontal'} style={{ width: isMobile ? '100%' : 'auto' }}>
           <Button
             icon={<FilePdfOutlined />}
             onClick={handleGenererRapport}
             loading={loading}
+            block={isMobile}
           >
             Rapport PDF
           </Button>
@@ -407,23 +529,28 @@ function EmployesList() {
             type="primary"
             icon={<PlusOutlined />}
             onClick={() => navigate('/employes/nouveau')}
+            block={isMobile}
           >
             Nouvel Employé
           </Button>
         </Space>
       </div>
 
-      <Space style={{ marginBottom: 16 }} size="middle">
+      <Space 
+        direction={isMobile ? 'vertical' : 'horizontal'}
+        style={{ marginBottom: 16, width: isMobile ? '100%' : 'auto' }} 
+        size="middle"
+      >
         <Search
           placeholder="Rechercher par nom, prénom..."
           allowClear
-          style={{ width: 300 }}
+          style={{ width: isMobile ? '100%' : 300 }}
           onChange={(e) => setFilters({ ...filters, recherche: e.target.value })}
           onSearch={(value) => setFilters({ ...filters, recherche: value })}
         />
         <Select
           placeholder="Filtrer par statut"
-          style={{ width: 200 }}
+          style={{ width: isMobile ? '100%' : 200 }}
           allowClear
           onChange={(value) => setFilters({ ...filters, statut: value || '' })}
           defaultValue="Actif"
@@ -434,14 +561,15 @@ function EmployesList() {
         </Select>
       </Space>
 
-      <Table
+      <ResponsiveTable
         loading={loading}
         columns={columns}
         dataSource={employes}
         rowKey="id"
+        mobileRenderItem={mobileRenderItem}
         pagination={{
-          pageSize: 10,
-          showSizeChanger: true,
+          pageSize: isMobile ? 10 : 10,
+          showSizeChanger: !isMobile,
           showTotal: (total) => `Total: ${total} employés`,
         }}
       />

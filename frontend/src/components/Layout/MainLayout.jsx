@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Layout, Menu, Dropdown, Avatar, Space } from 'antd';
+import { Layout, Menu, Dropdown, Avatar, Space, Drawer, Button } from 'antd';
 import { useNavigate, useLocation } from 'react-router-dom';
 import {
   DashboardOutlined,
@@ -16,9 +16,11 @@ import {
   LogoutOutlined,
   DatabaseOutlined,
   IdcardOutlined,
+  MenuOutlined,
 } from '@ant-design/icons';
 import { useAuth } from '../../contexts/AuthContext';
 import parametresService from '../../services/parametres';
+import useResponsive from '../../hooks/useResponsive';
 
 const { Header, Sider, Content, Footer } = Layout;
 
@@ -69,6 +71,11 @@ const menuItems = [
     label: 'Calcul Salaires',
   },
   {
+    key: '/rapports',
+    icon: <FileTextOutlined />,
+    label: 'Rapports',
+  },
+  {
     key: '/parametres',
     icon: <SettingOutlined />,
     label: 'Paramètres',
@@ -92,11 +99,13 @@ const menuItems = [
 
 function MainLayout({ children }) {
   const [collapsed, setCollapsed] = useState(false);
+  const [drawerVisible, setDrawerVisible] = useState(false);
   const [companyInitials, setCompanyInitials] = useState('AY');
   const [companyName, setCompanyName] = useState('AY HR');
   const navigate = useNavigate();
   const location = useLocation();
   const { user, logout, isAdmin } = useAuth();
+  const { isMobile, isTablet } = useResponsive();
 
   useEffect(() => {
     fetchCompanyInfo();
@@ -139,6 +148,9 @@ function MainLayout({ children }) {
 
   const handleMenuClick = ({ key }) => {
     navigate(key);
+    if (isMobile) {
+      setDrawerVisible(false);
+    }
   };
 
   const handleLogout = () => {
@@ -164,55 +176,120 @@ function MainLayout({ children }) {
     return true;
   });
 
+  const menuComponent = (
+    <Menu
+      theme="dark"
+      selectedKeys={[location.pathname]}
+      mode={isMobile ? "inline" : "inline"}
+      items={filteredMenuItems}
+      onClick={handleMenuClick}
+    />
+  );
+
   return (
     <Layout style={{ minHeight: '100vh' }}>
-      <Sider collapsible collapsed={collapsed} onCollapse={setCollapsed}>
-        <div style={{ 
-          height: 64, 
-          display: 'flex', 
-          alignItems: 'center', 
-          justifyContent: 'center',
-          color: 'white',
-          fontSize: collapsed ? 16 : 20,
-          fontWeight: 'bold',
-        }}>
-          {collapsed ? companyInitials : companyName}
-        </div>
-        <Menu
-          theme="dark"
-          selectedKeys={[location.pathname]}
-          mode="inline"
-          items={filteredMenuItems}
-          onClick={handleMenuClick}
-        />
-      </Sider>
-      <Layout>
+      {/* Sidebar pour Desktop/Tablette */}
+      {!isMobile && (
+        <Sider 
+          collapsible={!isTablet} 
+          collapsed={collapsed && !isTablet} 
+          onCollapse={setCollapsed}
+          breakpoint="lg"
+          collapsedWidth={isTablet ? 80 : 80}
+          width={isTablet ? 200 : 250}
+          style={{
+            overflow: 'auto',
+            height: '100vh',
+            position: 'fixed',
+            left: 0,
+            top: 0,
+            bottom: 0,
+          }}
+        >
+          <div style={{ 
+            height: 64, 
+            display: 'flex', 
+            alignItems: 'center', 
+            justifyContent: 'center',
+            color: 'white',
+            fontSize: collapsed && !isTablet ? 16 : 20,
+            fontWeight: 'bold',
+            padding: '0 16px',
+          }}>
+            {collapsed && !isTablet ? companyInitials : companyName}
+          </div>
+          {menuComponent}
+        </Sider>
+      )}
+
+      {/* Drawer pour Mobile */}
+      {isMobile && (
+        <Drawer
+          title={companyName}
+          placement="left"
+          onClose={() => setDrawerVisible(false)}
+          open={drawerVisible}
+          bodyStyle={{ padding: 0, backgroundColor: '#001529' }}
+          headerStyle={{ backgroundColor: '#001529', color: 'white', borderBottom: '1px solid #002140' }}
+          width={250}
+        >
+          {menuComponent}
+        </Drawer>
+      )}
+
+      <Layout style={{ 
+        marginLeft: isMobile ? 0 : (isTablet ? 200 : (collapsed ? 80 : 250)),
+        transition: 'margin-left 0.2s'
+      }}>
         <Header style={{ 
-          padding: '0 24px', 
+          padding: isMobile ? '0 16px' : '0 24px', 
           background: '#fff',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
+          position: 'sticky',
+          top: 0,
+          zIndex: 1,
+          boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
         }}>
-          <h1 style={{ margin: 0, fontSize: 24 }}>
-            Gestion des Ressources Humaines
-          </h1>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+            {isMobile && (
+              <Button
+                type="text"
+                icon={<MenuOutlined />}
+                onClick={() => setDrawerVisible(true)}
+                style={{ fontSize: 20 }}
+              />
+            )}
+            <h1 style={{ margin: 0, fontSize: isMobile ? 16 : 24 }}>
+              {isMobile ? 'AY HR' : 'Gestion des Ressources Humaines'}
+            </h1>
+          </div>
           <Dropdown menu={{ items: userMenuItems }} placement="bottomRight">
             <Space style={{ cursor: 'pointer' }}>
               <Avatar icon={<UserOutlined />} />
-              <span>{user?.nom} {user?.prenom}</span>
-              <span style={{ fontSize: 12, color: '#888' }}>({user?.role})</span>
+              {!isMobile && (
+                <>
+                  <span>{user?.nom} {user?.prenom}</span>
+                  <span style={{ fontSize: 12, color: '#888' }}>({user?.role})</span>
+                </>
+              )}
             </Space>
           </Dropdown>
         </Header>
-        <Content style={{ margin: '24px 16px', padding: 24, background: '#fff' }}>
+        <Content style={{ 
+          margin: isMobile ? '16px' : '24px 16px', 
+          padding: isMobile ? 16 : 24, 
+          background: '#fff',
+          minHeight: 280,
+        }}>
           {children}
         </Content>
         <Footer style={{ 
           textAlign: 'center', 
-          padding: '12px 50px',
+          padding: isMobile ? '8px 16px' : '12px 50px',
           color: '#888',
-          fontSize: '12px'
+          fontSize: isMobile ? '10px' : '12px'
         }}>
           Powered by AIRBAND
         </Footer>
