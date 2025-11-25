@@ -17,6 +17,8 @@ import DatabaseConfigPage from './pages/DatabaseConfig/DatabaseConfigPage';
 import UtilisateursPage from './pages/Utilisateurs/UtilisateursPage';
 import LogsPage from './pages/Logs/LogsPage';
 import LoginPage from './pages/Login/LoginPage';
+import ImportAttendance from './pages/Pointages/ImportAttendance';
+import AttendanceConflicts from './pages/Pointages/AttendanceConflicts';
 
 // Composant pour protéger les routes
 function ProtectedRoute({ children }) {
@@ -55,6 +57,8 @@ function AppRoutes() {
 
               {/* Pointages - Vue grille uniquement */}
               <Route path="/pointages" element={<GrillePointage />} />
+              <Route path="/pointages/import-attendance" element={<ImportAttendance />} />
+              <Route path="/pointages/conflicts" element={<AttendanceConflicts />} />
 
               {/* Clients */}
               <Route path="/clients" element={<ClientsList />} />

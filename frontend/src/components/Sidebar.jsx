@@ -12,7 +12,9 @@ import {
     ScrollText,
     Briefcase,
     Database,
-    UserCog
+    UserCog,
+    Download,
+    AlertCircle
 } from 'lucide-react';
 
 const Sidebar = ({ isOpen, onClose }) => {
@@ -23,6 +25,8 @@ const Sidebar = ({ isOpen, onClose }) => {
         { to: '/employes', label: 'Employés', icon: Users },
         { to: '/postes', label: 'Postes', icon: Briefcase },
         { to: '/pointages', label: 'Pointages', icon: ClipboardList },
+        { to: '/pointages/import-attendance', label: 'Importer Pointages', icon: Download },
+        { to: '/pointages/conflicts', label: 'Conflits Import', icon: AlertCircle },
         { to: '/missions', label: 'Missions', icon: Clock },
         { to: '/avances', label: 'Avances', icon: DollarSign },
         { to: '/credits', label: 'Crédits', icon: DollarSign },
