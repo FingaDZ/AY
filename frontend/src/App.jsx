@@ -1,7 +1,6 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-import { Layout, Spin, ConfigProvider, theme } from 'antd';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
-import MainLayout from './components/Layout/MainLayout';
+import Layout from './components/Layout';
 import Dashboard from './pages/Dashboard';
 import EmployesList from './pages/Employes/EmployesList';
 import EmployeForm from './pages/Employes/EmployeForm';
@@ -25,8 +24,8 @@ function ProtectedRoute({ children }) {
   const { user, loading } = useAuth();
 
   if (loading) {
-    return <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
-      <Spin size="large" />
+    return <div className="flex justify-center items-center h-screen">
+      <div className="animate-spin rounded-full h-16 w-16 border-t-4 border-b-4 border-blue-500"></div>
     </div>;
   }
 
@@ -43,56 +42,56 @@ function AppRoutes() {
       <Route path="/login" element={<LoginPage />} />
       <Route path="/*" element={
         <ProtectedRoute>
-          <MainLayout>
+          <Layout>
             <Routes>
-          <Route path="/" element={<Dashboard />} />
-          
-          {/* Employés */}
-          <Route path="/employes" element={<EmployesList />} />
-          <Route path="/employes/nouveau" element={<EmployeForm />} />
-          <Route path="/employes/:id" element={<EmployeForm />} />
-          
-          {/* Postes de Travail */}
-          <Route path="/postes" element={<PostesList />} />
-          
-          {/* Pointages - Vue grille uniquement */}
-          <Route path="/pointages" element={<GrillePointage />} />
-          
-          {/* Clients */}
-          <Route path="/clients" element={<ClientsList />} />
-          
-          {/* Missions */}
-          <Route path="/missions" element={<MissionsList />} />
-          
-          {/* Avances */}
-          <Route path="/avances" element={<AvancesList />} />
-          
-          {/* Crédits */}
-          <Route path="/credits" element={<CreditsList />} />
-          
-          {/* Salaires */}
-          <Route path="/salaires" element={<SalaireCalcul />} />
-          
-          {/* Rapports */}
-          <Route path="/rapports" element={<Rapports />} />
-          <Route path="/rapports/centre" element={<RapportsPage />} />
-          
-          {/* Paramètres */}
-          <Route path="/parametres" element={<ParametresPage />} />
-          
-          {/* Configuration Base de Données */}
-          <Route path="/database-config" element={<DatabaseConfigPage />} />
-          
-          {/* Utilisateurs */}
-          <Route path="/utilisateurs" element={<UtilisateursPage />} />
-          
-          {/* Logs */}
-          <Route path="/logs" element={<LogsPage />} />
-          
+              <Route path="/" element={<Dashboard />} />
+              
+              {/* Employés */}
+              <Route path="/employes" element={<EmployesList />} />
+              <Route path="/employes/nouveau" element={<EmployeForm />} />
+              <Route path="/employes/:id" element={<EmployeForm />} />
+              
+              {/* Postes de Travail */}
+              <Route path="/postes" element={<PostesList />} />
+              
+              {/* Pointages - Vue grille uniquement */}
+              <Route path="/pointages" element={<GrillePointage />} />
+              
+              {/* Clients */}
+              <Route path="/clients" element={<ClientsList />} />
+              
+              {/* Missions */}
+              <Route path="/missions" element={<MissionsList />} />
+              
+              {/* Avances */}
+              <Route path="/avances" element={<AvancesList />} />
+              
+              {/* Crédits */}
+              <Route path="/credits" element={<CreditsList />} />
+              
+              {/* Salaires */}
+              <Route path="/salaires" element={<SalaireCalcul />} />
+              
+              {/* Rapports */}
+              <Route path="/rapports" element={<Rapports />} />
+              <Route path="/rapports/centre" element={<RapportsPage />} />
+              
+              {/* Paramètres */}
+              <Route path="/parametres" element={<ParametresPage />} />
+              
+              {/* Configuration Base de Données */}
+              <Route path="/database-config" element={<DatabaseConfigPage />} />
+              
+              {/* Utilisateurs */}
+              <Route path="/utilisateurs" element={<UtilisateursPage />} />
+              
+              {/* Logs */}
+              <Route path="/logs" element={<LogsPage />} />
+              
               {/* Redirect */}
               <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>
-          </MainLayout>
+          </Layout>
         </ProtectedRoute>
       } />
     </Routes>
@@ -100,33 +99,17 @@ function AppRoutes() {
 }
 
 function App() {
-  const isMobile = window.innerWidth < 768;
-  
   return (
-    <ConfigProvider
-      theme={{
-        token: {
-          // Tokens spécifiques pour mobile
-          ...(isMobile && {
-            fontSize: 14,
-            controlHeight: 40,
-            borderRadius: 6,
-            colorBgContainer: '#ffffff',
-          }),
-        },
+    <Router
+      future={{
+        v7_startTransition: true,
+        v7_relativeSplatPath: true
       }}
     >
-      <Router
-        future={{
-          v7_startTransition: true,
-          v7_relativeSplatPath: true
-        }}
-      >
-        <AuthProvider>
-          <AppRoutes />
-        </AuthProvider>
-      </Router>
-    </ConfigProvider>
+      <AuthProvider>
+        <AppRoutes />
+      </AuthProvider>
+    </Router>
   );
 }
 

@@ -8,7 +8,6 @@ import {
   CreditCard, 
   Car 
 } from 'lucide-react';
-import Card from '../components/Card';
 import { 
   employeService, 
   clientService, 
@@ -72,7 +71,7 @@ function Dashboard() {
 
   if (loading) {
     return (
-      <div className="flex justify-center items-center h-64">
+      <div className="flex justify-center items-center h-screen">
         <div className="animate-spin rounded-full h-16 w-16 border-t-4 border-b-4 border-blue-500"></div>
       </div>
     );
@@ -87,17 +86,9 @@ function Dashboard() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
         {cards.map((card) => {
           const Icon = card.icon;
-          const colorMap = {
-            blue: 'text-blue-500',
-            green: 'text-green-500',
-            orange: 'text-orange-500',
-            red: 'text-red-500',
-            purple: 'text-purple-500',
-            indigo: 'text-indigo-500',
-          };
           return (
             <div
               key={card.title}
@@ -106,39 +97,13 @@ function Dashboard() {
             >
               <div className="flex items-center justify-between mb-4">
                 <h3 className="text-gray-500 text-sm font-medium">{card.title}</h3>
-                <Icon className={`${colorMap[card.color]} w-6 h-6`} />
+                <Icon className={`text-${card.color}-500 w-6 h-6`} />
               </div>
               <p className="text-3xl font-bold text-gray-800">{card.value}</p>
             </div>
           );
         })}
       </div>
-
-      <Card title="Actions Rapides">
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-          <div
-            onClick={() => navigate('/employes/nouveau')}
-            className="p-6 border border-gray-200 rounded-lg text-center cursor-pointer hover:bg-gray-50 transition-colors"
-          >
-            <Users className="w-8 h-8 mx-auto mb-2 text-blue-500" />
-            <p className="font-medium text-gray-800">Nouvel Employé</p>
-          </div>
-          <div
-            onClick={() => navigate('/pointages')}
-            className="p-6 border border-gray-200 rounded-lg text-center cursor-pointer hover:bg-gray-50 transition-colors"
-          >
-            <Clock className="w-8 h-8 mx-auto mb-2 text-orange-500" />
-            <p className="font-medium text-gray-800">Gestion Pointages</p>
-          </div>
-          <div
-            onClick={() => navigate('/salaires')}
-            className="p-6 border border-gray-200 rounded-lg text-center cursor-pointer hover:bg-gray-50 transition-colors"
-          >
-            <DollarSign className="w-8 h-8 mx-auto mb-2 text-green-500" />
-            <p className="font-medium text-gray-800">Calculer Salaires</p>
-          </div>
-        </div>
-      </Card>
     </div>
   );
 }
