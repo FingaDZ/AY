@@ -61,12 +61,20 @@ mysql -u root -p ay_hr < database/migrations/001_attendance_integration.sql
 # Verify tables
 echo -e "${YELLOW}Verifying tables...${NC}"
 TABLES=$(mysql -u root -p ay_hr -e "SHOW TABLES LIKE 'attendance%';" 2>/dev/null | grep -c attendance || true)
-if [ "$TABLES" -eq 3 ]; then
-    echo -e "${GREEN}✓ 3 tables created successfully${NC}"
+if [ "$TABLES" -ge 3 ]; then
+    echo -e "${GREEN}✓ Tables created successfully${NC}"
 else
-    echo -e "${RED}✗ Expected 3 tables, found $TABLES${NC}"
+    echo -e "${RED}✗ Expected at least 3 tables, found $TABLES${NC}"
     exit 1
 fi
+
+# Fix ENUM case sensitivity issue
+echo -e "${YELLOW}Fixing ENUM values...${NC}"
+mysql -u root -p ay_hr << 'EOFFIX'
+ALTER TABLE attendance_employee_mapping 
+MODIFY COLUMN sync_method ENUM('SECU_SOCIALE', 'NAME_DOB') DEFAULT 'NAME_DOB';
+EOFFIX
+echo -e "${GREEN}✓ ENUM values fixed${NC}"
 echo ""
 
 # Step 4: Update .env

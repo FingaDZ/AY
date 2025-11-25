@@ -8,7 +8,7 @@ CREATE TABLE IF NOT EXISTS attendance_employee_mapping (
     hr_employee_id INT NOT NULL,
     attendance_employee_id INT NOT NULL,
     attendance_employee_name VARCHAR(200),
-    sync_method ENUM('secu_sociale', 'name_dob') DEFAULT 'name_dob',
+    sync_method ENUM('SECU_SOCIALE', 'NAME_DOB') DEFAULT 'NAME_DOB',
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     UNIQUE KEY unique_mapping (hr_employee_id, attendance_employee_id),
