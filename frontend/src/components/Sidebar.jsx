@@ -8,8 +8,11 @@ import {
     FileText,
     Calendar,
     Settings as SettingsIcon,
+    Settings as SettingsIcon,
     Clock,
-    ScrollText
+    ScrollText,
+    Briefcase,
+    Database
 } from 'lucide-react';
 
 const Sidebar = ({ isOpen, onClose }) => {
@@ -18,14 +21,16 @@ const Sidebar = ({ isOpen, onClose }) => {
     const links = [
         { to: '/', label: 'Dashboard', icon: LayoutDashboard },
         { to: '/employes', label: 'Employés', icon: Users },
+        { to: '/postes', label: 'Postes', icon: Briefcase },
         { to: '/pointages', label: 'Pointages', icon: ClipboardList },
-        { to: '/salaires', label: 'Salaires', icon: DollarSign },
-        { to: '/conges', label: 'Congés', icon: Calendar },
+        { to: '/missions', label: 'Missions', icon: Clock },
         { to: '/avances', label: 'Avances', icon: DollarSign },
         { to: '/credits', label: 'Crédits', icon: DollarSign },
-        { to: '/missions', label: 'Missions', icon: Clock },
+        { to: '/conges', label: 'Congés', icon: Calendar },
+        { to: '/salaires', label: 'Salaires', icon: DollarSign },
         { to: '/logs', label: 'Logs', icon: ScrollText },
         { to: '/parametres', label: 'Paramètres', icon: SettingsIcon },
+        { to: '/database-config', label: 'Base de données', icon: Database },
     ];
 
     return (
@@ -57,7 +62,7 @@ const Sidebar = ({ isOpen, onClose }) => {
                     </button>
                 </div>
 
-                <nav className="flex-1 px-4 space-y-2 mt-4 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-700 scrollbar-track-gray-900">
+                <nav className="flex-1 px-4 space-y-2 mt-4 overflow-y-auto scrollbar-none [&::-webkit-scrollbar]:hidden">
                     {links.map((link) => {
                         const Icon = link.icon;
                         const isActive = location.pathname === link.to;
@@ -77,7 +82,7 @@ const Sidebar = ({ isOpen, onClose }) => {
                 </nav>
                 <div className="p-4 border-t border-gray-800 text-xs text-gray-500 flex flex-col items-center space-y-1 shrink-0">
                     <div className="flex justify-between w-full">
-                        <span>v1.1.11</span>
+                        <span>v1.2.0</span>
                         <span>© 2025</span>
                     </div>
                     <div className="text-blue-400 font-semibold tracking-wider pt-2 opacity-80">

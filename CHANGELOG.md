@@ -5,7 +5,30 @@ Tous les changements notables de ce projet seront documentés dans ce fichier.
 Le format est basé sur [Keep a Changelog](https://keepachangelog.com/fr/1.0.0/),
 et ce projet adhère à [Semantic Versioning](https://semver.org/lang/fr/).
 
-## [1.1.11] - 2025-11-25 ✅ ACTUELLE
+## [1.2.0] - 2025-11-25 ✅ ACTUELLE
+
+### ✨ Nouvelles Fonctionnalités
+- **Gestion des Congés** : Module complet de suivi des congés
+  - Tableau de bord des congés par employé et période
+  - Calcul automatique des droits (Acquis vs Pris)
+  - Saisie de la consommation mensuelle
+- **Interface Utilisateur** : Réorganisation majeure de la barre latérale
+  - Restauration de l'onglet **Postes**
+  - Ajout de l'onglet **Base de données**
+  - Réorganisation logique des menus (Dashboard > Employés > Postes > Pointages...)
+  - Masquage esthétique de la barre de défilement (tout en restant fonctionnelle)
+
+### 📄 Fichiers Modifiés
+- `backend/routers/conges.py` - [NOUVEAU] API Congés
+- `backend/main.py` - Enregistrement routeur Congés
+- `frontend/src/pages/Conges/CongesList.jsx` - [NOUVEAU] Interface Congés
+- `frontend/src/components/Sidebar.jsx` - Réorganisation + Postes + Scrollbar hidden
+- `frontend/src/App.jsx` - Route Congés
+- `frontend/package.json` - Version 1.2.0
+
+---
+
+## [1.1.11] - 2025-11-25
 
 ### 🐛 Corrections Critiques
 - **Pages Blanches** : Fix affichage du contenu

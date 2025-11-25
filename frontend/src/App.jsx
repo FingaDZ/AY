@@ -10,6 +10,7 @@ import ClientsList from './pages/Clients/ClientsList';
 import MissionsList from './pages/Missions/MissionsList';
 import AvancesList from './pages/Avances/AvancesList';
 import CreditsList from './pages/Credits/CreditsList';
+import CongesList from './pages/Conges/CongesList';
 import SalaireCalcul from './pages/Salaires/SalaireCalcul';
 import ParametresPage from './pages/Parametres/ParametresPage';
 import DatabaseConfigPage from './pages/DatabaseConfig/DatabaseConfigPage';
@@ -66,6 +67,9 @@ function AppRoutes() {
 
               {/* Crédits */}
               <Route path="/credits" element={<CreditsList />} />
+
+              {/* Congés */}
+              <Route path="/conges" element={<CongesList />} />
 
               {/* Salaires */}
               <Route path="/salaires" element={<SalaireCalcul />} />
