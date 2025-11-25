@@ -5,7 +5,21 @@ Tous les changements notables de ce projet seront documentés dans ce fichier.
 Le format est basé sur [Keep a Changelog](https://keepachangelog.com/fr/1.0.0/),
 et ce projet adhère à [Semantic Versioning](https://semver.org/lang/fr/).
 
-## [1.1.9] - 2025-11-25 ✅ ACTUELLE
+## [1.1.10] - 2025-11-25 ✅ ACTUELLE
+
+### 🐛 Corrections Critiques
+- **Build Error** : Fix erreur de compilation due à un import dupliqué dans `Sidebar.jsx`
+  - Suppression de l'import dupliqué de `SettingsIcon`
+
+### 📄 Fichiers Modifiés
+- `frontend/src/components/Sidebar.jsx` - Fix import + Version 1.1.10
+- `frontend/src/components/Layout.jsx` - Version 1.1.10
+- `frontend/src/pages/Login/LoginPage.jsx` - Version 1.1.10
+- `frontend/package.json` - Version 1.1.10
+
+---
+
+## [1.1.9] - 2025-11-25
 
 ### 🐛 Corrections Critiques
 - **Accès WAN (403)** : Fix erreur "Blocked request" sur domaine externe
