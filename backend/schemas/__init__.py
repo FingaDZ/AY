@@ -61,6 +61,16 @@ from .salaire import (
     SalaireCalculListResponse,
     SalaireDetailResponse,
 )
+from .attendance_schemas import (
+    AttendanceEmployeeMappingResponse,
+    AttendanceSyncLogResponse,
+    AttendanceImportConflictResponse,
+    ConflictResolution,
+    AttendanceImportRequest,
+    AttendanceImportSummary,
+    EmployeeSyncRequest,
+    EmployeeSyncResponse,
+)
 
 __all__ = [
     "EmployeBase",
@@ -112,4 +122,12 @@ __all__ = [
     "SalaireCalculResponse",
     "SalaireCalculListResponse",
     "SalaireDetailResponse",
+    "AttendanceEmployeeMappingResponse",
+    "AttendanceSyncLogResponse",
+    "AttendanceImportConflictResponse",
+    "ConflictResolution",
+    "AttendanceImportRequest",
+    "AttendanceImportSummary",
+    "EmployeeSyncRequest",
+    "EmployeeSyncResponse",
 ]

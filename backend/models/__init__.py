@@ -5,6 +5,14 @@ from .mission import Mission, Parametre
 from .avance import Avance
 from .credit import Credit, RetenueCredit, ProrogationCredit, StatutCredit
 from .conge import Conge
+from .attendance_mapping import (
+    AttendanceEmployeeMapping,
+    AttendanceSyncLog,
+    AttendanceImportConflict,
+    SyncMethod,
+    ConflictStatus,
+    LogType
+)
 from .parametres import Parametres
 from .user import User, UserRole
 from .database_config import DatabaseConfig
@@ -32,4 +40,10 @@ __all__ = [
     "Logging",
     "ActionType",
     "Salaire",
+    "AttendanceEmployeeMapping",
+    "AttendanceSyncLog",
+    "AttendanceImportConflict",
+    "SyncMethod",
+    "ConflictStatus",
+    "LogType",
 ]

@@ -5,7 +5,36 @@ Tous les changements notables de ce projet seront documentés dans ce fichier.
 Le format est basé sur [Keep a Changelog](https://keepachangelog.com/fr/1.0.0/),
 et ce projet adhère à [Semantic Versioning](https://semver.org/lang/fr/).
 
-## [1.2.4] - 2025-11-25 ✅ ACTUELLE
+## [1.3.0-beta] - 2025-11-25 ✅ ACTUELLE
+
+### 🔗 Intégration Attendance (Backend)
+- **Database** : Tables de mapping, sync log, et conflits
+  - `attendance_employee_mapping` : Lien HR ↔ Attendance
+  - `attendance_sync_log` : Historique des imports
+  - `attendance_import_conflicts` : Gestion des conflits
+  - Colonne `heures_supplementaires` ajoutée à `pointages`
+- **Backend Services** :
+  - `models/attendance_mapping.py` : Modèles SQLAlchemy
+  - `services/attendance_service.py` : Logique de sync et import
+  - `routers/attendance_integration.py` : 8 endpoints API
+- **API Endpoints** :
+  - `POST /sync-employee` : Sync employé vers Attendance
+  - `POST /sync-all-employees` : Sync tous les employés
+  - `POST /import-logs` : Importer logs de pointage
+  - `GET /conflicts` : Lister conflits
+  - `POST /conflicts/{id}/resolve` : Résoudre conflit
+- **Documentation** :
+  - `ATTENDANCE_FRONTEND_GUIDE.md` : Guide d'implémentation frontend
+  - `ATTENDANCE_INTEGRATION.md` : Stratégie d'intégration
+
+### ⚠️ Notes
+- **Frontend** : Non inclus dans cette version (guide fourni)
+- **Migration** : Exécuter `001_attendance_integration.sql` avant utilisation
+- **Configuration** : Ajouter `ATTENDANCE_API_URL` dans `.env`
+
+---
+
+## [1.2.4] - 2025-11-25
 
 ### ✨ Fonctionnalités
 - **Gestion Utilisateurs** : Restauration du module de gestion des utilisateurs (Admin)

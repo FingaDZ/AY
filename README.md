@@ -1,10 +1,10 @@
 # HR System
 
-[![Version](https://img.shields.io/badge/version-1.2.4-blue.svg)](https://github.com/FingaDZ/AY/releases/tag/v1.2.4)
+[![Version](https://img.shields.io/badge/version-1.3.0--beta-blue.svg)](https://github.com/FingaDZ/AY/releases/tag/v1.3.0-beta)
 [![Status](https://img.shields.io/badge/status-stable-green.svg)](https://github.com/FingaDZ/AY)
 [![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20Linux-lightgrey.svg)]()
 
-> **Version actuelle** : 1.2.4  
+> **Version actuelle** : 1.3.0-beta (Backend Attendance Integration)  
 > **Dernière mise à jour** : 25 novembre 2025  
 > **Statut** : ✅ Production Ready
 
@@ -161,7 +161,7 @@ CORS_ORIGINS=http://localhost:3000
 | Module | Version | Statut | Dernière Mise à Jour |
 |--------|---------|--------|----------------------|
 | **Frontend** | v1.2.4 | ✅ Stable | 25 Nov 2025 |
-| **Backend** | v1.2.4 | ✅ Stable | 25 Nov 2025 |
+| **Backend** | v1.3.0-beta | ✅ Stable | 25 Nov 2025 |
 | **Base de Données** | MariaDB | ✅ Connecté | 25 Nov 2025 |
 
 ## 🔐 Sécurité
