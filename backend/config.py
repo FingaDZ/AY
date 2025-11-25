@@ -18,6 +18,10 @@ class Settings(BaseSettings):
     ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
     
+    # Attendance Integration
+    ATTENDANCE_API_URL: str = "http://192.168.20.56:8000/api"
+    ATTENDANCE_API_TIMEOUT: int = 30
+    
     @property
     def cors_origins_list(self) -> List[str]:
         return [origin.strip() for origin in self.CORS_ORIGINS.split(",")]
