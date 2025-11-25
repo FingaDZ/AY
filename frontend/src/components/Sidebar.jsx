@@ -1,14 +1,14 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { 
-  LayoutDashboard, 
-  Users, 
-  ClipboardList, 
-  DollarSign, 
-  FileText, 
-  Calendar, 
-  Settings as SettingsIcon,
-  Clock
+import {
+    LayoutDashboard,
+    Users,
+    ClipboardList,
+    DollarSign,
+    FileText,
+    Calendar,
+    Settings as SettingsIcon,
+    Clock
 } from 'lucide-react';
 
 const Sidebar = ({ isOpen, onClose }) => {
@@ -23,7 +23,6 @@ const Sidebar = ({ isOpen, onClose }) => {
         { to: '/avances', label: 'Avances', icon: DollarSign },
         { to: '/credits', label: 'Crédits', icon: DollarSign },
         { to: '/missions', label: 'Missions', icon: Clock },
-        { to: '/rapports', label: 'Rapports', icon: FileText },
         { to: '/parametres', label: 'Paramètres', icon: SettingsIcon },
     ];
 
@@ -56,7 +55,7 @@ const Sidebar = ({ isOpen, onClose }) => {
                     </button>
                 </div>
 
-                <nav className="flex-1 px-4 space-y-2 mt-4">
+                <nav className="flex-1 px-4 space-y-2 mt-4 overflow-y-auto">
                     {links.map((link) => {
                         const Icon = link.icon;
                         const isActive = location.pathname === link.to;
@@ -65,9 +64,8 @@ const Sidebar = ({ isOpen, onClose }) => {
                                 key={link.to}
                                 to={link.to}
                                 onClick={() => onClose()} // Close sidebar on link click (mobile)
-                                className={`flex items-center px-4 py-3 rounded-lg transition-colors ${
-                                    isActive ? 'bg-blue-600 text-white' : 'text-gray-400 hover:bg-gray-800 hover:text-white'
-                                }`}
+                                className={`flex items-center px-4 py-3 rounded-lg transition-colors ${isActive ? 'bg-blue-600 text-white' : 'text-gray-400 hover:bg-gray-800 hover:text-white'
+                                    }`}
                             >
                                 <Icon className="w-5 h-5 mr-3" />
                                 {link.label}
@@ -77,7 +75,7 @@ const Sidebar = ({ isOpen, onClose }) => {
                 </nav>
                 <div className="p-4 border-t border-gray-800 text-xs text-gray-500 flex flex-col items-center space-y-1">
                     <div className="flex justify-between w-full">
-                        <span>v2.0</span>
+                        <span>v1.1.6</span>
                         <span>© 2025</span>
                     </div>
                     <div className="text-blue-400 font-semibold tracking-wider pt-2 opacity-80">

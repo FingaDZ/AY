@@ -11,8 +11,6 @@ import MissionsList from './pages/Missions/MissionsList';
 import AvancesList from './pages/Avances/AvancesList';
 import CreditsList from './pages/Credits/CreditsList';
 import SalaireCalcul from './pages/Salaires/SalaireCalcul';
-import Rapports from './pages/Rapports';
-import RapportsPage from './pages/Rapports/RapportsPage';
 import ParametresPage from './pages/Parametres/ParametresPage';
 import DatabaseConfigPage from './pages/DatabaseConfig/DatabaseConfigPage';
 import UtilisateursPage from './pages/Utilisateurs/UtilisateursPage';
@@ -45,49 +43,45 @@ function AppRoutes() {
           <Layout>
             <Routes>
               <Route path="/" element={<Dashboard />} />
-              
+
               {/* Employés */}
               <Route path="/employes" element={<EmployesList />} />
               <Route path="/employes/nouveau" element={<EmployeForm />} />
               <Route path="/employes/:id" element={<EmployeForm />} />
-              
+
               {/* Postes de Travail */}
               <Route path="/postes" element={<PostesList />} />
-              
+
               {/* Pointages - Vue grille uniquement */}
               <Route path="/pointages" element={<GrillePointage />} />
-              
+
               {/* Clients */}
               <Route path="/clients" element={<ClientsList />} />
-              
+
               {/* Missions */}
               <Route path="/missions" element={<MissionsList />} />
-              
+
               {/* Avances */}
               <Route path="/avances" element={<AvancesList />} />
-              
+
               {/* Crédits */}
               <Route path="/credits" element={<CreditsList />} />
-              
+
               {/* Salaires */}
               <Route path="/salaires" element={<SalaireCalcul />} />
-              
-              {/* Rapports */}
-              <Route path="/rapports" element={<Rapports />} />
-              <Route path="/rapports/centre" element={<RapportsPage />} />
-              
+
               {/* Paramètres */}
               <Route path="/parametres" element={<ParametresPage />} />
-              
+
               {/* Configuration Base de Données */}
               <Route path="/database-config" element={<DatabaseConfigPage />} />
-              
+
               {/* Utilisateurs */}
               <Route path="/utilisateurs" element={<UtilisateursPage />} />
-              
+
               {/* Logs */}
               <Route path="/logs" element={<LogsPage />} />
-              
+
               {/* Redirect */}
               <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>

@@ -5,7 +5,39 @@ Tous les changements notables de ce projet seront documentés dans ce fichier.
 Le format est basé sur [Keep a Changelog](https://keepachangelog.com/fr/1.0.0/),
 et ce projet adhère à [Semantic Versioning](https://semver.org/lang/fr/).
 
-## [1.1.5] - 2025-11-25 ✅ ACTUELLE
+## [1.1.6] - 2025-11-25 ✅ ACTUELLE
+
+### 🐛 Corrections
+- **Sidebar Scrolling** : Fix sidebar ne défilant pas pour accéder aux éléments en bas
+  - Ajout `overflow-y-auto` au conteneur de navigation
+  - Tous les liens du menu sont maintenant accessibles
+- **Navigation Rapports** : Fix redirection vers Dashboard au lieu de la page Rapports
+  - Suppression des imports et routes Rapports (module non implémenté)
+  - Suppression du lien Rapports de la sidebar
+
+### 🔍 Audit Logging
+- **Audit Complet** : Vérification de l'intégration du logging dans tous les modules
+  - ✅ `employes.py` - Logging complet (CREATE, UPDATE, DELETE, SOFT_DELETE, EXPORT)
+  - ✅ `postes_travail.py` - Logging complet (CREATE, UPDATE, DELETE)
+  - ⚠️ Modules sans logging : pointages, missions, avances, credits, salaires, clients
+  - Note : L'ajout du logging aux modules restants sera fait en v1.2.0
+
+### 🎨 Améliorations UI
+- **Version Display** : Mise à jour de l'affichage de version partout
+  - Sidebar : v2.0 → v1.1.6
+  - Layout footer : v1.1.5 → v1.1.6
+  - Login page : v1.1.5 → v1.1.6
+
+### 📄 Fichiers Modifiés
+- `frontend/src/components/Sidebar.jsx` - Fix scrolling + version + suppression Rapports
+- `frontend/src/App.jsx` - Suppression routes Rapports
+- `frontend/src/components/Layout.jsx` - Version 1.1.6
+- `frontend/src/pages/Login/LoginPage.jsx` - Version 1.1.6
+- `frontend/package.json` - Version 1.1.6
+
+---
+
+## [1.1.5] - 2025-11-25
 
 ### 🐛 Corrections
 - **Validation Salaire Base** : Fix erreur validation lors de l'édition d'un employé
