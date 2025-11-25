@@ -231,7 +231,9 @@ function MainLayout({ children }) {
           open={drawerVisible}
           bodyStyle={{ padding: 0, backgroundColor: '#001529' }}
           headerStyle={{ backgroundColor: '#001529', color: 'white', borderBottom: '1px solid #002140' }}
-          width={250}
+          width={280}
+          style={{ width: '100%', maxWidth: '280px' }}
+          contentWrapperStyle={{ width: '280px', maxWidth: '90vw' }}
         >
           {menuComponent}
         </Drawer>
@@ -239,7 +241,11 @@ function MainLayout({ children }) {
 
       <Layout style={{ 
         marginLeft: isMobile ? 0 : (isTablet ? 200 : (collapsed ? 80 : 250)),
-        transition: 'margin-left 0.2s'
+        transition: 'margin-left 0.2s',
+        ...(isMobile && {
+          width: '100% !important',
+          maxWidth: '100vw !important'
+        })
       }}>
         <Header style={{ 
           padding: isMobile ? '0 16px' : '0 24px', 
@@ -278,10 +284,17 @@ function MainLayout({ children }) {
           </Dropdown>
         </Header>
         <Content style={{ 
-          margin: isMobile ? '16px' : '24px 16px', 
-          padding: isMobile ? 16 : 24, 
+          margin: isMobile ? '12px' : '24px 16px', 
+          padding: isMobile ? 12 : 24, 
           background: '#fff',
           minHeight: 280,
+          ...(isMobile && {
+            margin: '12px !important',
+            padding: '12px !important',
+            width: '100%',
+            maxWidth: '100vw',
+            overflowX: 'hidden'
+          })
         }}>
           {children}
         </Content>

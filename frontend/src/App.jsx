@@ -1,5 +1,5 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-import { Layout, Spin } from 'antd';
+import { Layout, Spin, ConfigProvider, theme } from 'antd';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import MainLayout from './components/Layout/MainLayout';
 import Dashboard from './pages/Dashboard';
@@ -100,17 +100,33 @@ function AppRoutes() {
 }
 
 function App() {
+  const isMobile = window.innerWidth < 768;
+  
   return (
-    <Router
-      future={{
-        v7_startTransition: true,
-        v7_relativeSplatPath: true
+    <ConfigProvider
+      theme={{
+        token: {
+          // Tokens spécifiques pour mobile
+          ...(isMobile && {
+            fontSize: 14,
+            controlHeight: 40,
+            borderRadius: 6,
+            colorBgContainer: '#ffffff',
+          }),
+        },
       }}
     >
-      <AuthProvider>
-        <AppRoutes />
-      </AuthProvider>
-    </Router>
+      <Router
+        future={{
+          v7_startTransition: true,
+          v7_relativeSplatPath: true
+        }}
+      >
+        <AuthProvider>
+          <AppRoutes />
+        </AuthProvider>
+      </Router>
+    </ConfigProvider>
   );
 }
 

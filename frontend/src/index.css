@@ -70,28 +70,48 @@ body {
    RESPONSIVE STYLES - MOBILE (< 768px)
    ============================================ */
 @media screen and (max-width: 767px) {
+  /* Force mobile styles with higher specificity */
+  html, body {
+    font-size: 14px !important;
+    overflow-x: hidden !important;
+  }
+
   /* Layout adjustments */
   .ant-layout-header {
-    padding: 0 16px !important;
+    padding: 0 12px !important;
+    height: 56px !important;
   }
 
   .ant-layout-content {
-    margin: 16px !important;
-    padding: 16px !important;
-  }
-
-  /* Card styles */
-  .ant-card {
-    margin-bottom: 12px !important;
-  }
-
-  .ant-card-body {
+    margin: 12px !important;
     padding: 12px !important;
   }
 
-  .ant-card-head {
+  .ant-layout-sider {
+    display: none !important;
+  }
+
+  /* Card styles - FORCED */
+  .ant-card,
+  div.ant-card,
+  .ant-card.ant-card {
+    margin-bottom: 12px !important;
+    border-radius: 8px !important;
+  }
+
+  .ant-card-body,
+  div.ant-card-body,
+  .ant-card .ant-card-body {
+    padding: 12px !important;
+    font-size: 13px !important;
+  }
+
+  .ant-card-head,
+  div.ant-card-head,
+  .ant-card .ant-card-head {
     padding: 12px !important;
     min-height: auto !important;
+    font-size: 14px !important;
   }
 
   /* Modal styles */
@@ -145,18 +165,26 @@ body {
     font-size: 16px !important;
   }
 
-  /* Button styles */
-  .ant-btn {
+  /* Button styles - FORCED */
+  .ant-btn,
+  button.ant-btn,
+  .ant-btn.ant-btn {
     font-size: 14px !important;
     height: 40px !important;
+    min-height: 40px !important;
     padding: 4px 15px !important;
-    touch-action: manipulation;
+    touch-action: manipulation !important;
+    line-height: 38px !important;
   }
 
-  .ant-btn-sm {
+  .ant-btn-sm,
+  button.ant-btn-sm,
+  .ant-btn.ant-btn-sm {
     font-size: 12px !important;
     height: 32px !important;
+    min-height: 32px !important;
     padding: 0 12px !important;
+    line-height: 30px !important;
   }
 
   .ant-btn-lg {
@@ -286,17 +314,42 @@ body {
     font-size: 14px !important;
   }
 
-  /* Drawer */
-  .ant-drawer-body {
-    padding: 16px !important;
+  /* Drawer - FORCED */
+  .ant-drawer,
+  .ant-drawer.ant-drawer {
+    width: 100% !important;
+    max-width: 280px !important;
   }
 
-  /* Menu in Drawer */
-  .ant-drawer .ant-menu-item {
+  .ant-drawer-content-wrapper {
+    width: 280px !important;
+  }
+
+  .ant-drawer-body,
+  div.ant-drawer-body {
+    padding: 0 !important;
+  }
+
+  /* Menu in Drawer - FORCED */
+  .ant-drawer .ant-menu,
+  .ant-drawer .ant-menu.ant-menu {
+    background: #001529 !important;
+    border: none !important;
+  }
+
+  .ant-drawer .ant-menu-item,
+  .ant-drawer .ant-menu-item.ant-menu-item {
     margin: 0 !important;
-    padding: 12px 16px !important;
+    padding: 14px 20px !important;
     height: auto !important;
     line-height: 1.5 !important;
+    font-size: 14px !important;
+    color: rgba(255, 255, 255, 0.85) !important;
+  }
+
+  .ant-drawer .ant-menu-item-selected,
+  .ant-drawer .ant-menu-item-selected.ant-menu-item {
+    background-color: #1890ff !important;
   }
 
   /* Avatar */

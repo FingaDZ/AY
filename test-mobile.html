@@ -1,0 +1,365 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
+    <title>Test Mobile - AY HR</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            padding: 0;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: white;
+        }
+        
+        .container {
+            padding: 20px;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        
+        .header h1 {
+            font-size: 32px;
+            margin-bottom: 10px;
+        }
+        
+        .device-info {
+            background: rgba(255,255,255,0.15);
+            backdrop-filter: blur(10px);
+            padding: 20px;
+            border-radius: 16px;
+            margin-bottom: 20px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.2);
+        }
+        
+        .info-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 12px;
+            margin-bottom: 8px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 8px;
+            font-size: 14px;
+        }
+        
+        .info-row strong {
+            color: #fff;
+        }
+        
+        .info-value {
+            font-weight: 600;
+            color: #ffd700;
+        }
+        
+        .status-badge {
+            display: inline-block;
+            padding: 6px 16px;
+            border-radius: 20px;
+            font-size: 13px;
+            font-weight: bold;
+            animation: pulse 2s ease-in-out infinite;
+        }
+        
+        .status-mobile {
+            background: #52c41a;
+            color: white;
+        }
+        
+        .status-tablet {
+            background: #faad14;
+            color: white;
+        }
+        
+        .status-desktop {
+            background: #1890ff;
+            color: white;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+        }
+        
+        .test-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 15px;
+            margin: 20px 0;
+        }
+        
+        .test-box {
+            padding: 20px;
+            border-radius: 12px;
+            text-align: center;
+            font-weight: bold;
+            transition: all 0.3s;
+            box-shadow: 0 4px 16px rgba(0,0,0,0.2);
+        }
+        
+        .test-box.mobile-active {
+            background: #52c41a;
+            transform: scale(1.05);
+        }
+        
+        .test-box.tablet-active {
+            background: #faad14;
+            transform: scale(1.05);
+        }
+        
+        .test-box.desktop-active {
+            background: #1890ff;
+            transform: scale(1.05);
+        }
+        
+        .test-box.inactive {
+            background: rgba(255,255,255,0.2);
+            opacity: 0.5;
+        }
+        
+        .btn-group {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            margin-top: 20px;
+        }
+        
+        .btn {
+            padding: 16px 24px;
+            background: white;
+            color: #667eea;
+            text-decoration: none;
+            border-radius: 12px;
+            font-weight: bold;
+            font-size: 16px;
+            text-align: center;
+            transition: all 0.3s;
+            box-shadow: 0 4px 16px rgba(0,0,0,0.2);
+            border: none;
+            cursor: pointer;
+            display: block;
+            width: 100%;
+        }
+        
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0,0,0,0.3);
+        }
+        
+        .btn:active {
+            transform: translateY(0);
+        }
+        
+        .btn-primary {
+            background: #52c41a;
+            color: white;
+        }
+        
+        .btn-secondary {
+            background: rgba(255,255,255,0.2);
+            color: white;
+        }
+        
+        .force-mode {
+            background: #ff4d4f;
+            color: white;
+            animation: shake 0.5s ease-in-out infinite;
+        }
+        
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-5px); }
+            75% { transform: translateX(5px); }
+        }
+        
+        .console-log {
+            background: rgba(0,0,0,0.3);
+            border-radius: 12px;
+            padding: 15px;
+            margin-top: 20px;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+        
+        .console-log div {
+            margin-bottom: 5px;
+        }
+        
+        @media (min-width: 768px) {
+            .test-grid {
+                grid-template-columns: repeat(3, 1fr);
+            }
+            
+            .btn-group {
+                flex-direction: row;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🔬 Test Mobile AY HR</h1>
+            <p>Diagnostic en temps réel</p>
+        </div>
+        
+        <div class="device-info">
+            <h2 style="margin-bottom: 15px; font-size: 20px;">📱 Info Appareil</h2>
+            <div class="info-row">
+                <strong>Largeur:</strong>
+                <span class="info-value" id="width">-</span>
+            </div>
+            <div class="info-row">
+                <strong>Hauteur:</strong>
+                <span class="info-value" id="height">-</span>
+            </div>
+            <div class="info-row">
+                <strong>Type:</strong>
+                <span id="device-type">-</span>
+            </div>
+            <div class="info-row">
+                <strong>Orientation:</strong>
+                <span class="info-value" id="orientation">-</span>
+            </div>
+        </div>
+        
+        <div class="device-info">
+            <h3 style="margin-bottom: 15px;">✅ Tests Breakpoints</h3>
+            <div class="test-grid">
+                <div class="test-box" id="mobile-box">
+                    <div>📱</div>
+                    <div>Mobile</div>
+                    <div style="font-size: 12px; margin-top: 5px;">&lt; 768px</div>
+                </div>
+                <div class="test-box" id="tablet-box">
+                    <div>📱</div>
+                    <div>Tablette</div>
+                    <div style="font-size: 12px; margin-top: 5px;">768-991px</div>
+                </div>
+                <div class="test-box" id="desktop-box">
+                    <div>💻</div>
+                    <div>Desktop</div>
+                    <div style="font-size: 12px; margin-top: 5px;">≥ 992px</div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="btn-group">
+            <a href="http://192.168.20.53:3000" class="btn btn-primary">
+                🚀 Aller à l'App
+            </a>
+            <button onclick="forceMobileMode()" class="btn force-mode">
+                ⚡ FORCER MODE MOBILE
+            </button>
+            <button onclick="location.reload()" class="btn btn-secondary">
+                🔄 Rafraîchir
+            </button>
+        </div>
+        
+        <div class="console-log" id="console-log">
+            <strong>📋 Logs Console:</strong>
+            <div id="log-content"></div>
+        </div>
+    </div>
+    
+    <script>
+        let logs = [];
+        
+        function addLog(message) {
+            logs.unshift(message);
+            if (logs.length > 10) logs.pop();
+            const logContent = document.getElementById('log-content');
+            logContent.innerHTML = logs.map(log => `<div>${new Date().toLocaleTimeString()} - ${log}</div>`).join('');
+        }
+        
+        function updateDeviceInfo() {
+            const width = window.innerWidth;
+            const height = window.innerHeight;
+            
+            document.getElementById('width').textContent = width + 'px';
+            document.getElementById('height').textContent = height + 'px';
+            document.getElementById('orientation').textContent = 
+                width > height ? 'Paysage 🔄' : 'Portrait 📱';
+            
+            let deviceType = '';
+            let statusClass = '';
+            
+            const mobileBox = document.getElementById('mobile-box');
+            const tabletBox = document.getElementById('tablet-box');
+            const desktopBox = document.getElementById('desktop-box');
+            
+            // Reset
+            mobileBox.className = 'test-box inactive';
+            tabletBox.className = 'test-box inactive';
+            desktopBox.className = 'test-box inactive';
+            
+            if (width < 768) {
+                deviceType = 'Mobile';
+                statusClass = 'mobile';
+                mobileBox.className = 'test-box mobile-active';
+                addLog('📱 Mode MOBILE détecté (' + width + 'px)');
+            } else if (width >= 768 && width < 992) {
+                deviceType = 'Tablette';
+                statusClass = 'tablet';
+                tabletBox.className = 'test-box tablet-active';
+                addLog('📱 Mode TABLETTE détecté (' + width + 'px)');
+            } else {
+                deviceType = 'Desktop';
+                statusClass = 'desktop';
+                desktopBox.className = 'test-box desktop-active';
+                addLog('💻 Mode DESKTOP détecté (' + width + 'px)');
+            }
+            
+            document.getElementById('device-type').innerHTML = 
+                `<span class="status-badge status-${statusClass}">${deviceType}</span>`;
+        }
+        
+        function forceMobileMode() {
+            addLog('⚡ FORÇAGE MODE MOBILE - Redirection...');
+            setTimeout(() => {
+                window.location.href = 'http://192.168.20.53:3000';
+            }, 1000);
+        }
+        
+        // Initialize
+        addLog('🚀 Page de test chargée');
+        updateDeviceInfo();
+        
+        // Listeners
+        window.addEventListener('resize', () => {
+            updateDeviceInfo();
+        });
+        
+        window.addEventListener('orientationchange', () => {
+            addLog('🔄 Changement d\'orientation');
+            setTimeout(updateDeviceInfo, 100);
+        });
+        
+        // Media query listeners pour tests
+        const mobileQuery = window.matchMedia('(max-width: 767px)');
+        mobileQuery.addEventListener('change', (e) => {
+            if (e.matches) addLog('✅ Media Query MOBILE activée');
+        });
+        
+        const tabletQuery = window.matchMedia('(min-width: 768px) and (max-width: 991px)');
+        tabletQuery.addEventListener('change', (e) => {
+            if (e.matches) addLog('✅ Media Query TABLETTE activée');
+        });
+        
+        addLog('✅ Listeners media queries installés');
+    </script>
+</body>
+</html>
