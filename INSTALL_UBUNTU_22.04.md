@@ -775,6 +775,6 @@ Votre système AY HR Management est maintenant installé et configuré pour dém
 
 ---
 
-**Version** : 1.1.4  
-**Date** : Novembre 2025  
+**Version** : 1.2.1  
+**Date** : 25 Novembre 2025  
 **Plateforme** : Ubuntu 22.04 LTS

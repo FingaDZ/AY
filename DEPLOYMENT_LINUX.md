@@ -449,5 +449,5 @@ For issues or questions:
 
 ---
 
-**Last Updated**: November 16, 2025  
-**Version**: 1.1.4
+**Last Updated**: November 25, 2025  
+**Version**: 1.2.1

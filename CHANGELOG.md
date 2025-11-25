@@ -5,7 +5,26 @@ Tous les changements notables de ce projet seront documentés dans ce fichier.
 Le format est basé sur [Keep a Changelog](https://keepachangelog.com/fr/1.0.0/),
 et ce projet adhère à [Semantic Versioning](https://semver.org/lang/fr/).
 
-## [1.2.0] - 2025-11-25 ✅ ACTUELLE
+## [1.2.1] - 2025-11-25 ✅ ACTUELLE
+
+### 🐛 Corrections Critiques
+- **Build Error** : Fix erreur de compilation due à un import dupliqué dans `Sidebar.jsx`
+  - Suppression de l'import dupliqué de `SettingsIcon`
+
+### 📚 Documentation
+- Mise à jour des guides de déploiement (`DEPLOYMENT_LINUX.md`, `INSTALL_UBUNTU_22.04.md`)
+- Mise à jour du `README.md` (Version, Badges)
+
+### 📄 Fichiers Modifiés
+- `frontend/src/components/Sidebar.jsx` - Fix import + Version 1.2.1
+- `frontend/src/components/Layout.jsx` - Version 1.2.1
+- `frontend/src/pages/Login/LoginPage.jsx` - Version 1.2.1
+- `frontend/package.json` - Version 1.2.1
+- `backend/config.py` - Version 1.2.1
+
+---
+
+## [1.2.0] - 2025-11-25
 
 ### ✨ Nouvelles Fonctionnalités
 - **Gestion des Congés** : Module complet de suivi des congés
