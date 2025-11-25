@@ -5,7 +5,23 @@ Tous les changements notables de ce projet seront documentés dans ce fichier.
 Le format est basé sur [Keep a Changelog](https://keepachangelog.com/fr/1.0.0/),
 et ce projet adhère à [Semantic Versioning](https://semver.org/lang/fr/).
 
-## [1.2.2] - 2025-11-25 ✅ ACTUELLE
+## [1.2.3] - 2025-11-25 ✅ ACTUELLE
+
+### 🚀 Automatisation
+- **Scripts** : Ajout de scripts d'automatisation pour simplifier la gestion du serveur
+  - `update.sh` : Mise à jour en un clic (Git Pull + Build + Restart)
+  - `install.sh` : Installation initiale automatisée
+- **Documentation** : Mise à jour des guides pour inclure l'utilisation des scripts
+
+### 📄 Fichiers Modifiés
+- `update.sh` - [NOUVEAU] Script de mise à jour
+- `install.sh` - [NOUVEAU] Script d'installation
+- `DEPLOYMENT_LINUX.md` - Instructions automatisées
+- `README.md` - Section mise à jour automatique
+
+---
+
+## [1.2.2] - 2025-11-25
 
 ### 🐛 Corrections
 - **Documentation** : Correction de la structure du `README.md`

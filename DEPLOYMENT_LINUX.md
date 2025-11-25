@@ -75,7 +75,36 @@ mysql -uayhr_user -p'!Yara@2014' ay_hr < database/create_database.sql
 mysqldump -h<PROD_SERVER_IP> -un8n -p'!Yara@2014' ay_hr | mysql -uayhr_user -p'!Yara@2014' ay_hr
 ```
 
-## Application Deployment
+## Installation Automatisée (Recommandée)
+
+### 1. Télécharger et Installer
+```bash
+# Cloner le dépôt
+git clone https://github.com/FingaDZ/AY.git /opt/ay-hr
+cd /opt/ay-hr
+
+# Rendre le script exécutable
+chmod +x install.sh
+
+# Lancer l'installation
+sudo ./install.sh
+```
+
+Le script va automatiquement :
+- Installer les dépendances (Python, Node.js, MariaDB)
+- Configurer la base de données
+- Installer l'application
+- Configurer et démarrer les services
+
+### 2. Mise à Jour
+Pour mettre à jour l'application vers la dernière version :
+
+```bash
+cd /opt/ay-hr
+sudo ./update.sh
+```
+
+## Installation Manuelle (Avancée)
 
 ### 1. Create Application Directory
 ```bash
@@ -450,4 +479,4 @@ For issues or questions:
 ---
 
 **Last Updated**: November 25, 2025  
-**Version**: 1.2.2
+**Version**: 1.2.3

@@ -1,10 +1,10 @@
 # HR System
 
-[![Version](https://img.shields.io/badge/version-1.2.2-blue.svg)](https://github.com/FingaDZ/AY/releases/tag/v1.2.2)
+[![Version](https://img.shields.io/badge/version-1.2.3-blue.svg)](https://github.com/FingaDZ/AY/releases/tag/v1.2.3)
 [![Status](https://img.shields.io/badge/status-stable-green.svg)](https://github.com/FingaDZ/AY)
 [![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20Linux-lightgrey.svg)]()
 
-> **Version actuelle** : 1.2.2  
+> **Version actuelle** : 1.2.3  
 > **Dernière mise à jour** : 25 novembre 2025  
 > **Statut** : ✅ Production Ready
 
@@ -76,6 +76,27 @@ AY HR/
 - Node.js 18+
 - MariaDB 10.5+ ou MySQL 8.0+
 
+### Installation Serveur (Production)
+
+```bash
+# 1. Cloner
+git clone https://github.com/FingaDZ/AY.git /opt/ay-hr
+cd /opt/ay-hr
+
+# 2. Installer
+chmod +x install.sh
+sudo ./install.sh
+```
+
+### Mise à Jour Automatique
+
+Pour mettre à jour vers la dernière version :
+
+```bash
+cd /opt/ay-hr
+sudo ./update.sh
+```
+
 ### Installation Locale (Développement)
 
 #### 1. Backend
@@ -139,8 +160,8 @@ CORS_ORIGINS=http://localhost:3000
 
 | Module | Version | Statut | Dernière Mise à Jour |
 |--------|---------|--------|----------------------|
-| **Frontend** | v1.2.2 | ✅ Stable | 25 Nov 2025 |
-| **Backend** | v1.2.2 | ✅ Stable | 25 Nov 2025 |
+| **Frontend** | v1.2.3 | ✅ Stable | 25 Nov 2025 |
+| **Backend** | v1.2.3 | ✅ Stable | 25 Nov 2025 |
 | **Base de Données** | MariaDB | ✅ Connecté | 25 Nov 2025 |
 
 ## 🔐 Sécurité
@@ -178,5 +199,5 @@ Usage interne - Tous droits réservés
 ---
 
 **Développé par AIRBAND**  
-**Version** : 1.2.2  
+**Version** : 1.2.3  
 **Date** : 25 novembre 2025
