@@ -38,9 +38,10 @@ function EmployeForm() {
       setLoading(true);
       const response = await employeService.getById(id);
       const data = response.data;
-      
+
       form.setFieldsValue({
         ...data,
+        salaire_base: Number(data.salaire_base), // Convertir en nombre
         date_naissance: dayjs(data.date_naissance),
         date_recrutement: dayjs(data.date_recrutement),
         date_fin_contrat: data.date_fin_contrat ? dayjs(data.date_fin_contrat) : null,
@@ -57,7 +58,7 @@ function EmployeForm() {
   const calculateDateFinContrat = () => {
     const dateRecrutement = form.getFieldValue('date_recrutement');
     const dureeContrat = form.getFieldValue('duree_contrat');
-    
+
     if (dateRecrutement && dureeContrat) {
       const dateFinContrat = dayjs(dateRecrutement).add(dureeContrat, 'month');
       form.setFieldsValue({ date_fin_contrat: dateFinContrat });
@@ -67,7 +68,7 @@ function EmployeForm() {
   const handleSubmit = async (values) => {
     try {
       setSubmitting(true);
-      
+
       // Convertir les dates en string seulement si ce sont des objets dayjs
       const data = {
         ...values,
@@ -109,7 +110,7 @@ function EmployeForm() {
   return (
     <div>
       <h2>{isEdit ? 'Modifier' : 'Nouvel'} Employé</h2>
-      
+
       <Card style={{ maxWidth: 800, margin: '0 auto' }}>
         <Form
           form={form}
@@ -221,9 +222,9 @@ function EmployeForm() {
             name="date_recrutement"
             rules={[{ required: true, message: 'Veuillez sélectionner la date' }]}
           >
-            <DatePicker 
-              style={{ width: '100%' }} 
-              format="DD/MM/YYYY" 
+            <DatePicker
+              style={{ width: '100%' }}
+              format="DD/MM/YYYY"
               onChange={calculateDateFinContrat}
             />
           </Form.Item>
@@ -233,11 +234,11 @@ function EmployeForm() {
             name="duree_contrat"
             tooltip="La date de fin sera calculée automatiquement"
           >
-            <InputNumber 
-              min={1} 
-              max={120} 
-              placeholder="Ex: 6, 12, 24 mois" 
-              style={{ width: '100%' }} 
+            <InputNumber
+              min={1}
+              max={120}
+              placeholder="Ex: 6, 12, 24 mois"
+              style={{ width: '100%' }}
               onChange={calculateDateFinContrat}
             />
           </Form.Item>
@@ -255,7 +256,7 @@ function EmployeForm() {
             name="poste_travail"
             rules={[{ required: true, message: 'Veuillez sélectionner le poste' }]}
           >
-            <Select 
+            <Select
               placeholder="Sélectionnez un poste"
               showSearch
               filterOption={(input, option) =>
@@ -275,10 +276,10 @@ function EmployeForm() {
             name="salaire_base"
             rules={[
               { required: true, message: 'Veuillez saisir le salaire' },
-              { 
-                type: 'number', 
-                min: 20000, 
-                message: 'Le salaire minimum légal est de 20 000 DA' 
+              {
+                type: 'number',
+                min: 20000,
+                message: 'Le salaire minimum légal est de 20 000 DA'
               }
             ]}
           >

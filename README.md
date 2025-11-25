@@ -1,398 +1,217 @@
 # AY HR Management System
 
-[![Version](https://img.shields.io/badge/version-1.1.4-blue.svg)](https://github.com/FingaDZ/AY/releases/tag/v1.1.4)
+[![Version](https://img.shields.io/badge/version-1.1.5-blue.svg)](https://github.com/FingaDZ/AY/releases/tag/v1.1.5)
 [![Status](https://img.shields.io/badge/status-production%20ready-success.svg)](https://github.com/FingaDZ/AY)
-[![Last Updated](https://img.shields.io/badge/updated-Nov%2015%2C%202025-orange.svg)](https://github.com/FingaDZ/AY/commits/main)
-[![License](https://img.shields.io/badge/license-Internal%20Use-red.svg)](https://github.com/FingaDZ/AY)
 [![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20Linux-lightgrey.svg)]()
 
-> **Version actuelle** : 1.1.4  
-> **Dernière mise à jour** : 15 novembre 2025  
-> **Statut** : ✅ Production Ready avec Package de Déploiement  
-> 📋 **[Voir le changelog complet](CHANGELOG.md)** | 🚀 **[Guide d'installation Ubuntu](INSTALL_UBUNTU_22.04.md)**
+> **Version actuelle** : 1.1.5  
+> **Dernière mise à jour** : 25 novembre 2025  
+> **Statut** : ✅ Production Ready
 
 ## 📋 Description
-Application complète de gestion RH avec :
-- ✅ Gestion des employés (CRUD complet + durée contrat)
-- ✅ **NOUVEAU** Gestion dynamique des postes de travail (CRUD)
+
+Système complet de gestion des ressources humaines développé avec FastAPI (backend) et React (frontend).
+
+### Fonctionnalités Principales
+
+- ✅ Gestion des employés (CRUD complet)
+- ✅ Gestion dynamique des postes de travail
 - ✅ Système de pointage mensuel automatisé
 - ✅ Gestion des clients et distances
 - ✅ Ordres de mission pour chauffeurs avec calcul de primes
 - ✅ Gestion des avances salariales
-- ✅ Système de crédits avec retenues mensuelles et prorogations
+- ✅ Système de crédits avec retenues mensuelles
 - ✅ Calcul automatique des salaires (cotisable, imposable, net)
 - ✅ Génération de rapports PDF/Excel
 - ✅ Calcul IRG selon barème personnalisable
-
-## 📊 État du Système (v1.1.3)
-
-| Module | Statut | Description |
-|--------|--------|-------------|
-| 👤 Authentification | ✅ Opérationnel | JWT + Rôles (Admin/User) |
-| 👥 Employés | ✅ Opérationnel | CRUD + Soft delete + Durée contrat |
-| 🏢 Postes | ✅ Opérationnel | **NOUVEAU** Gestion dynamique CRUD |
-| 📅 Pointages | ✅ Opérationnel | Grille 31 jours + Verrouillage |
-| 🚗 Missions | ✅ Opérationnel | Ordres + Calcul primes |
-| 💰 Avances | ✅ Opérationnel | Gestion + Déduction auto |
-| 💳 Crédits | ✅ Opérationnel | Mensualités + Prorogation |
-| 💵 Salaires | ✅ Opérationnel | Calcul complet + IRG |
-| 📄 PDF/Excel | ✅ Opérationnel | Bulletins + Rapports personnalisés |
-| 📝 Logging | ✅ Opérationnel | Audit complet avec filtres |
-| 🗄️ Base de données | ✅ Opérationnel | Config dynamique + MariaDB |
-| 🎨 Branding | ✅ Opérationnel | Logo initiales + Footer AIRBAND |
-
-### 🔐 Sécurité
-- ✅ Soft delete pour protection des données
-- ✅ Logging complet de toutes les actions
-- ✅ CORS configuré pour réseau LAN
-- ✅ Encodage sécurisé des mots de passe DB
-
-### 🐛 Bugs Connus
-Aucun bug critique identifié. Warnings mineurs Ant Design (non bloquants).
-
-## �🚀 Démarrage Rapide
-
-### Option 1 : Script automatique - Backend + Frontend (Recommandé)
-
-**Démarrer toute l'application (Backend + Frontend) :**
-```powershell
-.\start_all.ps1
-```
-
-**Ou séparément :**
-
-Backend seulement :
-```powershell
-.\start_backend.ps1
-```
-
-Frontend seulement :
-```powershell
-.\start_frontend.ps1
-```
-
-### Option 2 : Démarrage manuel
-
-#### Backend
-```powershell
-cd backend
-.\venv\Scripts\Activate.ps1
-uvicorn main:app --host 0.0.0.0 --port 8000 --reload
-```
-
-#### Frontend
-```powershell
-cd frontend
-npm run dev
-```
-
-## 🔗 URLs d'Accès
-
-| Service | URL | Description |
-|---------|-----|-------------|
-| 🖥️ **Frontend** | http://localhost:3000 | Interface utilisateur |
-| 🔌 **Backend API** | http://localhost:8000 | API REST |
-| 📚 **Swagger** | http://localhost:8000/docs | Documentation interactive |
-| 📖 **ReDoc** | http://localhost:8000/redoc | Documentation alternative |
-| ❤️ **Health** | http://localhost:8000/health | État de santé API |
-
-### Option 3 : Démarrage manuel (Backend seul)
-
-```powershell
-cd backend
-python -m venv venv
-.\venv\Scripts\activate
-pip install -r requirements.txt
-python data\create_irg.py
-python main.py
-```
-
-**L'API sera accessible sur :**
-- 🌐 API : http://localhost:8000
-- 📚 Documentation : http://localhost:8000/docs
-
-## 📖 Documentation
-
-- **[INSTALLATION.md](INSTALLATION.md)** - Guide d'installation détaillé
-- **[GUIDE_UTILISATEUR.md](GUIDE_UTILISATEUR.md)** - Guide d'utilisation complet
-- **[database/README.md](database/README.md)** - Configuration de la base de données
+- ✅ Système d'authentification JWT
+- ✅ Logging complet des actions
 
 ## 🛠️ Stack Technique
-- **Backend**: FastAPI (Python 3.9+)
-- **Base de données**: MariaDB 10.5+
+
+### Backend
+- **Framework**: FastAPI (Python 3.9+)
+- **Base de données**: MariaDB 10.5+ / MySQL 8.0+
 - **ORM**: SQLAlchemy
 - **Rapports**: ReportLab (PDF), XlsxWriter (Excel)
 - **Validation**: Pydantic
+- **Authentification**: JWT
+
+### Frontend
+- **Framework**: React 18 + Vite
+- **UI Library**: Ant Design 5
+- **Routing**: React Router v6
+- **HTTP Client**: Axios
+- **Date Handling**: Day.js
 
 ## 📁 Structure du Projet
+
 ```
 AY HR/
 ├── backend/
-│   ├── main.py              # Point d'entrée de l'application
+│   ├── main.py              # Point d'entrée API
 │   ├── config.py            # Configuration
-│   ├── database.py          # Configuration base de données
+│   ├── database.py          # Configuration DB
 │   ├── models/              # Modèles SQLAlchemy
 │   ├── schemas/             # Schémas Pydantic
 │   ├── routers/             # Routes API
-│   │   ├── employes.py     # Gestion des employés
-│   │   ├── pointages.py    # Système de pointage
-│   │   ├── clients.py      # Gestion des clients
-│   │   ├── missions.py     # Ordres de mission
-│   │   ├── avances.py      # Gestion des avances
-│   │   ├── credits.py      # Gestion des crédits
-│   │   ├── salaires.py     # Calcul des salaires
-│   │   └── rapports.py     # Génération de rapports
-│   ├── services/            # Logique métier
-│   │   ├── salaire_calculator.py    # Calcul des salaires
-│   │   ├── irg_calculator.py        # Calcul IRG
-│   │   ├── rapport_generator.py     # Génération PDF
-│   │   └── excel_generator.py       # Génération Excel
-│   └── data/                # Fichiers de données
-│       ├── irg.xlsx         # Barème IRG
-│       └── create_irg.py    # Script de création IRG
+│   └── services/            # Logique métier
+├── frontend/
+│   ├── src/
+│   │   ├── components/      # Composants React
+│   │   ├── pages/           # Pages de l'application
+│   │   ├── services/        # Services API
+│   │   └── contexts/        # Contextes React
+│   ├── package.json
+│   └── vite.config.js
 ├── database/
-│   ├── init.sql             # Script d'initialisation DB
-│   └── README.md            # Documentation DB
-├── start.ps1                # Script de démarrage PowerShell
-├── start.bat                # Script de démarrage CMD
-├── INSTALLATION.md          # Guide d'installation
-├── GUIDE_UTILISATEUR.md     # Guide utilisateur
+│   └── create_database.sql  # Script d'initialisation DB
+├── DEPLOYMENT_LINUX.md      # Guide déploiement Linux
+├── INSTALL_UBUNTU_22.04.md  # Guide installation Ubuntu
+├── CHANGELOG.md             # Historique des versions
 └── README.md                # Ce fichier
 ```
 
-## 🎯 Fonctionnalités Détaillées
+## 🚀 Démarrage Rapide
 
-### 1. Gestion des Employés
-- Création avec validation complète
-- Recherche et filtrage avancés
-- Validation automatique des contrats selon dates
-- Suivi complet des informations personnelles et professionnelles
+### Prérequis
 
-### 2. Système de Pointage
-- Grille de pointage mensuel (31 jours)
-- Types : Travaillé, Absent, Congé, Maladie, Férié, Arrêt
-- Calculs automatiques des totaux
-- Verrouillage des pointages finalisés
-- Copie de pointages entre mois
+- Python 3.9+
+- Node.js 18+
+- MariaDB 10.5+ ou MySQL 8.0+
 
-### 3. Gestion des Clients
-- Liste des clients avec distances
-- Utilisation pour calcul des primes de déplacement
+### Installation Locale (Développement)
 
-### 4. Ordres de Mission (Chauffeurs)
-- Enregistrement des missions
-- Calcul automatique : Distance × Tarif/km
-- Totaux mensuels par chauffeur
-- Tarif kilométrique paramétrable
+#### 1. Backend
 
-### 5. Gestion des Avances
-- Enregistrement avec mois de déduction
-- Déduction automatique lors du calcul des salaires
-- Historique complet
+```bash
+cd backend
+python -m venv venv
+source venv/bin/activate  # Windows: venv\Scripts\activate
+pip install -r requirements.txt
 
-### 6. Gestion des Crédits
-- Crédits à long terme
-- Calcul automatique des mensualités
-- Retenues mensuelles automatiques
-- Système de prorogation (report de mensualité)
-- Suivi du solde restant
-- Statut automatique (En cours / Soldé)
+# Configurer .env
+cp .env.example .env
+# Éditer .env avec vos paramètres
 
-### 7. Calcul des Salaires
-**Salaire Cotisable :**
-- Salaire de base proratisé selon jours travaillés
-- Heures supplémentaires (majoration 50%)
-- IN (Indemnité de Nuisance) - 5%
-- IFSP - 5%
-- IEP (Expérience) - 1% par année
-- Prime d'encouragement - 10% si > 1 an
-- Prime chauffeur - 100 DA/jour si applicable
-- Prime de déplacement (missions)
-- Primes objectif et variable
+# Démarrer le serveur
+uvicorn main:app --reload --host 0.0.0.0 --port 8000
+```
 
-**Retenues :**
-- Sécurité Sociale - 9%
-- IRG selon barème
+#### 2. Frontend
 
-**Salaire Net :**
-- Salaire imposable - Avances - Crédit + Prime Femme au Foyer
+```bash
+cd frontend
+npm install
+npm run dev
+```
 
-### 8. Génération de Rapports
-- **Rapport Pointages** : PDF et Excel
-  - Détail par employé
-  - Totaux des présences/absences
+### Accès
 
-- **Rapport Salaires** : PDF et Excel
-  - Détail complet du calcul
-  - Informations employé
-  - Totaux généraux
+- **Frontend**: http://localhost:3000
+- **Backend API**: http://localhost:8000
+- **Documentation API**: http://localhost:8000/docs
+
+## 📖 Documentation
+
+- **[DEPLOYMENT_LINUX.md](DEPLOYMENT_LINUX.md)** - Guide de déploiement complet pour Linux
+- **[INSTALL_UBUNTU_22.04.md](INSTALL_UBUNTU_22.04.md)** - Installation sur Ubuntu 22.04
+- **[CHANGELOG.md](CHANGELOG.md)** - Historique des versions
 
 ## 🔧 Configuration
 
 ### Base de Données
-Fichier `.env` :
+
+Créer un fichier `.env` dans le dossier `backend`:
+
 ```env
-DATABASE_URL=mysql+pymysql://root:password@localhost:3306/ay_hr
+DATABASE_URL=mysql+pymysql://user:password@localhost/ay_hr
+SECRET_KEY=your-secret-key-here
+CORS_ORIGINS=http://localhost:3000
 ```
 
-### Barème IRG
-Le fichier `backend/data/irg.xlsx` contient le barème fiscal :
-- Colonne A : Salaire imposable (DA)
-- Colonne B : Montant IRG (DA)
+### Variables d'Environnement
 
-Le système effectue une interpolation linéaire entre les valeurs.
+| Variable | Description | Défaut |
+|----------|-------------|--------|
+| `DATABASE_URL` | URL de connexion MySQL | - |
+| `SECRET_KEY` | Clé secrète JWT | - |
+| `CORS_ORIGINS` | Origines CORS autorisées | localhost:3000 |
+| `DEBUG` | Mode debug | False |
 
-## 📊 API Endpoints
+## 📊 Modules Principaux
 
-### Employés
-- `POST /api/employes/` - Créer un employé
-- `GET /api/employes/` - Lister les employés
-- `GET /api/employes/{id}` - Obtenir un employé
-- `PUT /api/employes/{id}` - Modifier un employé
-- `DELETE /api/employes/{id}` - Supprimer un employé
-- `POST /api/employes/valider-tous-contrats` - Valider tous les contrats
+### 1. Gestion des Employés
+- CRUD complet avec validation
+- Gestion des contrats et durées
+- Informations personnelles et professionnelles
+- Soft delete pour protection des données
 
-### Pointages
-- `POST /api/pointages/` - Créer un pointage
-- `GET /api/pointages/` - Lister les pointages
-- `PUT /api/pointages/{id}` - Modifier un pointage
-- `POST /api/pointages/{id}/verrouiller` - Verrouiller
-- `POST /api/pointages/copier` - Copier un pointage
-- `GET /api/pointages/employes-actifs` - Employés actifs du mois
+### 2. Système de Pointage
+- Grille mensuelle (31 jours)
+- Types: Travaillé, Absent, Congé, Maladie, Férié, Arrêt
+- Calculs automatiques
+- Verrouillage des pointages validés
 
-### Clients
-- `POST /api/clients/` - Créer un client
-- `GET /api/clients/` - Lister les clients
-- `PUT /api/clients/{id}` - Modifier un client
+### 3. Calcul des Salaires
+- Salaire de base proratisé
+- Heures supplémentaires (majoration 50%)
+- Primes (IN, IFSP, IEP, encouragement, chauffeur)
+- Retenues (Sécurité Sociale 9%, IRG)
+- Déduction avances et crédits
 
-### Missions
-- `POST /api/missions/` - Créer une mission
-- `GET /api/missions/` - Lister les missions
-- `GET /api/missions/primes-mensuelles` - Primes mensuelles
-- `GET /api/missions/parametres/tarif-km` - Obtenir le tarif
-- `PUT /api/missions/parametres/tarif-km` - Modifier le tarif
+### 4. Gestion des Crédits
+- Crédits à long terme
+- Mensualités automatiques
+- Système de prorogation
+- Suivi du solde
 
-### Avances
-- `POST /api/avances/` - Créer une avance
-- `GET /api/avances/` - Lister les avances
-- `GET /api/avances/total-mensuel` - Total mensuel
-
-### Crédits
-- `POST /api/credits/` - Créer un crédit
-- `GET /api/credits/` - Lister les crédits
-- `POST /api/credits/{id}/prorogation` - Créer une prorogation
-- `GET /api/credits/{id}/historique` - Historique complet
-
-### Salaires
-- `POST /api/salaires/calculer` - Calculer un salaire
-- `POST /api/salaires/calculer-tous` - Calculer tous les salaires
-- `GET /api/salaires/rapport/{annee}/{mois}` - Rapport mensuel
-
-### Rapports
-- `GET /api/rapports/pointages/pdf` - Rapport pointages PDF
-- `GET /api/rapports/pointages/excel` - Rapport pointages Excel
-- `GET /api/rapports/salaires/pdf` - Rapport salaires PDF
-- `GET /api/rapports/salaires/excel` - Rapport salaires Excel
+### 5. Rapports
+- Bulletins de paie PDF
+- Rapports Excel personnalisés
+- Déclaration G29 (IRG annuel)
+- Statistiques et analyses
 
 ## 🔐 Sécurité
 
-- Validation des données avec Pydantic
-- Protection CORS configurable
-- Variables d'environnement pour les secrets
-- Validation des contraintes métier
+- ✅ Authentification JWT
+- ✅ Hachage des mots de passe (bcrypt)
+- ✅ Validation des données (Pydantic)
+- ✅ CORS configuré
+- ✅ Soft delete pour données sensibles
+- ✅ Logging complet des actions
 
-## 🐛 Dépannage
+## 📝 Changelog
 
-Consultez le fichier [INSTALLATION.md](INSTALLATION.md) pour les problèmes courants.
+### v1.1.5 - 25 novembre 2025
+- 🐛 Fix: Correction validation salaire_base lors de l'édition d'employé
+- 🧹 Nettoyage: Suppression fichiers non essentiels
+- 📚 Documentation: Guides de déploiement mis à jour
 
-## 📝 Workflow Mensuel
+### v1.1.4 - 15 novembre 2025
+- 📦 Package de déploiement complet
+- 📚 Guides de déploiement simplifiés
 
-1. Créer les pointages pour tous les employés actifs
-2. Saisir les pointages quotidiennement
-3. Enregistrer les missions des chauffeurs
-4. Enregistrer les avances accordées
-5. Finaliser et verrouiller les pointages en fin de mois
-6. Calculer tous les salaires
-7. Générer les rapports PDF/Excel
-8. Archiver les documents
+### v1.1.3 - 14 novembre 2025
+- 🔒 Soft delete avec protection données liées
+- 🌐 CORS ouvert pour réseau LAN
+- 🔐 Encodage passwords spéciaux
 
-## 💡 Recommandations
+[Voir le changelog complet](CHANGELOG.md)
 
-- ✅ Sauvegarder la base de données régulièrement
-- ✅ Vérifier le barème IRG annuellement
-- ✅ Verrouiller les pointages après validation
-- ✅ Archiver les rapports mensuels
-- ✅ Tester les calculs sur quelques employés avant le calcul global
+## 🤝 Support
 
-## 📞 Support
+Pour toute question ou problème:
+1. Consultez la [documentation API](http://localhost:8000/docs)
+2. Vérifiez le [CHANGELOG.md](CHANGELOG.md)
+3. Consultez les guides de déploiement
 
-- Documentation API interactive : http://localhost:8000/docs
-- Guide utilisateur : [GUIDE_UTILISATEUR.md](GUIDE_UTILISATEUR.md)
-- Guide d'installation : [INSTALLATION.md](INSTALLATION.md)
+## 📜 Licence
 
-## 📜 Historique des Versions
-
-### v1.1.2 - 13 novembre 2025 ✅ ACTUELLE
-**Corrections finales**
-- ✅ PDF bulletins de paie avec informations entreprise dynamiques
-- ✅ Test connexion DB avec mots de passe spéciaux (!@#$)
-- ✅ Correction erreur 500 création employé (schéma actif)
-- ✅ Suppression warnings React Router v7 (future flags)
-
-📄 [Détails complets](CORRECTIONS_V1.1.2.md)
+Usage interne - Tous droits réservés
 
 ---
 
-### v1.1.1 - 12 novembre 2025
-**Corrections critiques**
-- 🛡️ Protection des données : soft delete avec vérification données liées
-- ✅ Logging des suppressions d'employés corrigé
-- � CORS ouvert pour réseau LAN (allow_origins=['*'])
-- 🔐 Encodage passwords spéciaux pour connexion DB
-- 🐛 Correction erreur frontend paramètres entreprise
-
-📄 [Détails complets](CORRECTIONS_V1.1.1.md)
-
-**⚠️ CHANGEMENT IMPORTANT** : Les employés avec données liées (pointages, salaires, missions, avances, crédits) ne peuvent plus être supprimés définitivement - ils sont désactivés (soft delete).
-
----
-
-### v1.1.0 - 12 novembre 2025
-**Système de logging et branding entreprise**
-- 📝 Système de logging complet (CREATE, UPDATE, DELETE)
-- 🎨 Branding entreprise : logo avec initiales dynamiques
-- 🏢 Paramètres entreprise intégrés dans tous les PDF
-- 🔍 Page de logs avec filtres avancés (module, action, user, dates)
-- 📊 Footer "Powered by AIRBAND" sur tous les écrans et PDF
-
-📄 [Guide complet](AMELIORATIONS_V1.1.md) | [Guide logging](LOGGING_GUIDE.md)
-
----
-
-### v1.0.0 - 11 novembre 2025
-**Première version stable**
-- 👤 Système d'authentification et autorisation JWT
-- 🔒 Rôles utilisateurs (Admin, User)
-- 🗄️ Configuration base de données dynamique
-- ✅ Toutes les fonctionnalités RH opérationnelles
-
-📄 [Détails complets](STATUS.md)
-
----
-
-### Versions précédentes
-- **10 novembre 2025** : Migration pointages numériques (0/1)
-- **9 novembre 2025** : Initial commit - Système RH complet
-
----
-
-## �🎓 Licence
-
-Cette application est développée pour un usage interne de gestion RH.
-
----
-
-**Version actuelle** : 1.1.2  
-**Dernière mise à jour** : 13 novembre 2025  
-**Statut** : ✅ Production Ready  
-**Stack** : FastAPI + React + MariaDB + SQLAlchemy
+**Développé par AIRBAND**  
+**Version** : 1.1.5  
+**Date** : 25 novembre 2025

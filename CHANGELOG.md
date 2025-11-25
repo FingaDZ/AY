@@ -5,6 +5,49 @@ Tous les changements notables de ce projet seront documentés dans ce fichier.
 Le format est basé sur [Keep a Changelog](https://keepachangelog.com/fr/1.0.0/),
 et ce projet adhère à [Semantic Versioning](https://semver.org/lang/fr/).
 
+## [1.1.5] - 2025-11-25 ✅ ACTUELLE
+
+### 🐛 Corrections
+- **Validation Salaire Base** : Fix erreur validation lors de l'édition d'un employé
+  - Conversion explicite `salaire_base` en nombre lors du chargement des données
+  - Résout le problème "Le salaire minimum légal est de 20 000 DA" sur valeurs existantes
+
+### 🧹 Nettoyage
+- **Suppression Fichiers Non Essentiels** : Nettoyage complet du repository
+  - Suppression de 14 guides obsolètes (ANALYSE_G29, CERTIFICATS_GUIDE, etc.)
+  - Suppression fichiers de test (test-mobile.html, test-responsive.html, etc.)
+  - Suppression scripts de déploiement temporaires
+  - Suppression backups SQL et fichiers Excel de test
+
+### 📚 Documentation
+- **README.md** : Nouvelle version complète et concise
+  - Structure du projet claire
+  - Stack technique détaillée
+  - Guide de démarrage rapide
+  - Modules principaux documentés
+- **DEPLOYMENT_WINDOWS.md** : Nouveau guide complet pour Windows 10/11
+  - Installation pas à pas
+  - Configuration en tant que service Windows (NSSM)
+  - Scripts de démarrage automatique
+  - Dépannage et sauvegarde
+- **DEPLOYMENT_LINUX.md** : Guide existant conservé et à jour
+- **INSTALL_UBUNTU_22.04.md** : Guide existant conservé
+
+### 📄 Fichiers Modifiés
+- `frontend/src/pages/Employes/EmployeForm.jsx` - Fix validation salaire
+- `frontend/package.json` - Version 1.1.5
+- `README.md` - Réécriture complète
+- `CHANGELOG.md` - Ajout v1.1.5
+
+### 📄 Fichiers Supprimés
+- 14 guides obsolètes (MD)
+- 6 scripts de test/déploiement (PS1, PY, SH)
+- 3 fichiers de test HTML
+- 2 backups SQL
+- 1 fichier Excel de test
+
+---
+
 ## [1.1.4] - 2025-01-XX 🆕 EN DÉVELOPPEMENT
 
 ### ✨ Nouvelles Fonctionnalités
