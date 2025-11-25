@@ -22,6 +22,7 @@ Système complet de gestion des ressources humaines développé avec FastAPI (ba
 - ✅ **Avances & Crédits** : Gestion financière des employés.
 - ✅ **Missions** : Suivi des ordres de mission.
 - ✅ **Logs & Audit** : Traçabilité des actions critiques.
+- 🆕 **Intégration Attendance** : Synchronisation avec système de pointage biométrique (v1.3.0-beta).
 
 ## 🛠️ Stack Technique
 
@@ -97,6 +98,19 @@ cd /opt/ay-hr
 sudo ./update.sh
 ```
 
+### Upgrade vers v1.3.0-beta (Attendance Integration)
+
+Pour upgrader depuis v1.2.x vers v1.3.0-beta :
+
+```bash
+cd /opt/ay-hr
+git pull origin main
+chmod +x upgrade.sh
+sudo ./upgrade.sh
+```
+
+Voir [DEPLOYMENT_V1.3.0-BETA.md](DEPLOYMENT_V1.3.0-BETA.md) pour les détails.
+
 ### Installation Locale (Développement)
 
 #### 1. Backend
@@ -145,6 +159,10 @@ Créer un fichier `.env` dans le dossier `backend`:
 DATABASE_URL=mysql+pymysql://user:password@localhost/ay_hr
 SECRET_KEY=your-secret-key-here
 CORS_ORIGINS=http://localhost:3000
+
+# Attendance Integration (v1.3.0+)
+ATTENDANCE_API_URL=http://192.168.20.56:8000/api
+ATTENDANCE_API_TIMEOUT=30
 ```
 
 ### Variables d'Environnement
@@ -155,6 +173,8 @@ CORS_ORIGINS=http://localhost:3000
 | `SECRET_KEY` | Clé secrète JWT | - |
 | `CORS_ORIGINS` | Origines CORS autorisées | localhost:3000 |
 | `DEBUG` | Mode debug | False |
+| `ATTENDANCE_API_URL` | URL API Attendance (v1.3.0+) | http://192.168.20.56:8000/api |
+| `ATTENDANCE_API_TIMEOUT` | Timeout API Attendance (v1.3.0+) | 30 |
 
 ## 📊 État du Système
 
@@ -175,22 +195,54 @@ CORS_ORIGINS=http://localhost:3000
 
 ## 📝 Changelog
 
-### v1.2.2 - 25 novembre 2025
-- 🐛 Fix: Correction structure README.md
-- ⬆️ Bump: Version v1.2.2
+### v1.3.0-beta - 25 novembre 2025 ✨ ACTUELLE
+- 🔗 **Intégration Attendance** : Backend complet (sync employés, import logs, gestion conflits)
+- 🗄️ **Database** : 3 nouvelles tables + colonne heures_supplementaires
+- 🚀 **API** : 8 nouveaux endpoints pour l'intégration
+- 📚 **Docs** : Guides complets (déploiement, frontend, intégration)
+- 🔧 **Scripts** : upgrade.sh pour migration automatique
 
-### v1.2.1 - 25 novembre 2025
-- 🐛 Fix: Erreur de compilation (import dupliqué)
-- 📚 Docs: Mise à jour guides déploiement
+### v1.2.4 - 25 novembre 2025
+- ✨ **Gestion Utilisateurs** : Restauration du module Admin
+- 📄 **Documentation** : Analyse système Attendance
+- 🔧 **Scripts** : install.sh et update.sh automatisés
 
 [Voir le changelog complet](CHANGELOG.md)
+
+## 🔗 Intégration Attendance
+
+### Fonctionnalités (v1.3.0-beta)
+
+- ✅ **Sync Employés** : HR → Attendance (nom, poste, PIN)
+- ✅ **Import Pointages** : Attendance → HR (conversion minutes → jours)
+- ✅ **Heures Supplémentaires** : Calcul automatique (>8h/jour)
+- ✅ **Gestion Conflits** : Détection et résolution manuelle
+- ✅ **Mapping Intelligent** : Par numéro sécu sociale ou nom+prénom+date
+
+### Documentation
+
+- [ATTENDANCE_INTEGRATION.md](ATTENDANCE_INTEGRATION.md) - Stratégie d'intégration
+- [ATTENDANCE_FRONTEND_GUIDE.md](ATTENDANCE_FRONTEND_GUIDE.md) - Guide implémentation UI
+- [DEPLOYMENT_V1.3.0-BETA.md](DEPLOYMENT_V1.3.0-BETA.md) - Guide déploiement
+
+### API Endpoints
+
+Accédez à la documentation interactive : `http://192.168.20.53:8000/docs`
+
+Section **"Attendance Integration"** :
+- `POST /sync-employee` - Synchroniser un employé
+- `POST /sync-all-employees` - Synchroniser tous les employés
+- `POST /import-logs` - Importer les pointages
+- `GET /conflicts` - Lister les conflits
+- `POST /conflicts/{id}/resolve` - Résoudre un conflit
 
 ## 🤝 Support
 
 Pour toute question ou problème:
-1. Consultez la [documentation API](http://localhost:8000/docs)
+1. Consultez la [documentation API](http://192.168.20.53:8000/docs)
 2. Vérifiez le [CHANGELOG.md](CHANGELOG.md)
 3. Consultez les guides de déploiement
+4. Intégration Attendance : voir [ATTENDANCE_INTEGRATION.md](ATTENDANCE_INTEGRATION.md)
 
 ## 📜 Licence
 
@@ -199,5 +251,5 @@ Usage interne - Tous droits réservés
 ---
 
 **Développé par AIRBAND**  
-**Version** : 1.2.4  
+**Version** : 1.3.0-beta  
 **Date** : 25 novembre 2025
