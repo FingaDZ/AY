@@ -83,5 +83,15 @@ function LoginPage() {
             className="w-full"
           >
             {loading ? 'Connexion...' : 'Se connecter'}
+          </Button>
+        </form>
 
-            export default LoginPage;
+        <div className="mt-6 text-center">
+          <div className="text-xs text-gray-400">Version 1.3.0</div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+export default LoginPage;
