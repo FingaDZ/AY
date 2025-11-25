@@ -1,10 +1,10 @@
 # HR System
 
-[![Version](https://img.shields.io/badge/version-1.2.3-blue.svg)](https://github.com/FingaDZ/AY/releases/tag/v1.2.3)
+[![Version](https://img.shields.io/badge/version-1.2.4-blue.svg)](https://github.com/FingaDZ/AY/releases/tag/v1.2.4)
 [![Status](https://img.shields.io/badge/status-stable-green.svg)](https://github.com/FingaDZ/AY)
 [![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20Linux-lightgrey.svg)]()
 
-> **Version actuelle** : 1.2.3  
+> **Version actuelle** : 1.2.4  
 > **Dernière mise à jour** : 25 novembre 2025  
 > **Statut** : ✅ Production Ready
 
@@ -160,8 +160,8 @@ CORS_ORIGINS=http://localhost:3000
 
 | Module | Version | Statut | Dernière Mise à Jour |
 |--------|---------|--------|----------------------|
-| **Frontend** | v1.2.3 | ✅ Stable | 25 Nov 2025 |
-| **Backend** | v1.2.3 | ✅ Stable | 25 Nov 2025 |
+| **Frontend** | v1.2.4 | ✅ Stable | 25 Nov 2025 |
+| **Backend** | v1.2.4 | ✅ Stable | 25 Nov 2025 |
 | **Base de Données** | MariaDB | ✅ Connecté | 25 Nov 2025 |
 
 ## 🔐 Sécurité
@@ -199,5 +199,5 @@ Usage interne - Tous droits réservés
 ---
 
 **Développé par AIRBAND**  
-**Version** : 1.2.3  
+**Version** : 1.2.4  
 **Date** : 25 novembre 2025

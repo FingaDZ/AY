@@ -479,4 +479,4 @@ For issues or questions:
 ---
 
 **Last Updated**: November 25, 2025  
-**Version**: 1.2.3
+**Version**: 1.2.4

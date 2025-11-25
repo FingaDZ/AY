@@ -5,7 +5,21 @@ Tous les changements notables de ce projet seront documentés dans ce fichier.
 Le format est basé sur [Keep a Changelog](https://keepachangelog.com/fr/1.0.0/),
 et ce projet adhère à [Semantic Versioning](https://semver.org/lang/fr/).
 
-## [1.2.3] - 2025-11-25 ✅ ACTUELLE
+## [1.2.4] - 2025-11-25 ✅ ACTUELLE
+
+### ✨ Fonctionnalités
+- **Gestion Utilisateurs** : Restauration du module de gestion des utilisateurs (Admin)
+  - Ajout du lien "Utilisateurs" dans la barre latérale
+- **Intégration Attendance** : Analyse et documentation de l'intégration
+  - Création de `ATTENDANCE_INTEGRATION.md`
+
+### 📄 Fichiers Modifiés
+- `frontend/src/components/Sidebar.jsx` - Ajout lien Utilisateurs
+- `ATTENDANCE_INTEGRATION.md` - [NOUVEAU] Documentation technique
+
+---
+
+## [1.2.3] - 2025-11-25
 
 ### 🚀 Automatisation
 - **Scripts** : Ajout de scripts d'automatisation pour simplifier la gestion du serveur
