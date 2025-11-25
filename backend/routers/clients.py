@@ -14,6 +14,7 @@ from schemas import (
 )
 from services.pdf_generator import PDFGenerator
 from models import Parametres
+from services.logging_service import log_action, clean_data_for_logging, ActionType
 
 router = APIRouter(prefix="/clients", tags=["Clients"])
 
@@ -25,6 +26,15 @@ def create_client(client: ClientCreate, db: Session = Depends(get_db)):
     db.add(db_client)
     db.commit()
     db.refresh(db_client)
+    
+    # Log action
+    log_action(
+        db=db,
+        module="clients",
+        action=ActionType.CREATE,
+        description=f"Création client #{db_client.id} - {client.prenom} {client.nom}",
+        new_data=clean_data_for_logging(db_client)
+    )
     
     return db_client
 
@@ -81,6 +91,15 @@ def update_client(
     for field, value in update_data.items():
         setattr(client, field, value)
     
+    # Log action
+    log_action(
+        db=db,
+        module="clients",
+        action=ActionType.UPDATE,
+        description=f"Modification client #{client_id}",
+        new_data=clean_data_for_logging(client)
+    )
+    
     db.commit()
     db.refresh(client)
     
@@ -94,6 +113,15 @@ def delete_client(client_id: int, db: Session = Depends(get_db)):
     
     if not client:
         raise HTTPException(status_code=404, detail="Client non trouvé")
+    
+    # Log action before delete
+    log_action(
+        db=db,
+        module="clients",
+        action=ActionType.DELETE,
+        description=f"Suppression client #{client_id}",
+        old_data=clean_data_for_logging(client)
+    )
     
     db.delete(client)
     db.commit()

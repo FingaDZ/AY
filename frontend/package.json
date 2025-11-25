@@ -1,6 +1,6 @@
 {
   "name": "ay-hr-frontend",
-  "version": "1.1.6",
+  "version": "1.1.7",
   "type": "module",
   "description": "Frontend React pour AY HR Management",
   "scripts": {

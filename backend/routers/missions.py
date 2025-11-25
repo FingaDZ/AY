@@ -17,6 +17,7 @@ from schemas import (
     ParametreResponse,
 )
 from services.pdf_generator import PDFGenerator
+from services.logging_service import log_action, clean_data_for_logging, ActionType
 
 router = APIRouter(prefix="/missions", tags=["Missions"])
 pdf_generator = PDFGenerator()
@@ -75,6 +76,15 @@ def create_mission(mission: MissionCreate, db: Session = Depends(get_db)):
     db.commit()
     db.refresh(db_mission)
     
+    # Log action
+    log_action(
+        db=db,
+        module="missions",
+        action=ActionType.CREATE,
+        description=f"Création mission #{db_mission.id} pour {chauffeur.prenom} {chauffeur.nom} - Client: {client.nom}",
+        new_data=clean_data_for_logging(db_mission)
+    )
+    
     return db_mission
 
 @router.put("/{mission_id}", response_model=MissionResponse)
@@ -112,6 +122,15 @@ def update_mission(
     db_mission.distance = distance
     db_mission.prime_calculee = prime_calculee
     
+    # Log action
+    log_action(
+        db=db,
+        module="missions",
+        action=ActionType.UPDATE,
+        description=f"Modification mission #{mission_id}",
+        new_data=clean_data_for_logging(db_mission)
+    )
+    
     db.commit()
     db.refresh(db_mission)
     
@@ -127,6 +146,15 @@ def delete_mission(
     db_mission = db.query(Mission).filter(Mission.id == mission_id).first()
     if not db_mission:
         raise HTTPException(status_code=404, detail="Mission non trouvée")
+    
+    # Log action before delete
+    log_action(
+        db=db,
+        module="missions",
+        action=ActionType.DELETE,
+        description=f"Suppression mission #{mission_id}",
+        old_data=clean_data_for_logging(db_mission)
+    )
     
     db.delete(db_mission)
     db.commit()

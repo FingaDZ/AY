@@ -5,7 +5,40 @@ Tous les changements notables de ce projet seront documentés dans ce fichier.
 Le format est basé sur [Keep a Changelog](https://keepachangelog.com/fr/1.0.0/),
 et ce projet adhère à [Semantic Versioning](https://semver.org/lang/fr/).
 
-## [1.1.6] - 2025-11-25 ✅ ACTUELLE
+## [1.1.7] - 2025-11-25 ✅ ACTUELLE
+
+### 🌐 Corrections Réseau
+- **Accès WAN** : Fix erreur 403 sur domaine externe (hgd09pzcrcm.sn.mynetname.net)
+  - Ajout configuration CORS pour le domaine externe dans backend/config.py
+  - Note: Vite en mode dev n'a pas besoin de allowedHosts (géré par le serveur)
+
+### 📝 Logging Complet
+- **Ajout Logging Backend** : Implémentation logging pour 4 modules
+  - ✅ `missions.py` - Logging CREATE, UPDATE, DELETE
+  - ✅ `avances.py` - Logging CREATE, UPDATE, DELETE
+  - ✅ `credits.py` - Logging CREATE, UPDATE, DELETE
+  - ✅ `clients.py` - Logging CREATE, UPDATE, DELETE
+  - Tous les modules principaux ont maintenant un logging complet sauf pointages et salaires (prévu v1.2.0)
+
+### 🎨 Améliorations
+- **Version Display** : Mise à jour version 1.1.7 partout
+  - Backend config.py : APP_VERSION = "1.1.7"
+  - Frontend package.json, Sidebar, Layout, LoginPage
+
+### 📄 Fichiers Modifiés
+- `backend/config.py` - CORS + version 1.1.7
+- `backend/routers/missions.py` - Ajout logging
+- `backend/routers/avances.py` - Ajout logging
+- `backend/routers/credits.py` - Ajout logging
+- `backend/routers/clients.py` - Ajout logging
+- `frontend/package.json` - Version 1.1.7
+- `frontend/src/components/Sidebar.jsx` - Version 1.1.7
+- `frontend/src/components/Layout.jsx` - Version 1.1.7
+- `frontend/src/pages/Login/LoginPage.jsx` - Version 1.1.7
+
+---
+
+## [1.1.6] - 2025-11-25
 
 ### 🐛 Corrections
 - **Sidebar Scrolling** : Fix sidebar ne défilant pas pour accéder aux éléments en bas

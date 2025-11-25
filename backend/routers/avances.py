@@ -16,6 +16,7 @@ from schemas import (
     AvanceTotalMensuel,
 )
 from services.pdf_generator import PDFGenerator
+from services.logging_service import log_action, clean_data_for_logging, ActionType
 
 router = APIRouter(prefix="/avances", tags=["Avances"])
 
@@ -54,6 +55,15 @@ def create_avance(avance: AvanceCreate, db: Session = Depends(get_db)):
     db.add(db_avance)
     db.commit()
     db.refresh(db_avance)
+    
+    # Log action
+    log_action(
+        db=db,
+        module="avances",
+        action=ActionType.CREATE,
+        description=f"Création avance #{db_avance.id} pour {employe.prenom} {employe.nom} - Montant: {avance.montant} DA",
+        new_data=clean_data_for_logging(db_avance)
+    )
     
     return db_avance
 
@@ -194,6 +204,15 @@ def update_avance(
     for field, value in update_data.items():
         setattr(avance, field, value)
     
+    # Log action
+    log_action(
+        db=db,
+        module="avances",
+        action=ActionType.UPDATE,
+        description=f"Modification avance #{avance_id}",
+        new_data=clean_data_for_logging(avance)
+    )
+    
     db.commit()
     db.refresh(avance)
     
@@ -207,6 +226,15 @@ def delete_avance(avance_id: int, db: Session = Depends(get_db)):
     
     if not avance:
         raise HTTPException(status_code=404, detail="Avance non trouvée")
+    
+    # Log action before delete
+    log_action(
+        db=db,
+        module="avances",
+        action=ActionType.DELETE,
+        description=f"Suppression avance #{avance_id}",
+        old_data=clean_data_for_logging(avance)
+    )
     
     db.delete(avance)
     db.commit()

@@ -17,6 +17,7 @@ from schemas import (
     ProrogationCreditResponse,
 )
 from services.pdf_generator import PDFGenerator
+from services.logging_service import log_action, clean_data_for_logging, ActionType
 
 router = APIRouter(prefix="/credits", tags=["Crédits"])
 
@@ -45,6 +46,15 @@ def create_credit(credit: CreditCreate, db: Session = Depends(get_db)):
     db.add(db_credit)
     db.commit()
     db.refresh(db_credit)
+    
+    # Log action
+    log_action(
+        db=db,
+        module="credits",
+        action=ActionType.CREATE,
+        description=f"Création crédit #{db_credit.id} pour {employe.prenom} {employe.nom} - Montant: {credit.montant_total} DA",
+        new_data=clean_data_for_logging(db_credit)
+    )
     
     return db_credit
 
@@ -238,6 +248,15 @@ def update_credit(
         # Recalculer la mensualité
         credit.montant_mensualite = credit.montant_total / Decimal(credit.nombre_mensualites)
     
+    # Log action
+    log_action(
+        db=db,
+        module="credits",
+        action=ActionType.UPDATE,
+        description=f"Modification crédit #{credit_id}",
+        new_data=clean_data_for_logging(credit)
+    )
+    
     db.commit()
     db.refresh(credit)
     
@@ -348,6 +367,15 @@ def delete_credit(credit_id: int, db: Session = Depends(get_db)):
     
     if not credit:
         raise HTTPException(status_code=404, detail="Crédit non trouvé")
+    
+    # Log action before delete
+    log_action(
+        db=db,
+        module="credits",
+        action=ActionType.DELETE,
+        description=f"Suppression crédit #{credit_id}",
+        old_data=clean_data_for_logging(credit)
+    )
     
     db.delete(credit)
     db.commit()

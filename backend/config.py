@@ -7,11 +7,11 @@ class Settings(BaseSettings):
     
     # Application
     APP_NAME: str = "AIRBAND HR"
-    APP_VERSION: str = "2.0.0"
+    APP_VERSION: str = "1.1.7"
     DEBUG: bool = True
     
     # CORS
-    CORS_ORIGINS: str = "http://localhost:3000,http://localhost:5173"
+    CORS_ORIGINS: str = "http://localhost:3000,http://localhost:5173,http://192.168.20.53:3000,https://hgd09pzcrcm.sn.mynetname.net"
     
     # Security
     SECRET_KEY: str
