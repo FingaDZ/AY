@@ -45,11 +45,17 @@ CURRENT_TAG=$(git describe --tags 2>/dev/null || echo "unknown")
 echo "📌 Version actuelle: $CURRENT_TAG"
 echo ""
 
-# Étape 4: Installation dépendances backend
+# Étape 4: Installation dépendances backend (sans venv si non existant)
 echo "4️⃣  Installation dépendances backend..."
 cd "$PROJECT_DIR/backend"
-source venv/bin/activate
-pip install -r requirements.txt --quiet
+if [ -d "venv" ]; then
+  echo "   Using virtual environment..."
+  source venv/bin/activate
+  pip install -r requirements.txt --quiet
+else
+  echo "   Using system Python..."
+  pip3 install -r requirements.txt --quiet
+fi
 echo "✅ Dépendances backend installées"
 echo ""
 
