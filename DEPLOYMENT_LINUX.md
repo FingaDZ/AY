@@ -450,4 +450,4 @@ For issues or questions:
 ---
 
 **Last Updated**: November 25, 2025  
-**Version**: 1.2.1
+**Version**: 1.2.2
