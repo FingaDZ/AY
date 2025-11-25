@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react';
 import { Table, Button, Space, Input, Select, Tag, message, Modal, Tooltip, Avatar, Card, Typography } from 'antd';
-import { PlusOutlined, EditOutlined, DeleteOutlined, SearchOutlined, FilePdfOutlined, ExclamationCircleOutlined, CheckCircleOutlined, FileTextOutlined, SafetyCertificateOutlined, FileProtectOutlined, UserOutlined } from '@ant-design/icons';
+import { PlusOutlined, EditOutlined, DeleteOutlined, SearchOutlined, FilePdfOutlined, ExclamationCircleOutlined, CheckCircleOutlined, FileTextOutlined, SafetyCertificateOutlined, FileProtectOutlined, UserOutlined, CloudSyncOutlined } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
-import { employeService } from '../../services';
+import { employeService, attendanceService } from '../../services';
 import { format } from 'date-fns';
 import ResponsiveTable from '../../components/Common/ResponsiveTable';
 import useResponsive from '../../hooks/useResponsive';
@@ -15,6 +15,7 @@ function EmployesList() {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [employes, setEmployes] = useState([]);
+  const [syncingAll, setSyncingAll] = useState(false);
   const [filters, setFilters] = useState({
     statut: 'Actif',
     recherche: '',
@@ -31,7 +32,7 @@ function EmployesList() {
       const params = {};
       if (filters.statut) params.statut = filters.statut;
       if (filters.recherche) params.search = filters.recherche;
-      
+
       // Inclure les inactifs si le filtre "Inactif" ou "Tous" est sélectionné
       if (filters.statut === 'Inactif' || filters.statut === '') {
         params.inclure_inactifs = true;
@@ -76,7 +77,7 @@ function EmployesList() {
       } else {
         // L'employé a des enregistrements - afficher modal avec option de désactivation
         const hasPointages = has_data.pointages;
-        
+
         let detailsMessage = `${employe.nom} ${employe.prenom} possède des pointages enregistrés dans la base de données.\n\n`;
         detailsMessage += 'Cet employé ne peut pas être supprimé pour préserver l\'intégrité du système.';
 
@@ -157,9 +158,9 @@ function EmployesList() {
       const now = new Date();
       const annee = now.getFullYear();
       const mois = now.getMonth() + 1;
-      
+
       const response = await employeService.getRapportActifs(annee, mois);
-      
+
       // Télécharger le PDF
       const url = window.URL.createObjectURL(new Blob([response.data]));
       const link = document.createElement('a');
@@ -168,7 +169,7 @@ function EmployesList() {
       document.body.appendChild(link);
       link.click();
       link.remove();
-      
+
       message.success('Rapport généré avec succès');
     } catch (error) {
       message.error('Erreur lors de la génération du rapport');
@@ -182,7 +183,7 @@ function EmployesList() {
     try {
       setLoading(true);
       const response = await employeService.generateAttestation(employe.id);
-      
+
       // Télécharger le PDF
       const url = window.URL.createObjectURL(new Blob([response.data]));
       const link = document.createElement('a');
@@ -193,7 +194,7 @@ function EmployesList() {
       document.body.appendChild(link);
       link.click();
       link.remove();
-      
+
       message.success('Attestation de travail générée avec succès');
     } catch (error) {
       const errorMsg = error.response?.data?.detail || 'Erreur lors de la génération de l\'attestation';
@@ -208,7 +209,7 @@ function EmployesList() {
     try {
       setLoading(true);
       const response = await employeService.generateCertificat(employe.id);
-      
+
       // Télécharger le PDF
       const url = window.URL.createObjectURL(new Blob([response.data]));
       const link = document.createElement('a');
@@ -219,7 +220,7 @@ function EmployesList() {
       document.body.appendChild(link);
       link.click();
       link.remove();
-      
+
       message.success('Certificat de travail généré avec succès');
     } catch (error) {
       const errorMsg = error.response?.data?.detail || 'Erreur lors de la génération du certificat';
@@ -234,7 +235,7 @@ function EmployesList() {
     try {
       setLoading(true);
       const response = await employeService.generateContrat(employe.id);
-      
+
       // Télécharger le PDF
       const url = window.URL.createObjectURL(new Blob([response.data]));
       const link = document.createElement('a');
@@ -245,7 +246,7 @@ function EmployesList() {
       document.body.appendChild(link);
       link.click();
       link.remove();
-      
+
       message.success('Contrat de travail généré avec succès');
     } catch (error) {
       const errorMsg = error.response?.data?.detail || 'Erreur lors de la génération du contrat';
@@ -350,7 +351,7 @@ function EmployesList() {
               {isMobile && 'Modifier'}
             </Button>
           </Tooltip>
-          
+
           {record.actif ? (
             <>
               <Tooltip title="Attestation">
@@ -419,7 +420,7 @@ function EmployesList() {
 
   // Rendu mobile personnalisé
   const mobileRenderItem = (employe) => (
-    <Card 
+    <Card
       size="small"
       style={{ marginBottom: 12 }}
       hoverable
@@ -508,15 +509,36 @@ function EmployesList() {
 
   return (
     <div>
-      <div style={{ 
-        display: 'flex', 
+      <div style={{
+        display: 'flex',
         flexDirection: isMobile ? 'column' : 'row',
-        justifyContent: 'space-between', 
+        justifyContent: 'space-between',
         marginBottom: 16,
         gap: isMobile ? 12 : 0
       }}>
         <h2 style={{ margin: 0 }}>Liste des Employés</h2>
         <Space direction={isMobile ? 'vertical' : 'horizontal'} style={{ width: isMobile ? '100%' : 'auto' }}>
+          <Button
+            icon={<CloudSyncOutlined />}
+            onClick={async () => {
+              try {
+                setSyncingAll(true);
+                const response = await attendanceService.syncAllEmployees();
+                message.success(`${response.data.synced} employés synchronisés`);
+                if (response.data.not_found > 0) {
+                  message.info(`${response.data.not_found} non trouvés`);
+                }
+              } catch (error) {
+                message.error('Erreur sync');
+              } finally {
+                setSyncingAll(false);
+              }
+            }}
+            loading={syncingAll}
+            block={isMobile}
+          >
+            Sync Attendance
+          </Button>
           <Button
             icon={<FilePdfOutlined />}
             onClick={handleGenererRapport}
@@ -536,9 +558,9 @@ function EmployesList() {
         </Space>
       </div>
 
-      <Space 
+      <Space
         direction={isMobile ? 'vertical' : 'horizontal'}
-        style={{ marginBottom: 16, width: isMobile ? '100%' : 'auto' }} 
+        style={{ marginBottom: 16, width: isMobile ? '100%' : 'auto' }}
         size="middle"
       >
         <Search
