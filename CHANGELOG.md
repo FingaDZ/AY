@@ -5,7 +5,21 @@ Tous les changements notables de ce projet seront documentés dans ce fichier.
 Le format est basé sur [Keep a Changelog](https://keepachangelog.com/fr/1.0.0/),
 et ce projet adhère à [Semantic Versioning](https://semver.org/lang/fr/).
 
-## [1.1.10] - 2025-11-25 ✅ ACTUELLE
+## [1.1.11] - 2025-11-25 ✅ ACTUELLE
+
+### 🐛 Corrections Critiques
+- **Pages Blanches** : Fix affichage du contenu
+  - Remplacement de `<Outlet />` par `{children}` dans `Layout.jsx` car le routage est géré dans `App.jsx` via composition et non par routes imbriquées.
+
+### 📄 Fichiers Modifiés
+- `frontend/src/components/Layout.jsx` - Fix Outlet -> children + Version 1.1.11
+- `frontend/package.json` - Version 1.1.11
+- `frontend/src/components/Sidebar.jsx` - Version 1.1.11
+- `frontend/src/pages/Login/LoginPage.jsx` - Version 1.1.11
+
+---
+
+## [1.1.10] - 2025-11-25
 
 ### 🐛 Corrections Critiques
 - **Build Error** : Fix erreur de compilation due à un import dupliqué dans `Sidebar.jsx`

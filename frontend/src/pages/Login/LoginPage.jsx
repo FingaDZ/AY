@@ -88,7 +88,7 @@ function LoginPage() {
 
         <div className="mt-6 text-center">
           <div className="text-xs text-gray-500 mb-1">
-            © 2025 HR System - v1.1.10
+            © 2025 HR System - v1.1.11
           </div>
           <div className="text-xs text-gray-400">
             Powered by <span className="font-semibold text-gray-600">AIRBAND</span>

@@ -1,9 +1,8 @@
 import React, { useState } from 'react';
 import Sidebar from './Sidebar';
-import { Outlet } from 'react-router-dom';
 import { Menu } from 'lucide-react';
 
-const Layout = () => {
+const Layout = ({ children }) => {
     const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
     return (
@@ -24,14 +23,14 @@ const Layout = () => {
 
                 {/* Main Content */}
                 <main className="flex-1 overflow-y-auto bg-gray-50 p-4 md:p-8">
-                    <Outlet />
+                    {children}
                 </main>
 
                 {/* Footer */}
                 <footer className="border-t border-gray-200 bg-white px-4 py-3 shrink-0">
                     <div className="flex flex-col md:flex-row items-center justify-between text-xs text-gray-500">
                         <div className="mb-1 md:mb-0">
-                            © 2025 HR System - v1.1.10
+                            © 2025 HR System - v1.1.11
                         </div>
                         <div className="text-gray-400">
                             Powered by <span className="font-semibold text-gray-600">AIRBAND</span>
