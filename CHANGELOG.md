@@ -5,7 +5,32 @@ Tous les changements notables de ce projet seront documentés dans ce fichier.
 Le format est basé sur [Keep a Changelog](https://keepachangelog.com/fr/1.0.0/),
 et ce projet adhère à [Semantic Versioning](https://semver.org/lang/fr/).
 
-## [1.1.7] - 2025-11-25 ✅ ACTUELLE
+## [1.1.8] - 2025-11-25 ✅ ACTUELLE
+
+### 🐛 Corrections Critiques
+- **Layout & Affichage** : Fix structure Layout pour garantir l'affichage du contenu
+  - Simplification de la structure Flexbox
+  - Correction du scrolling du contenu principal
+- **Sidebar Scrolling** : Fix définitif du défilement de la barre latérale
+  - Structure `flex-col` avec `h-full`
+  - Scrollbar personnalisée pour le menu de navigation
+- **CORS & Réseau** : Configuration permissive pour déploiement LAN/WAN
+  - `CORS_ORIGINS="*"` pour autoriser toutes les origines (fix accès WAN)
+
+### 🎨 Rebranding
+- **Nom du Système** : Changement de "AY HR System" vers "HR System"
+  - Mis à jour dans Sidebar, Layout, Login Page, Config Backend
+
+### 📄 Fichiers Modifiés
+- `frontend/src/components/Layout.jsx` - Fix structure + Branding
+- `frontend/src/components/Sidebar.jsx` - Fix scrolling + Branding
+- `frontend/src/pages/Login/LoginPage.jsx` - Branding
+- `backend/config.py` - CORS "*" + Branding + Version 1.1.8
+- `frontend/package.json` - Version 1.1.8
+
+---
+
+## [1.1.7] - 2025-11-25
 
 ### 🌐 Corrections Réseau
 - **Accès WAN** : Fix erreur 403 sur domaine externe (hgd09pzcrcm.sn.mynetname.net)

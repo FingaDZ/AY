@@ -30,7 +30,7 @@ function LoginPage() {
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-500 to-purple-600 p-4">
       <div className="bg-white rounded-xl shadow-2xl p-8 w-full max-w-md">
         <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-gray-800 mb-2">AY HR System</h1>
+          <h1 className="text-3xl font-bold text-gray-800 mb-2">HR System</h1>
           <p className="text-gray-500">Connexion au système</p>
         </div>
 
@@ -88,7 +88,7 @@ function LoginPage() {
 
         <div className="mt-6 text-center">
           <div className="text-xs text-gray-500 mb-1">
-            © 2025 AY HR System - v1.1.7
+            © 2025 HR System - v1.1.8
           </div>
           <div className="text-xs text-gray-400">
             Powered by <span className="font-semibold text-gray-600">AIRBAND</span>

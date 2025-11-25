@@ -38,12 +38,12 @@ const Sidebar = ({ isOpen, onClose }) => {
 
             {/* Sidebar */}
             <div className={`
-                fixed inset-y-0 left-0 z-30 w-64 bg-gray-900 text-white transform transition-transform duration-300 ease-in-out
+                fixed inset-y-0 left-0 z-30 w-64 bg-gray-900 text-white transform transition-transform duration-300 ease-in-out flex flex-col h-full
                 md:relative md:translate-x-0
                 ${isOpen ? 'translate-x-0' : '-translate-x-full'}
             `}>
-                <div className="flex items-center justify-between p-6">
-                    <div className="text-2xl font-bold text-blue-400">AY HR</div>
+                <div className="flex items-center justify-between p-6 shrink-0">
+                    <div className="text-2xl font-bold text-blue-400">HR System</div>
                     {/* Close button for mobile */}
                     <button
                         onClick={onClose}
@@ -55,7 +55,7 @@ const Sidebar = ({ isOpen, onClose }) => {
                     </button>
                 </div>
 
-                <nav className="flex-1 px-4 space-y-2 mt-4 overflow-y-auto">
+                <nav className="flex-1 px-4 space-y-2 mt-4 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-700 scrollbar-track-gray-900">
                     {links.map((link) => {
                         const Icon = link.icon;
                         const isActive = location.pathname === link.to;
@@ -67,19 +67,19 @@ const Sidebar = ({ isOpen, onClose }) => {
                                 className={`flex items-center px-4 py-3 rounded-lg transition-colors ${isActive ? 'bg-blue-600 text-white' : 'text-gray-400 hover:bg-gray-800 hover:text-white'
                                     }`}
                             >
-                                <Icon className="w-5 h-5 mr-3" />
+                                <Icon className="w-5 h-5 mr-3 shrink-0" />
                                 {link.label}
                             </Link>
                         );
                     })}
                 </nav>
-                <div className="p-4 border-t border-gray-800 text-xs text-gray-500 flex flex-col items-center space-y-1">
+                <div className="p-4 border-t border-gray-800 text-xs text-gray-500 flex flex-col items-center space-y-1 shrink-0">
                     <div className="flex justify-between w-full">
-                        <span>v1.1.7</span>
+                        <span>v1.1.8</span>
                         <span>© 2025</span>
                     </div>
                     <div className="text-blue-400 font-semibold tracking-wider pt-2 opacity-80">
-                        AY HR System
+                        HR System
                     </div>
                 </div>
             </div>
