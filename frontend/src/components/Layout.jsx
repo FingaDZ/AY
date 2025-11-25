@@ -27,6 +27,18 @@ const Layout = () => {
                     <div className="p-4 md:p-8">
                         <Outlet />
                     </div>
+
+                    {/* Footer */}
+                    <div className="border-t border-gray-200 bg-white px-4 py-3">
+                        <div className="flex flex-col md:flex-row items-center justify-between text-xs text-gray-500">
+                            <div className="mb-1 md:mb-0">
+                                © 2025 AY HR System - v1.1.5
+                            </div>
+                            <div className="text-gray-400">
+                                Powered by <span className="font-semibold text-gray-600">AIRBAND</span>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>

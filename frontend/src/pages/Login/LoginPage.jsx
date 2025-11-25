@@ -86,8 +86,13 @@ function LoginPage() {
           </Button>
         </form>
 
-        <div className="mt-6 text-center text-xs text-gray-500">
-          © 2025 AY HR System - v2.0
+        <div className="mt-6 text-center">
+          <div className="text-xs text-gray-500 mb-1">
+            © 2025 AY HR System - v1.1.5
+          </div>
+          <div className="text-xs text-gray-400">
+            Powered by <span className="font-semibold text-gray-600">AIRBAND</span>
+          </div>
         </div>
       </div>
     </div>
