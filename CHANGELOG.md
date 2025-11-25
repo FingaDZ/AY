@@ -5,6 +5,31 @@ Tous les changements notables de ce projet seront documentés dans ce fichier.
 Le format est basé sur [Keep a Changelog](https://keepachangelog.com/fr/1.0.0/),
 et ce projet adhère à [Semantic Versioning](https://semver.org/lang/fr/).
 
+## [1.3.0] - 2025-11-25
+
+### ✨ Ajouté
+- **Intégration Attendance** : Synchronisation complète avec système de pointage biométrique
+  - Backend : 8 endpoints API REST pour sync employés, import logs, gestion conflits
+  - Frontend : 3 pages (Import, Conflits, Service API)
+  - Database : 3 nouvelles tables + colonne heures_supplementaires
+- **Sync Employés** : HR → Attendance (nom, poste, PIN)
+- **Import Pointages** : Attendance → HR avec conversion minutes → jours
+- **Heures Supplémentaires** : Calcul automatique (>8h/jour)
+- **Gestion Conflits** : Détection et résolution manuelle des conflits d'import
+- **Mapping Intelligent** : Par numéro sécu sociale ou nom+prénom+date
+
+### 📚 Documentation
+- Guide stratégie : ATTENDANCE_INTEGRATION.md
+- Guide frontend : ATTENDANCE_FRONTEND_GUIDE.md
+- Guide déploiement : DEPLOYMENT_V1.3.0-BETA.md
+- Instructions sync button : SYNC_BUTTON_INSTRUCTIONS.md
+- Release summary : RELEASE_v1.3.0.md
+
+### 🔧 Scripts
+- upgrade.sh : Migration automatique v1.2.x → v1.3.0
+
+---
+
 ## [1.3.0-beta] - 2025-11-25 ✅ ACTUELLE
 
 ### 🔗 Intégration Attendance (Backend)

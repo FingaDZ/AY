@@ -83,20 +83,5 @@ function LoginPage() {
             className="w-full"
           >
             {loading ? 'Connexion...' : 'Se connecter'}
-          </Button>
-        </form>
 
-        <div className="mt-6 text-center">
-          <div className="text-xs text-gray-500 mb-1">
-            © 2025 HR System - v1.2.4
-          </div>
-          <div className="text-xs text-gray-400">
-            Powered by <span className="font-semibold text-gray-600">AIRBAND</span>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-export default LoginPage;
+            export default LoginPage;

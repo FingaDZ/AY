@@ -26,20 +26,7 @@ const Layout = ({ children }) => {
                     {children}
                 </main>
 
-                {/* Footer */}
-                <footer className="border-t border-gray-200 bg-white px-4 py-3 shrink-0">
-                    <div className="flex flex-col md:flex-row items-center justify-between text-xs text-gray-500">
-                        <div className="mb-1 md:mb-0">
-                            © 2025 HR System - v1.2.4
-                        </div>
-                        <div className="text-gray-400">
-                            Powered by <span className="font-semibold text-gray-600">AIRBAND</span>
-                        </div>
-                    </div>
-                </footer>
-            </div>
-        </div>
-    );
+                );
 };
 
-export default Layout;
+                export default Layout;

@@ -1,10 +1,10 @@
 # HR System
 
-[![Version](https://img.shields.io/badge/version-1.3.0--beta-blue.svg)](https://github.com/FingaDZ/AY/releases/tag/v1.3.0-beta)
+[![Version](https://img.shields.io/badge/version-1.3.0-blue.svg)](https://github.com/FingaDZ/AY/releases/tag/v1.3.0)
 [![Status](https://img.shields.io/badge/status-stable-green.svg)](https://github.com/FingaDZ/AY)
 [![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20Linux-lightgrey.svg)]()
 
-> **Version actuelle** : 1.3.0-beta (Backend Attendance Integration)  
+> **Version actuelle** : 1.3.0 (Attendance Integration Complete)  
 > **Dernière mise à jour** : 25 novembre 2025  
 > **Statut** : ✅ Production Ready
 
@@ -180,8 +180,8 @@ ATTENDANCE_API_TIMEOUT=30
 
 | Module | Version | Statut | Dernière Mise à Jour |
 |--------|---------|--------|----------------------|
-| **Frontend** | v1.2.4 | ✅ Stable | 25 Nov 2025 |
-| **Backend** | v1.3.0-beta | ✅ Stable | 25 Nov 2025 |
+| **Frontend** | v1.3.0 | ✅ Stable | 25 Nov 2025 |
+| **Backend** | v1.3.0 | ✅ Stable | 25 Nov 2025 |
 | **Base de Données** | MariaDB | ✅ Connecté | 25 Nov 2025 |
 
 ## 🔐 Sécurité
@@ -251,5 +251,5 @@ Usage interne - Tous droits réservés
 ---
 
 **Développé par AIRBAND**  
-**Version** : 1.3.0-beta  
+**Version** : 1.3.0  
 **Date** : 25 novembre 2025
