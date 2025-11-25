@@ -5,7 +5,25 @@ Tous les changements notables de ce projet seront documentés dans ce fichier.
 Le format est basé sur [Keep a Changelog](https://keepachangelog.com/fr/1.0.0/),
 et ce projet adhère à [Semantic Versioning](https://semver.org/lang/fr/).
 
-## [1.1.8] - 2025-11-25 ✅ ACTUELLE
+## [1.1.9] - 2025-11-25 ✅ ACTUELLE
+
+### 🐛 Corrections Critiques
+- **Accès WAN (403)** : Fix erreur "Blocked request" sur domaine externe
+  - Ajout de `allowedHosts` dans `vite.config.js` pour autoriser `hgd09pzcrcm.sn.mynetname.net` et `192.168.20.53`
+- **Pages Vides** : Fix CSS Layout pour garantir l'affichage du contenu
+  - Ajustement de la structure Flexbox et des hauteurs
+- **Navigation** : Ajout de l'onglet **Logs** manquant dans la barre latérale
+
+### 📄 Fichiers Modifiés
+- `frontend/vite.config.js` - Configuration `allowedHosts`
+- `frontend/src/components/Layout.jsx` - Fix CSS + Version 1.1.9
+- `frontend/src/components/Sidebar.jsx` - Ajout Logs + Version 1.1.9
+- `frontend/src/pages/Login/LoginPage.jsx` - Version 1.1.9
+- `frontend/package.json` - Version 1.1.9
+
+---
+
+## [1.1.8] - 2025-11-25
 
 ### 🐛 Corrections Critiques
 - **Layout & Affichage** : Fix structure Layout pour garantir l'affichage du contenu
