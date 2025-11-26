@@ -173,5 +173,12 @@ export const rapportService = {
   getG29Pdf: (annee) => api.get(`/rapports/g29/${annee}/pdf`, { responseType: 'blob' }),
 };
 
+export const incompleteLogsService = {
+  getAll: (params = {}) => api.get('/incomplete-logs/', { params }),
+  getStats: () => api.get('/incomplete-logs/stats'),
+  validate: (id, data) => api.post(`/incomplete-logs/${id}/validate`, data),
+  delete: (id) => api.delete(`/incomplete-logs/${id}`),
+};
+
 export { default as attendanceService } from './attendanceService';
 

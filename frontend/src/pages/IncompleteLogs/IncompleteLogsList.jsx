@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
+import { incompleteLogsService } from '../../services';
 
 const IncompleteLogsList = () => {
     const [logs, setLogs] = useState([]);
@@ -22,16 +23,13 @@ const IncompleteLogsList = () => {
     const fetchLogs = async () => {
         try {
             setLoading(true);
-            let url = `http://192.168.20.53:8000/api/incomplete-logs/?limit=100`;
+            const params = { limit: 100 };
             if (filterStatus !== 'all') {
-                url += `&status=${filterStatus}`;
+                params.status = filterStatus;
             }
 
-            const response = await fetch(url);
-            if (response.ok) {
-                const data = await response.json();
-                setLogs(data);
-            }
+            const response = await incompleteLogsService.getAll(params);
+            setLogs(response.data);
         } catch (error) {
             console.error("Error fetching logs:", error);
         } finally {
@@ -41,11 +39,8 @@ const IncompleteLogsList = () => {
 
     const fetchStats = async () => {
         try {
-            const response = await fetch(`http://192.168.20.53:8000/api/incomplete-logs/stats`);
-            if (response.ok) {
-                const data = await response.json();
-                setStats(data);
-            }
+            const response = await incompleteLogsService.getStats();
+            setStats(response.data);
         } catch (error) {
             console.error("Error fetching stats:", error);
         }
@@ -72,24 +67,14 @@ const IncompleteLogsList = () => {
                 payload.corrected_minutes = parseInt(correctionMinutes);
             }
 
-            const response = await fetch(`http://192.168.20.53:8000/api/incomplete-logs/${selectedLog.id}/validate`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify(payload)
-            });
+            const response = await incompleteLogsService.validate(selectedLog.id, payload);
 
-            if (response.ok) {
-                // Refresh data
-                fetchLogs();
-                fetchStats();
-                setSelectedLog(null);
-                setCorrectionMinutes('');
-                setCorrectionNote('');
-            } else {
-                alert("Erreur lors de la validation");
-            }
+            // Refresh data
+            fetchLogs();
+            fetchStats();
+            setSelectedLog(null);
+            setCorrectionMinutes('');
+            setCorrectionNote('');
         } catch (error) {
             console.error("Error validating log:", error);
             alert("Erreur technique");
