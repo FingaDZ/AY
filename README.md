@@ -1,11 +1,11 @@
 # HR System
 
-[![Version](https://img.shields.io/badge/version-1.3.0-blue.svg)](https://github.com/FingaDZ/AY/releases/tag/v1.3.0)
+[![Version](https://img.shields.io/badge/version-1.7.0-blue.svg)](https://github.com/FingaDZ/AY/releases/tag/v1.7.0)
 [![Status](https://img.shields.io/badge/status-stable-green.svg)](https://github.com/FingaDZ/AY)
 [![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20Linux-lightgrey.svg)]()
 
-> **Version actuelle** : 1.3.0 (Attendance Integration Complete)  
-> **Dernière mise à jour** : 25 novembre 2025  
+> **Version actuelle** : 1.7.0 (Hybrid Incomplete Logs)  
+> **Dernière mise à jour** : 26 novembre 2025  
 > **Statut** : ✅ Production Ready
 
 ## 📋 Description
@@ -195,12 +195,15 @@ ATTENDANCE_API_TIMEOUT=30
 
 ## 📝 Changelog
 
-### v1.3.0-beta - 25 novembre 2025 ✨ ACTUELLE
+### v1.7.0 - 26 novembre 2025 ✨ ACTUELLE
+- 🛡️ **Gestion Logs Incomplets** : Solution hybride (Calcul Smart + Validation RH)
+- 📊 **Dashboard** : Interface de validation des estimations
+- 🚀 **Fiabilité** : Import robuste sans perte de données
+- 📱 **UI** : Notifications et badges pour actions requises
+
+### v1.3.0 - 25 novembre 2025
 - 🔗 **Intégration Attendance** : Backend complet (sync employés, import logs, gestion conflits)
 - 🗄️ **Database** : 3 nouvelles tables + colonne heures_supplementaires
-- 🚀 **API** : 8 nouveaux endpoints pour l'intégration
-- 📚 **Docs** : Guides complets (déploiement, frontend, intégration)
-- 🔧 **Scripts** : upgrade.sh pour migration automatique
 
 ### v1.2.4 - 25 novembre 2025
 - ✨ **Gestion Utilisateurs** : Restauration du module Admin

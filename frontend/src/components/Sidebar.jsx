@@ -27,6 +27,7 @@ const Sidebar = ({ isOpen, onClose }) => {
         { to: '/pointages', label: 'Pointages', icon: ClipboardList },
         { to: '/pointages/import-attendance', label: 'Importer Pointages', icon: Download },
         { to: '/pointages/conflicts', label: 'Conflits Import', icon: AlertCircle },
+        { to: '/incomplete-logs', label: 'Logs Incomplets', icon: AlertCircle },
         { to: '/missions', label: 'Missions', icon: Clock },
         { to: '/avances', label: 'Avances', icon: DollarSign },
         { to: '/credits', label: 'Crédits', icon: DollarSign },

@@ -37,6 +37,10 @@ function ImportAttendance() {
             if (response.data.skipped_no_mapping > 0) {
                 message.info(`${response.data.skipped_no_mapping} logs ignorés (employés non mappés)`);
             }
+
+            if (response.data.incomplete_pending_validation > 0) {
+                message.warning(`${response.data.incomplete_pending_validation} logs incomplets importés avec estimation. À valider.`);
+            }
         } catch (error) {
             message.error('Erreur lors de l\'importation');
             console.error(error);
@@ -127,6 +131,15 @@ function ImportAttendance() {
                                         title="Erreurs"
                                         value={summary.errors}
                                         valueStyle={{ color: '#cf1322' }}
+                                    />
+                                </Card>
+                            </Col>
+                            <Col xs={12} sm={8} md={4}>
+                                <Card>
+                                    <Statistic
+                                        title="Incomplets"
+                                        value={summary.incomplete_pending_validation}
+                                        valueStyle={{ color: '#faad14' }}
                                     />
                                 </Card>
                             </Col>

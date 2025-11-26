@@ -19,6 +19,7 @@ import LogsPage from './pages/Logs/LogsPage';
 import LoginPage from './pages/Login/LoginPage';
 import ImportAttendance from './pages/Pointages/ImportAttendance';
 import AttendanceConflicts from './pages/Pointages/AttendanceConflicts';
+import IncompleteLogsList from './pages/IncompleteLogs/IncompleteLogsList';
 
 // Composant pour protéger les routes
 function ProtectedRoute({ children }) {
@@ -59,6 +60,7 @@ function AppRoutes() {
               <Route path="/pointages" element={<GrillePointage />} />
               <Route path="/pointages/import-attendance" element={<ImportAttendance />} />
               <Route path="/pointages/conflicts" element={<AttendanceConflicts />} />
+              <Route path="/incomplete-logs" element={<IncompleteLogsList />} />
 
               {/* Clients */}
               <Route path="/clients" element={<ClientsList />} />

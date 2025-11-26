@@ -16,7 +16,9 @@ from models import (
     AttendanceImportConflict,
     SyncMethod,
     ConflictStatus,
-    LogType
+    ConflictStatus,
+    LogType,
+    IncompleteAttendanceLog
 )
 
 logger = logging.getLogger(__name__)
@@ -36,6 +38,70 @@ class AttendanceService:
         self.db = db
         self.api_url = ATTENDANCE_API_URL
     
+    # ============ Smart Calculation ============
+    
+    def calculate_worked_minutes_smart(
+        self, 
+        log: Dict, 
+        log_date: date
+    ) -> Tuple[int, str, str]:
+        """
+        Calcul intelligent des minutes travaillées pour logs incomplets
+        
+        Returns:
+            (worked_minutes, estimation_rule, status)
+            
+        Règles:
+        - ENTRY seul: Assume EXIT à 17:00
+        - EXIT seul: Assume ENTRY à 08:00
+        - Complet: Utilise worked_minutes de l'API
+        """
+        log_type = log.get("type", "EXIT")
+        worked_minutes = log.get("worked_minutes")
+        timestamp = datetime.fromisoformat(log["timestamp"])
+        
+        # Horaires par défaut (configurables)
+        DEFAULT_START_HOUR = 8  # 08:00
+        DEFAULT_END_HOUR = 17   # 17:00
+        DEFAULT_WORK_HOURS = 8  # 8 heures
+        
+        # Cas 1: Log complet (ENTRY + EXIT)
+        if worked_minutes is not None and worked_minutes > 0:
+            return worked_minutes, "complete", "complete"
+        
+        # Cas 2: ENTRY seul (pas encore d'EXIT)
+        if log_type == "ENTRY":
+            assumed_exit = timestamp.replace(hour=DEFAULT_END_HOUR, minute=0, second=0)
+            
+            if timestamp.hour >= DEFAULT_END_HOUR:
+                # ENTRY après 17h → assume 8h de travail
+                minutes = DEFAULT_WORK_HOURS * 60
+                rule = f"entry_late_assume_{DEFAULT_WORK_HOURS}h"
+            else:
+                # ENTRY avant 17h → calcule jusqu'à 17h
+                minutes = int((assumed_exit - timestamp).total_seconds() / 60)
+                rule = f"entry_assume_exit_{DEFAULT_END_HOUR}h"
+            
+            return max(0, minutes), rule, "incomplete_entry"
+        
+        # Cas 3: EXIT seul (pas d'ENTRY)
+        if log_type == "EXIT":
+            assumed_entry = timestamp.replace(hour=DEFAULT_START_HOUR, minute=0, second=0)
+            
+            if timestamp.hour <= DEFAULT_START_HOUR:
+                # EXIT avant 8h → assume 8h de travail
+                minutes = DEFAULT_WORK_HOURS * 60
+                rule = f"exit_early_assume_{DEFAULT_WORK_HOURS}h"
+            else:
+                # EXIT après 8h → calcule depuis 8h
+                minutes = int((timestamp - assumed_entry).total_seconds() / 60)
+                rule = f"exit_assume_entry_{DEFAULT_START_HOUR}h"
+            
+            return max(0, minutes), rule, "incomplete_exit"
+        
+        # Cas 4: Aucune donnée valide
+        return 0, "no_data", "missing"
+
     # ============ Employee Mapping ============
     
     def get_or_create_mapping(self, hr_employee_id: int) -> Optional[AttendanceEmployeeMapping]:
@@ -215,6 +281,7 @@ class AttendanceService:
         summary = {
             "total_logs": len(logs),
             "imported": 0,
+            "incomplete_pending_validation": 0,
             "skipped_duplicate": 0,
             "skipped_no_mapping": 0,
             "conflicts": 0,
@@ -227,7 +294,6 @@ class AttendanceService:
                 attendance_emp_id = log["employee_id"]
                 log_timestamp = datetime.fromisoformat(log["timestamp"])
                 log_date = log_timestamp.date()
-                worked_minutes = log.get("worked_minutes", 0)
                 log_type = log.get("type", "EXIT")
                 
                 # Check if already imported
@@ -250,6 +316,13 @@ class AttendanceService:
                     continue
                 
                 hr_emp_id = mapping.hr_employee_id
+                employee = self.db.query(Employe).filter(Employe.id == hr_emp_id).first()
+                
+                # ===== Smart Calculation =====
+                worked_minutes, estimation_rule, status = self.calculate_worked_minutes_smart(
+                    log, log_date
+                )
+                
                 year = log_date.year
                 month = log_date.month
                 day = log_date.day
@@ -307,6 +380,25 @@ class AttendanceService:
                         log_type=LogType(log_type) if log_type in ["ENTRY", "EXIT"] else LogType.EXIT
                     )
                     self.db.add(sync_log)
+                    self.db.flush()
+                    
+                    # ===== Incomplete Log Tracking =====
+                    if status in ["incomplete_entry", "incomplete_exit"]:
+                        incomplete_log = IncompleteAttendanceLog(
+                            attendance_log_id=attendance_log_id,
+                            attendance_sync_log_id=sync_log.id,
+                            hr_employee_id=hr_emp_id,
+                            employee_name=f"{employee.nom} {employee.prenom}",
+                            log_date=log_date,
+                            log_type=log_type,
+                            log_timestamp=log_timestamp,
+                            estimated_minutes=worked_minutes,
+                            estimation_rule=estimation_rule,
+                            status='pending'
+                        )
+                        self.db.add(incomplete_log)
+                        summary["incomplete_pending_validation"] += 1
+                        
                     summary["imported"] += 1
                 
                 self.db.commit()

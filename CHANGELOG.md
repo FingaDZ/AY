@@ -5,6 +5,27 @@ Tous les changements notables de ce projet seront documentés dans ce fichier.
 Le format est basé sur [Keep a Changelog](https://keepachangelog.com/fr/1.0.0/),
 et ce projet adhère à [Semantic Versioning](https://semver.org/lang/fr/).
 
+## [1.7.0] - 2025-11-26
+### ✨ Fonctionnalités Majeures
+- **Gestion Hybride des Logs Incomplets** : Solution complète pour les pointages manquants (ENTRY sans EXIT ou inversement)
+  - **Calcul Intelligent** : Estimation automatique des heures (ex: ENTRY seul → sortie supposée 17h)
+  - **Dashboard de Validation** : Interface RH pour valider/corriger les estimations
+  - **Notifications** : Alertes automatiques lors de l'import de logs incomplets
+  - **Traçabilité** : Historique complet des validations et corrections manuelles
+
+### 🚀 Améliorations
+- **Import Pointages** : Support robuste des erreurs de synchronisation
+- **Interface** : Nouveau menu "Logs Incomplets" avec badges de notification
+- **Base de Données** : Nouvelle table `incomplete_attendance_logs`
+
+### 📄 Fichiers Ajoutés
+- `backend/models/incomplete_log.py`
+- `backend/schemas/incomplete_log.py`
+- `backend/routers/incomplete_logs.py`
+- `frontend/src/pages/IncompleteLogs/IncompleteLogsList.jsx`
+
+---
+
 ## [1.3.0] - 2025-11-25
 
 ### ✨ Ajouté

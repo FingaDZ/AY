@@ -71,6 +71,11 @@ from .attendance_schemas import (
     EmployeeSyncRequest,
     EmployeeSyncResponse,
 )
+from .incomplete_log import (
+    IncompleteLogResponse,
+    IncompleteLogValidation,
+    IncompleteLogStats,
+)
 
 __all__ = [
     "EmployeBase",
@@ -130,4 +135,7 @@ __all__ = [
     "AttendanceImportSummary",
     "EmployeeSyncRequest",
     "EmployeeSyncResponse",
+    "IncompleteLogResponse",
+    "IncompleteLogValidation",
+    "IncompleteLogStats",
 ]

@@ -13,6 +13,7 @@ from .attendance_mapping import (
     ConflictStatus,
     LogType
 )
+from .incomplete_log import IncompleteAttendanceLog
 from .parametres import Parametres
 from .user import User, UserRole
 from .database_config import DatabaseConfig
@@ -46,4 +47,5 @@ __all__ = [
     "SyncMethod",
     "ConflictStatus",
     "LogType",
+    "IncompleteAttendanceLog",
 ]
