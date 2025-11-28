@@ -51,6 +51,10 @@ export const employeService = {
   generateContrat: (id) => api.get(`/employes/${id}/contrat-travail`, {
     responseType: 'blob'
   }),
+
+  // Export
+  exportExcel: () => api.get('/employes/export/excel', { responseType: 'blob' }),
+  exportCsv: () => api.get('/employes/export/csv', { responseType: 'blob' }),
 };
 
 export const pointageService = {

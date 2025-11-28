@@ -5,7 +5,7 @@ Tous les changements notables de ce projet seront documentés dans ce fichier.
 Le format est basé sur [Keep a Changelog](https://keepachangelog.com/fr/1.0.0/),
 et ce projet adhère à [Semantic Versioning](https://semver.org/lang/fr/).
 
-## [1.7.0] - 2025-11-26
+## [1.7.0] - 2025-11-28
 ### ✨ Fonctionnalités Majeures
 - **Gestion Hybride des Logs Incomplets** : Solution complète pour les pointages manquants (ENTRY sans EXIT ou inversement)
   - **Calcul Intelligent** : Estimation automatique des heures (ex: ENTRY seul → sortie supposée 17h)

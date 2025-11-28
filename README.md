@@ -5,7 +5,7 @@
 [![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20Linux-lightgrey.svg)]()
 
 > **Version actuelle** : 1.7.0 (Hybrid Incomplete Logs)  
-> **Dernière mise à jour** : 26 novembre 2025  
+> **Dernière mise à jour** : 28 novembre 2025  
 > **Statut** : ✅ Production Ready
 
 ## 📋 Description

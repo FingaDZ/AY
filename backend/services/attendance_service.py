@@ -285,14 +285,32 @@ class AttendanceService:
             "skipped_duplicate": 0,
             "skipped_no_mapping": 0,
             "conflicts": 0,
-            "errors": 0
+            "errors": 0,
+            "details": []
         }
         
         for log in logs:
+            log_id = log.get("id", "unknown")
+            emp_name = "Inconnu"
+            
             try:
+                # Validate log structure
+                if "id" not in log:
+                    raise ValueError("Log manque le champ 'id'")
+                if "employee_id" not in log:
+                    raise ValueError("Log manque le champ 'employee_id'")
+                if "timestamp" not in log:
+                    raise ValueError("Log manque le champ 'timestamp'")
+                
                 attendance_log_id = log["id"]
                 attendance_emp_id = log["employee_id"]
-                log_timestamp = datetime.fromisoformat(log["timestamp"])
+                
+                # Parse timestamp with better error handling
+                try:
+                    log_timestamp = datetime.fromisoformat(log["timestamp"])
+                except (ValueError, TypeError) as e:
+                    raise ValueError(f"Format timestamp invalide: {log.get('timestamp')} - {str(e)}")
+                
                 log_date = log_timestamp.date()
                 log_type = log.get("type", "EXIT")
                 
@@ -312,16 +330,38 @@ class AttendanceService:
                 
                 if not mapping:
                     summary["skipped_no_mapping"] += 1
+                    summary["details"].append({
+                        "log_id": log_id,
+                        "status": "skipped",
+                        "message": f"Pas de mapping pour ID Attendance {attendance_emp_id}",
+                        "employee_name": f"ID Attendance: {attendance_emp_id}"
+                    })
                     logger.warning(f"No mapping for Attendance employee {attendance_emp_id}")
                     continue
                 
                 hr_emp_id = mapping.hr_employee_id
                 employee = self.db.query(Employe).filter(Employe.id == hr_emp_id).first()
                 
+                if not employee:
+                    summary["skipped_no_mapping"] += 1
+                    summary["details"].append({
+                        "log_id": log_id,
+                        "status": "error",
+                        "message": f"Employé HR ID {hr_emp_id} introuvable",
+                        "employee_name": mapping.attendance_employee_name or f"HR ID: {hr_emp_id}"
+                    })
+                    logger.error(f"HR Employee {hr_emp_id} not found but mapping exists")
+                    continue
+                
+                emp_name = f"{employee.nom} {employee.prenom}"
+                
                 # ===== Smart Calculation =====
-                worked_minutes, estimation_rule, status = self.calculate_worked_minutes_smart(
-                    log, log_date
-                )
+                try:
+                    worked_minutes, estimation_rule, status = self.calculate_worked_minutes_smart(
+                        log, log_date
+                    )
+                except Exception as calc_error:
+                    raise ValueError(f"Erreur calcul minutes: {str(calc_error)}")
                 
                 year = log_date.year
                 month = log_date.month
@@ -360,7 +400,13 @@ class AttendanceService:
                     )
                     self.db.add(conflict)
                     summary["conflicts"] += 1
-                    logger.info(f"Conflict detected for {log_date} - Employee {hr_emp_id}")
+                    summary["details"].append({
+                        "log_id": log_id,
+                        "status": "conflict",
+                        "message": f"Conflit: Jour {day} déjà rempli ({existing_value})",
+                        "employee_name": emp_name
+                    })
+                    logger.info(f"Conflict detected for {log_date} - Employee {emp_name}")
                 else:
                     # No conflict, import
                     day_status, overtime_hours = self.convert_minutes_to_pointage(worked_minutes)
@@ -388,7 +434,7 @@ class AttendanceService:
                             attendance_log_id=attendance_log_id,
                             attendance_sync_log_id=sync_log.id,
                             hr_employee_id=hr_emp_id,
-                            employee_name=f"{employee.nom} {employee.prenom}",
+                            employee_name=emp_name,
                             log_date=log_date,
                             log_type=log_type,
                             log_timestamp=log_timestamp,
@@ -398,14 +444,27 @@ class AttendanceService:
                         )
                         self.db.add(incomplete_log)
                         summary["incomplete_pending_validation"] += 1
+                        summary["details"].append({
+                            "log_id": log_id,
+                            "status": "incomplete",
+                            "message": f"Log incomplet ({log_type}) - Estimé: {worked_minutes}m - Règle: {estimation_rule}",
+                            "employee_name": emp_name
+                        })
                         
                     summary["imported"] += 1
                 
                 self.db.commit()
                 
             except Exception as e:
-                logger.error(f"Error importing log {log.get('id')}: {e}")
+                error_msg = str(e)
+                logger.error(f"Error importing log {log_id} for {emp_name}: {error_msg}")
                 summary["errors"] += 1
+                summary["details"].append({
+                    "log_id": log_id,
+                    "status": "error",
+                    "message": error_msg,
+                    "employee_name": emp_name
+                })
                 self.db.rollback()
         
         return summary

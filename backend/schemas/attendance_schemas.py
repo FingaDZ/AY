@@ -90,6 +90,8 @@ class AttendanceImportSummary(BaseModel):
     skipped_no_mapping: int
     conflicts: int
     errors: int
+    incomplete_pending_validation: int = 0
+    details: List[dict] = []  # List of {log_id, status, message, employee_name}
 
 # Employee Sync
 class EmployeeSyncRequest(BaseModel):

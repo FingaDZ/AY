@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Table, Button, Space, Input, Select, Tag, message, Modal, Tooltip, Avatar, Card, Typography } from 'antd';
-import { PlusOutlined, EditOutlined, DeleteOutlined, SearchOutlined, FilePdfOutlined, ExclamationCircleOutlined, CheckCircleOutlined, FileTextOutlined, SafetyCertificateOutlined, FileProtectOutlined, UserOutlined, CloudSyncOutlined } from '@ant-design/icons';
+import { PlusOutlined, EditOutlined, DeleteOutlined, SearchOutlined, FilePdfOutlined, ExclamationCircleOutlined, CheckCircleOutlined, FileTextOutlined, SafetyCertificateOutlined, FileProtectOutlined, UserOutlined, CloudSyncOutlined, FileExcelOutlined, DownloadOutlined } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
 import { employeService, attendanceService } from '../../services';
 import { format } from 'date-fns';
@@ -150,6 +150,54 @@ function EmployesList() {
         }
       },
     });
+  };
+
+  const handleExportExcel = async () => {
+    try {
+      setLoading(true);
+      const response = await employeService.exportExcel();
+
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement('a');
+      link.href = url;
+      const today = new Date();
+      const dateStr = `${today.getDate().toString().padStart(2, '0')}${(today.getMonth() + 1).toString().padStart(2, '0')}${today.getFullYear()}`;
+      link.setAttribute('download', `employes_export_${dateStr}.xlsx`);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+
+      message.success('Export Excel réussi');
+    } catch (error) {
+      message.error('Erreur lors de l\'export Excel');
+      console.error(error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleExportCsv = async () => {
+    try {
+      setLoading(true);
+      const response = await employeService.exportCsv();
+
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement('a');
+      link.href = url;
+      const today = new Date();
+      const dateStr = `${today.getDate().toString().padStart(2, '0')}${(today.getMonth() + 1).toString().padStart(2, '0')}${today.getFullYear()}`;
+      link.setAttribute('download', `employes_export_${dateStr}.csv`);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+
+      message.success('Export CSV réussi');
+    } catch (error) {
+      message.error('Erreur lors de l\'export CSV');
+      console.error(error);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleGenererRapport = async () => {
@@ -546,6 +594,23 @@ function EmployesList() {
             block={isMobile}
           >
             Rapport PDF
+          </Button>
+          <Button
+            icon={<FileExcelOutlined />}
+            onClick={handleExportExcel}
+            loading={loading}
+            block={isMobile}
+            style={{ color: '#217346', borderColor: '#217346' }}
+          >
+            Export Excel
+          </Button>
+          <Button
+            icon={<DownloadOutlined />}
+            onClick={handleExportCsv}
+            loading={loading}
+            block={isMobile}
+          >
+            Export CSV
           </Button>
           <Button
             type="primary"

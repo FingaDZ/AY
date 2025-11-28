@@ -671,3 +671,94 @@ def generate_contrat_travail(
     )
 
 
+
+@router.get("/export/excel")
+def export_employes_excel(db: Session = Depends(get_db), current_user: User = Depends(require_auth)):
+    """Exporter la liste des employés en Excel (format compatible import)"""
+    import pandas as pd
+    from io import BytesIO
+    from datetime import date
+    
+    employes = db.query(Employe).all()
+    
+    data = []
+    for emp in employes:
+        data.append({
+            'NOM': emp.nom,
+            'PRENOM': emp.prenom,
+            ' NAISSANCE': emp.date_naissance,
+            'LIEU': emp.lieu_naissance or '',
+            'ADRESSE': emp.adresse or '',
+            'TELEPHONE': emp.mobile or '',
+            'N Sécurité Sociale': emp.numero_secu_sociale or '',
+            'N° COMPTE': emp.numero_compte_bancaire or '',
+            'SITUATION': emp.situation_familiale or 'Célibataire',
+            'FOF': 'Oui' if emp.femme_au_foyer else 'Non',
+            'ENTRE': emp.date_recrutement,
+            'SORTIE': emp.date_fin_contrat,
+            'POSTE': emp.poste_travail
+        })
+    
+    df = pd.DataFrame(data)
+    
+    # Créer le fichier Excel en mémoire
+    output = BytesIO()
+    with pd.ExcelWriter(output, engine='openpyxl') as writer:
+        df.to_excel(writer, sheet_name='LIST DES EMPLOYES', index=False)
+    
+    output.seek(0)
+    
+    filename = f"employes_export_{date.today().strftime('%d%m%Y')}.xlsx"
+    
+    return StreamingResponse(
+        output,
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers={"Content-Disposition": f"attachment; filename={filename}"}
+    )
+
+@router.get("/export/csv")
+def export_employes_csv(db: Session = Depends(get_db), current_user: User = Depends(require_auth)):
+    """Exporter la liste des employés en CSV"""
+    import csv
+    from io import StringIO
+    from datetime import date
+    
+    employes = db.query(Employe).all()
+    
+    output = StringIO()
+    writer = csv.writer(output)
+    
+    # En-têtes
+    headers = [
+        'NOM', 'PRENOM', 'NAISSANCE', 'LIEU', 'ADRESSE', 'TELEPHONE', 
+        'N Sécurité Sociale', 'N° COMPTE', 'SITUATION', 'FOF', 
+        'ENTRE', 'SORTIE', 'POSTE'
+    ]
+    writer.writerow(headers)
+    
+    for emp in employes:
+        writer.writerow([
+            emp.nom,
+            emp.prenom,
+            emp.date_naissance,
+            emp.lieu_naissance or '',
+            emp.adresse or '',
+            emp.mobile or '',
+            emp.numero_secu_sociale or '',
+            emp.numero_compte_bancaire or '',
+            emp.situation_familiale or 'Célibataire',
+            'Oui' if emp.femme_au_foyer else 'Non',
+            emp.date_recrutement,
+            emp.date_fin_contrat or '',
+            emp.poste_travail
+        ])
+    
+    output.seek(0)
+    
+    filename = f"employes_export_{date.today().strftime('%d%m%Y')}.csv"
+    
+    return StreamingResponse(
+        iter([output.getvalue()]),
+        media_type="text/csv",
+        headers={"Content-Disposition": f"attachment; filename={filename}"}
+    )

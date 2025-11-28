@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Card, DatePicker, Button, Select, message, Statistic, Row, Col, Spin } from 'antd';
+import { Card, DatePicker, Button, Select, message, Statistic, Row, Col, Spin, Table, Tag } from 'antd';
 import { DownloadOutlined, SyncOutlined } from '@ant-design/icons';
 import { attendanceService } from '../../services';
 import dayjs from 'dayjs';
@@ -144,6 +144,47 @@ function ImportAttendance() {
                                 </Card>
                             </Col>
                         </Row>
+                    </div>
+                )}
+
+                {summary && summary.details && summary.details.length > 0 && (
+                    <div style={{ marginTop: 32 }}>
+                        <h3 style={{ marginBottom: 16 }}>Détails des problèmes</h3>
+                        <Table
+                            dataSource={summary.details}
+                            rowKey="log_id"
+                            pagination={{ pageSize: 10 }}
+                            columns={[
+                                {
+                                    title: 'ID Log',
+                                    dataIndex: 'log_id',
+                                    key: 'log_id',
+                                    width: 100,
+                                },
+                                {
+                                    title: 'Employé',
+                                    dataIndex: 'employee_name',
+                                    key: 'employee_name',
+                                },
+                                {
+                                    title: 'Statut',
+                                    dataIndex: 'status',
+                                    key: 'status',
+                                    render: (status) => {
+                                        let color = 'default';
+                                        if (status === 'error') color = 'red';
+                                        if (status === 'conflict') color = 'orange';
+                                        if (status === 'incomplete') color = 'gold';
+                                        return <Tag color={color}>{status.toUpperCase()}</Tag>;
+                                    }
+                                },
+                                {
+                                    title: 'Message',
+                                    dataIndex: 'message',
+                                    key: 'message',
+                                },
+                            ]}
+                        />
                     </div>
                 )}
             </Card>
