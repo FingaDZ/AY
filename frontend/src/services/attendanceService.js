@@ -58,6 +58,22 @@ const attendanceService = {
         });
     },
 
+    // Preview import
+    previewImport: (file) => {
+        const formData = new FormData();
+        formData.append('file', file);
+        return axios.post(`${API_URL}/import-preview`, formData, {
+            headers: {
+                'Content-Type': 'multipart/form-data'
+            }
+        });
+    },
+
+    // Confirm import
+    confirmImport: (data) => {
+        return axios.post(`${API_URL}/import-confirm`, data);
+    },
+
     // Delete conflict
     deleteConflict: (conflictId) => {
         return axios.delete(`${API_URL}/conflicts/${conflictId}`);
