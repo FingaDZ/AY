@@ -1,10 +1,10 @@
 # HR System
 
-[![Version](https://img.shields.io/badge/version-2.0.2-blue.svg)](https://github.com/FingaDZ/AY/releases/tag/v2.0.2)
+[![Version](https://img.shields.io/badge/version-2.0.3-blue.svg)](https://github.com/FingaDZ/AY/releases/tag/v2.0.3)
 [![Status](https://img.shields.io/badge/status-stable-green.svg)](https://github.com/FingaDZ/AY)
 [![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20Linux-lightgrey.svg)]()
 
-> **Version actuelle** : 2.0.2 (Feature Release)  
+> **Version actuelle** : 2.0.3 (Bugfix Release)  
 > **Dernière mise à jour** : 29 novembre 2025  
 > **Statut** : ✅ Production Ready
 
@@ -202,8 +202,8 @@ ATTENDANCE_API_TIMEOUT=30
 
 | Module | Version | Statut | Dernière Mise à Jour |
 |--------|---------|--------|----------------------|
-| **Frontend** | v2.0.2 | ✅ Stable | 29 Nov 2025 |
-| **Backend** | v2.0.2 | ✅ Stable | 29 Nov 2025 |
+| **Frontend** | v2.0.3 | ✅ Stable | 29 Nov 2025 |
+| **Backend** | v2.0.3 | ✅ Stable | 29 Nov 2025 |
 | **Base de Données** | MariaDB | ✅ Connecté | 29 Nov 2025 |
 
 ## 🔐 Sécurité
@@ -217,7 +217,12 @@ ATTENDANCE_API_TIMEOUT=30
 
 ## 📝 Changelog
 
-### v2.0.2 - 29 novembre 2025 ✨ ACTUELLE
+### v2.0.3 - 29 novembre 2025 ✨ ACTUELLE
+- 🐛 **Correctif Critique** : Fix compatibilité Pydantic v2 pour endpoint conflits (erreur 500)
+- ✨ **Amélioration** : Affichage noms et postes employés sur page Conflits Import
+- 📊 **UX** : Meilleure lisibilité des conflits d'importation
+
+### v2.0.2 - 29 novembre 2025
 - ✨ **Import Excel** : Ajout de l'importation manuelle de fichiers Excel pour les pointages
 - 🐛 **Correctif** : Validation et parsing améliorés pour les fichiers d'import
 
@@ -285,5 +290,5 @@ Usage interne - Tous droits réservés
 ---
 
 **Développé par AIRBAND**  
-**Version** : 2.0.2  
+**Version** : 2.0.3  
 **Date** : 29 novembre 2025
