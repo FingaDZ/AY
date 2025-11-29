@@ -3,7 +3,7 @@ Attendance Integration API Router
 Endpoints for syncing employees and importing attendance logs
 """
 
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, UploadFile, File
 from sqlalchemy.orm import Session
 from typing import List, Optional
 from datetime import date
@@ -25,6 +25,7 @@ from schemas import (
     EmployeeSyncResponse,
 )
 from services.attendance_service import AttendanceService
+from services.import_service import ImportService
 
 router = APIRouter(prefix="/attendance-integration", tags=["Attendance Integration"])
 
@@ -131,6 +132,29 @@ def import_attendance_logs(
     )
     
     return AttendanceImportSummary(**summary)
+
+@router.post("/import-file", response_model=AttendanceImportSummary)
+async def import_attendance_file(
+    file: UploadFile = File(...),
+    db: Session = Depends(get_db)
+):
+    """Import attendance logs from Excel/CSV file"""
+    if not file.filename.endswith(('.xlsx', '.xls', '.csv')):
+        raise HTTPException(400, "Format de fichier non supporté. Utilisez .xlsx, .xls ou .csv")
+    
+    content = await file.read()
+    
+    import_service = ImportService()
+    attendance_service = AttendanceService(db)
+    
+    try:
+        logs = import_service.parse_excel(content)
+        summary = attendance_service.process_attendance_logs(logs)
+        return summary
+    except ValueError as e:
+        raise HTTPException(400, str(e))
+    except Exception as e:
+        raise HTTPException(500, f"Erreur lors de l'import: {str(e)}")
 
 # ============ Conflict Management ============
 

@@ -32,6 +32,17 @@ const attendanceService = {
         });
     },
 
+    // Import file
+    importFile: (file) => {
+        const formData = new FormData();
+        formData.append('file', file);
+        return axios.post(`${API_URL}/import-file`, formData, {
+            headers: {
+                'Content-Type': 'multipart/form-data'
+            }
+        });
+    },
+
     // Get conflicts
     getConflicts: (status = null, params = {}) => {
         const queryParams = { ...params };

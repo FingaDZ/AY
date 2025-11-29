@@ -1,6 +1,6 @@
 import { useState } from 'react';
-import { Card, DatePicker, Button, Select, message, Statistic, Row, Col, Spin, Table, Tag } from 'antd';
-import { DownloadOutlined, SyncOutlined } from '@ant-design/icons';
+import { Card, DatePicker, Button, Select, message, Statistic, Row, Col, Spin, Table, Tag, Upload } from 'antd';
+import { DownloadOutlined, SyncOutlined, UploadOutlined } from '@ant-design/icons';
 import { attendanceService } from '../../services';
 import dayjs from 'dayjs';
 
@@ -24,28 +24,45 @@ function ImportAttendance() {
                 dateRange[1].format('YYYY-MM-DD')
             );
 
-            setSummary(response.data);
-
-            if (response.data.imported > 0) {
-                message.success(`${response.data.imported} logs importés avec succès`);
-            }
-
-            if (response.data.conflicts > 0) {
-                message.warning(`${response.data.conflicts} conflits détectés. Consultez la page Conflits.`);
-            }
-
-            if (response.data.skipped_no_mapping > 0) {
-                message.info(`${response.data.skipped_no_mapping} logs ignorés (employés non mappés)`);
-            }
-
-            if (response.data.incomplete_pending_validation > 0) {
-                message.warning(`${response.data.incomplete_pending_validation} logs incomplets importés avec estimation. À valider.`);
-            }
+            handleResponse(response.data);
         } catch (error) {
-            message.error('Erreur lors de l\'importation');
+            message.error('Erreur lors de l\'importation API');
             console.error(error);
         } finally {
             setLoading(false);
+        }
+    };
+
+    const handleFileImport = async (file) => {
+        try {
+            setLoading(true);
+            const response = await attendanceService.importFile(file);
+            handleResponse(response.data);
+        } catch (error) {
+            message.error('Erreur lors de l\'importation du fichier');
+            console.error(error);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleResponse = (data) => {
+        setSummary(data);
+
+        if (data.imported > 0) {
+            message.success(`${data.imported} logs importés avec succès`);
+        }
+
+        if (data.conflicts > 0) {
+            message.warning(`${data.conflicts} conflits détectés. Consultez la page Conflits.`);
+        }
+
+        if (data.skipped_no_mapping > 0) {
+            message.info(`${data.skipped_no_mapping} logs ignorés (employés non mappés)`);
+        }
+
+        if (data.incomplete_pending_validation > 0) {
+            message.warning(`${data.incomplete_pending_validation} logs incomplets importés avec estimation. À valider.`);
         }
     };
 
@@ -67,15 +84,34 @@ function ImportAttendance() {
                     </Col>
                 </Row>
 
-                <Button
-                    type="primary"
-                    icon={<DownloadOutlined />}
-                    onClick={handleImport}
-                    loading={loading}
-                    size="large"
-                >
-                    Importer les Pointages
-                </Button>
+                <div style={{ display: 'flex', gap: '10px' }}>
+                    <Button
+                        type="primary"
+                        icon={<DownloadOutlined />}
+                        onClick={handleImport}
+                        loading={loading}
+                        size="large"
+                    >
+                        Importer depuis API
+                    </Button>
+
+                    <Upload
+                        beforeUpload={(file) => {
+                            handleFileImport(file);
+                            return false; // Prevent auto upload
+                        }}
+                        showUploadList={false}
+                        accept=".xlsx,.xls,.csv"
+                    >
+                        <Button
+                            icon={<UploadOutlined />}
+                            loading={loading}
+                            size="large"
+                        >
+                            Importer Fichier Excel
+                        </Button>
+                    </Upload>
+                </div>
 
                 {summary && (
                     <div style={{ marginTop: 32 }}>

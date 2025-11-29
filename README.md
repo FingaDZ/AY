@@ -1,10 +1,10 @@
 # HR System
 
-[![Version](https://img.shields.io/badge/version-2.0.1-blue.svg)](https://github.com/FingaDZ/AY/releases/tag/v2.0.1)
+[![Version](https://img.shields.io/badge/version-2.0.2-blue.svg)](https://github.com/FingaDZ/AY/releases/tag/v2.0.2)
 [![Status](https://img.shields.io/badge/status-stable-green.svg)](https://github.com/FingaDZ/AY)
 [![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20Linux-lightgrey.svg)]()
 
-> **Version actuelle** : 2.0.1 (Corrective Release)  
+> **Version actuelle** : 2.0.2 (Feature Release)  
 > **Dernière mise à jour** : 29 novembre 2025  
 > **Statut** : ✅ Production Ready
 
@@ -202,8 +202,8 @@ ATTENDANCE_API_TIMEOUT=30
 
 | Module | Version | Statut | Dernière Mise à Jour |
 |--------|---------|--------|----------------------|
-| **Frontend** | v2.0.1 | ✅ Stable | 29 Nov 2025 |
-| **Backend** | v2.0.1 | ✅ Stable | 29 Nov 2025 |
+| **Frontend** | v2.0.2 | ✅ Stable | 29 Nov 2025 |
+| **Backend** | v2.0.2 | ✅ Stable | 29 Nov 2025 |
 | **Base de Données** | MariaDB | ✅ Connecté | 29 Nov 2025 |
 
 ## 🔐 Sécurité
@@ -217,7 +217,11 @@ ATTENDANCE_API_TIMEOUT=30
 
 ## 📝 Changelog
 
-### v2.0.1 - 29 novembre 2025 ✨ ACTUELLE
+### v2.0.2 - 29 novembre 2025 ✨ ACTUELLE
+- ✨ **Import Excel** : Ajout de l'importation manuelle de fichiers Excel pour les pointages
+- 🐛 **Correctif** : Validation et parsing améliorés pour les fichiers d'import
+
+### v2.0.1 - 29 novembre 2025
 - 🐛 **Correctif** : Résolution des problèmes de cache navigateur après mise à jour
 - 🐛 **Correctif** : Affichage de la version et branding sur tous les écrans
 - 🔄 **Système** : Amélioration du script de déploiement
@@ -281,5 +285,5 @@ Usage interne - Tous droits réservés
 ---
 
 **Développé par AIRBAND**  
-**Version** : 2.0.1  
+**Version** : 2.0.2  
 **Date** : 29 novembre 2025

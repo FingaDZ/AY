@@ -277,7 +277,12 @@ class AttendanceService:
         Returns summary: {imported, skipped, conflicts}
         """
         logs = self.fetch_attendance_logs(start_date, end_date, employee_id)
-        
+        return self.process_attendance_logs(logs)
+
+    def process_attendance_logs(self, logs: List[Dict]) -> Dict:
+        """
+        Process a list of attendance logs (from API or File)
+        """
         summary = {
             "total_logs": len(logs),
             "imported": 0,
@@ -295,62 +300,89 @@ class AttendanceService:
             
             try:
                 # Validate log structure
-                if "id" not in log:
-                    raise ValueError("Log manque le champ 'id'")
-                if "employee_id" not in log:
-                    raise ValueError("Log manque le champ 'employee_id'")
                 if "timestamp" not in log:
                     raise ValueError("Log manque le champ 'timestamp'")
                 
-                attendance_log_id = log["id"]
-                attendance_emp_id = log["employee_id"]
+                attendance_log_id = log.get("id")
+                attendance_emp_id = log.get("employee_id")
+                emp_name_from_log = log.get("employee_name")
                 
-                # Parse timestamp with better error handling
+                # Parse timestamp
                 try:
-                    log_timestamp = datetime.fromisoformat(log["timestamp"])
-                except (ValueError, TypeError) as e:
+                    if isinstance(log["timestamp"], (datetime, date)):
+                        log_timestamp = log["timestamp"]
+                        if isinstance(log_timestamp, date) and not isinstance(log_timestamp, datetime):
+                             log_timestamp = datetime.combine(log_timestamp, datetime.min.time())
+                    else:
+                        # Try ISO format first
+                        try:
+                            log_timestamp = datetime.fromisoformat(log["timestamp"])
+                        except ValueError:
+                            # Try common Excel formats
+                            try:
+                                log_timestamp = datetime.strptime(log["timestamp"], "%d/%m/%Y %H:%M:%S")
+                            except ValueError:
+                                log_timestamp = datetime.strptime(log["timestamp"], "%Y-%m-%d %H:%M:%S")
+                except Exception as e:
                     raise ValueError(f"Format timestamp invalide: {log.get('timestamp')} - {str(e)}")
                 
                 log_date = log_timestamp.date()
                 log_type = log.get("type", "EXIT")
                 
-                # Check if already imported
-                existing_sync = self.db.query(AttendanceSyncLog).filter(
-                    AttendanceSyncLog.attendance_log_id == attendance_log_id
-                ).first()
+                # Check if already imported (only if ID is present)
+                if attendance_log_id:
+                    existing_sync = self.db.query(AttendanceSyncLog).filter(
+                        AttendanceSyncLog.attendance_log_id == attendance_log_id
+                    ).first()
+                    
+                    if existing_sync:
+                        summary["skipped_duplicate"] += 1
+                        continue
                 
-                if existing_sync:
-                    summary["skipped_duplicate"] += 1
-                    continue
+                # Find HR employee
+                mapping = None
+                employee = None
                 
-                # Find HR employee via mapping
-                mapping = self.db.query(AttendanceEmployeeMapping).filter(
-                    AttendanceEmployeeMapping.attendance_employee_id == attendance_emp_id
-                ).first()
+                # 1. Try by Attendance ID mapping
+                if attendance_emp_id:
+                    mapping = self.db.query(AttendanceEmployeeMapping).filter(
+                        AttendanceEmployeeMapping.attendance_employee_id == attendance_emp_id
+                    ).first()
                 
-                if not mapping:
-                    summary["skipped_no_mapping"] += 1
-                    summary["details"].append({
-                        "log_id": log_id,
-                        "status": "skipped",
-                        "message": f"Pas de mapping pour ID Attendance {attendance_emp_id}",
-                        "employee_name": f"ID Attendance: {attendance_emp_id}"
-                    })
-                    logger.warning(f"No mapping for Attendance employee {attendance_emp_id}")
-                    continue
+                if mapping:
+                    hr_emp_id = mapping.hr_employee_id
+                    employee = self.db.query(Employe).filter(Employe.id == hr_emp_id).first()
                 
-                hr_emp_id = mapping.hr_employee_id
-                employee = self.db.query(Employe).filter(Employe.id == hr_emp_id).first()
+                # 2. If no mapping/employee found, try by Name (for Excel import)
+                if not employee and emp_name_from_log:
+                    # Normalize name for search (uppercase, simple spaces)
+                    search_name = emp_name_from_log.upper().strip()
+                    
+                    # Try exact match on "Nom Prenom"
+                    from sqlalchemy import func
+                    employee = self.db.query(Employe).filter(
+                        func.upper(func.concat(Employe.nom, ' ', Employe.prenom)) == search_name
+                    ).first()
+                    
+                    # Try reverse "Prenom Nom"
+                    if not employee:
+                        employee = self.db.query(Employe).filter(
+                            func.upper(func.concat(Employe.prenom, ' ', Employe.nom)) == search_name
+                        ).first()
+                        
+                    if employee:
+                        hr_emp_id = employee.id
+                        # Optional: Auto-create mapping?
+                        # For now, just use the employee found
                 
                 if not employee:
                     summary["skipped_no_mapping"] += 1
                     summary["details"].append({
                         "log_id": log_id,
-                        "status": "error",
-                        "message": f"Employé HR ID {hr_emp_id} introuvable",
-                        "employee_name": mapping.attendance_employee_name or f"HR ID: {hr_emp_id}"
+                        "status": "skipped",
+                        "message": f"Employé non trouvé: ID={attendance_emp_id}, Nom={emp_name_from_log}",
+                        "employee_name": emp_name_from_log or f"ID: {attendance_emp_id}"
                     })
-                    logger.error(f"HR Employee {hr_emp_id} not found but mapping exists")
                     continue
                 
                 emp_name = f"{employee.nom} {employee.prenom}"
@@ -390,9 +422,14 @@ class AttendanceService:
                 
                 if existing_value is not None:
                     # Conflict: day already set in HR
+                    # Only create conflict if we have a valid attendance_log_id (from API)
+                    # For Excel import without ID, we might skip conflict tracking or generate a fake ID?
+                    # Let's generate a fake ID if missing for conflict tracking
+                    conflict_log_id = attendance_log_id if attendance_log_id else int(log_timestamp.timestamp())
+                    
                     conflict = AttendanceImportConflict(
                         hr_employee_id=hr_emp_id,
-                        attendance_log_id=attendance_log_id,
+                        attendance_log_id=conflict_log_id,
                         conflict_date=log_date,
                         hr_existing_value=existing_value,
                         attendance_worked_minutes=worked_minutes,
@@ -406,7 +443,6 @@ class AttendanceService:
                         "message": f"Conflit: Jour {day} déjà rempli ({existing_value})",
                         "employee_name": emp_name
                     })
-                    logger.info(f"Conflict detected for {log_date} - Employee {emp_name}")
                 else:
                     # No conflict, import
                     day_status, overtime_hours = self.convert_minutes_to_pointage(worked_minutes)
@@ -417,39 +453,48 @@ class AttendanceService:
                     pointage.heures_supplementaires = round(current_overtime + overtime_hours, 2)
                     
                     # Log the import
-                    sync_log = AttendanceSyncLog(
-                        attendance_log_id=attendance_log_id,
-                        hr_employee_id=hr_emp_id,
-                        sync_date=log_date,
-                        worked_minutes=worked_minutes,
-                        overtime_minutes=max(0, worked_minutes - STANDARD_DAY_MINUTES),
-                        log_type=LogType(log_type) if log_type in ["ENTRY", "EXIT"] else LogType.EXIT
-                    )
-                    self.db.add(sync_log)
-                    self.db.flush()
+                    # Use fake ID if missing
+                    sync_log_id = attendance_log_id if attendance_log_id else int(log_timestamp.timestamp())
                     
-                    # ===== Incomplete Log Tracking =====
-                    if status in ["incomplete_entry", "incomplete_exit"]:
-                        incomplete_log = IncompleteAttendanceLog(
-                            attendance_log_id=attendance_log_id,
-                            attendance_sync_log_id=sync_log.id,
+                    # Check if sync log already exists (for Excel re-import)
+                    existing_sync_log = self.db.query(AttendanceSyncLog).filter(
+                        AttendanceSyncLog.attendance_log_id == sync_log_id
+                    ).first()
+                    
+                    if not existing_sync_log:
+                        sync_log = AttendanceSyncLog(
+                            attendance_log_id=sync_log_id,
                             hr_employee_id=hr_emp_id,
-                            employee_name=emp_name,
-                            log_date=log_date,
-                            log_type=log_type,
-                            log_timestamp=log_timestamp,
-                            estimated_minutes=worked_minutes,
-                            estimation_rule=estimation_rule,
-                            status='pending'
+                            sync_date=log_date,
+                            worked_minutes=worked_minutes,
+                            overtime_minutes=max(0, worked_minutes - STANDARD_DAY_MINUTES),
+                            log_type=LogType(log_type) if log_type in ["ENTRY", "EXIT"] else LogType.EXIT
                         )
-                        self.db.add(incomplete_log)
-                        summary["incomplete_pending_validation"] += 1
-                        summary["details"].append({
-                            "log_id": log_id,
-                            "status": "incomplete",
-                            "message": f"Log incomplet ({log_type}) - Estimé: {worked_minutes}m - Règle: {estimation_rule}",
-                            "employee_name": emp_name
-                        })
+                        self.db.add(sync_log)
+                        self.db.flush()
+                        
+                        # ===== Incomplete Log Tracking =====
+                        if status in ["incomplete_entry", "incomplete_exit"]:
+                            incomplete_log = IncompleteAttendanceLog(
+                                attendance_log_id=sync_log_id,
+                                attendance_sync_log_id=sync_log.id,
+                                hr_employee_id=hr_emp_id,
+                                employee_name=emp_name,
+                                log_date=log_date,
+                                log_type=log_type,
+                                log_timestamp=log_timestamp,
+                                estimated_minutes=worked_minutes,
+                                estimation_rule=estimation_rule,
+                                status='pending'
+                            )
+                            self.db.add(incomplete_log)
+                            summary["incomplete_pending_validation"] += 1
+                            summary["details"].append({
+                                "log_id": log_id,
+                                "status": "incomplete",
+                                "message": f"Log incomplet ({log_type}) - Estimé: {worked_minutes}m - Règle: {estimation_rule}",
+                                "employee_name": emp_name
+                            })
                         
                     summary["imported"] += 1
                 

@@ -72,6 +72,7 @@ class AttendanceImportConflictResponse(AttendanceImportConflictBase):
     
     class Config:
         from_attributes = True
+        use_enum_values = True
 
 class ConflictResolution(BaseModel):
     resolution: str = Field(..., description="'keep_hr' or 'use_attendance'")
