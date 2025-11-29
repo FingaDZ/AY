@@ -23,9 +23,12 @@ from schemas import (
     AttendanceImportSummary,
     EmployeeSyncRequest,
     EmployeeSyncResponse,
+    ImportPreviewResponse,
+    ImportConfirmRequest,
 )
 from services.attendance_service import AttendanceService
 from services.import_service import ImportService
+from services.preview_service import preview_import_endpoint, confirm_import_endpoint
 
 router = APIRouter(prefix="/attendance-integration", tags=["Attendance Integration"])
 
@@ -155,6 +158,22 @@ async def import_attendance_file(
         raise HTTPException(400, str(e))
     except Exception as e:
         raise HTTPException(500, f"Erreur lors de l'import: {str(e)}")
+
+@router.post("/import-preview", response_model=ImportPreviewResponse)
+async def import_preview(
+    file: UploadFile = File(...),
+    db: Session = Depends(get_db)
+):
+    """Preview attendance import before applying changes"""
+    return await preview_import_endpoint(file, db)
+
+@router.post("/import-confirm", response_model=AttendanceImportSummary)
+async def import_confirm(
+    request: ImportConfirmRequest,
+    db: Session = Depends(get_db)
+):
+    """Confirm and execute previewed import"""
+    return await confirm_import_endpoint(request, db)
 
 # ============ Conflict Management ============
 

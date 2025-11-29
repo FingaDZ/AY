@@ -76,6 +76,14 @@ from .incomplete_log import (
     IncompleteLogValidation,
     IncompleteLogStats,
 )
+from .import_preview import (
+    LogPreviewItem,
+    LogPreviewStatus,
+    MatchMethod,
+    ImportPreviewStats,
+    ImportPreviewResponse,
+    ImportConfirmRequest,
+)
 
 __all__ = [
     "EmployeBase",
@@ -138,4 +146,10 @@ __all__ = [
     "IncompleteLogResponse",
     "IncompleteLogValidation",
     "IncompleteLogStats",
+    "LogPreviewItem",
+    "LogPreviewStatus",
+    "MatchMethod",
+    "ImportPreviewStats",
+    "ImportPreviewResponse",
+    "ImportConfirmRequest",
 ]
