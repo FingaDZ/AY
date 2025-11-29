@@ -53,7 +53,7 @@ def sync_employee_to_attendance(
         return EmployeeSyncResponse(
             success=True,
             message=f"Employé {employee.nom} {employee.prenom} synchronisé avec succès",
-            mapping=AttendanceEmployeeMappingResponse.from_orm(mapping)
+            mapping=AttendanceEmployeeMappingResponse.model_validate(mapping)
         )
     else:
         return EmployeeSyncResponse(
@@ -95,7 +95,7 @@ def list_employee_mappings(
 ):
     """List all employee mappings"""
     mappings = db.query(AttendanceEmployeeMapping).offset(skip).limit(limit).all()
-    return [AttendanceEmployeeMappingResponse.from_orm(m) for m in mappings]
+    return [AttendanceEmployeeMappingResponse.model_validate(m) for m in mappings]
 
 @router.delete("/mappings/{mapping_id}")
 def delete_employee_mapping(mapping_id: int, db: Session = Depends(get_db)):
@@ -176,7 +176,7 @@ def list_conflicts(
             raise HTTPException(status_code=400, detail=f"Invalid status: {status}")
     
     conflicts = query.order_by(AttendanceImportConflict.created_at.desc()).offset(skip).limit(limit).all()
-    return [AttendanceImportConflictResponse.from_orm(c) for c in conflicts]
+    return [AttendanceImportConflictResponse.model_validate(c) for c in conflicts]
 
 @router.post("/conflicts/{conflict_id}/resolve")
 def resolve_conflict(
