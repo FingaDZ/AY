@@ -1,0 +1,14 @@
+    
+    # Clean up session
+    del preview_sessions[request.session_id]
+    
+    return AttendanceImportSummary(
+        total_logs=len(selected_items),
+        imported=imported,
+        skipped_duplicate=0,
+        skipped_no_mapping=0,
+        conflicts=0,
+        errors=errors,
+        incomplete_pending_validation=0,
+        details=[]
+    )
