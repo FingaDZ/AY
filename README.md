@@ -1,10 +1,10 @@
 # HR System
 
-[![Version](https://img.shields.io/badge/version-2.2.0-blue.svg)](https://github.com/FingaDZ/AY/releases/tag/v2.2.0)
+[![Version](https://img.shields.io/badge/version-2.3.0-blue.svg)](https://github.com/FingaDZ/AY/releases/tag/v2.3.0)
 [![Status](https://img.shields.io/badge/status-stable-green.svg)](https://github.com/FingaDZ/AY)
 [![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20Linux-lightgrey.svg)]()
 
-> **Version actuelle** : 2.2.0 (Major Refactoring)  
+> **Version actuelle** : 2.3.0 (Major Refactoring)  
 > **Dernière mise à jour** : 29 novembre 2025  
 > **Statut** : ✅ Production Ready
 
@@ -206,6 +206,24 @@ ATTENDANCE_API_TIMEOUT=30
 
 - ✅ Authentification JWT
 - ✅ Hachage des mots de passe (bcrypt)
+- ✅ Validation des données (Pydantic)
+- ✅ CORS configuré
+- ✅ Soft delete pour données sensibles
+- ✅ Logging complet des actions
+
+## 📝 Changelog
+
+### v2.3.0 - 29 novembre 2025 ✨ ACTUELLE
+- 🗑️ **Nettoyage** : Suppression du module "Logs Incomplets"
+- 🔄 **Version** : Passage global à la version 2.3.0
+
+### v2.2.0 - 29 novembre 2025
+- 🔄 **Refactoring Majeur** : Système d'import complètement refactoré
+- 📊 **Calculs Journaliers** : 1 entrée + 1 sortie par jour avec règles métier
+- ⚖️ **Règles Business** : Vendredis travaillés par défaut, règle "Vendredi entre Absences"
+- 🎯 **Estimation Intelligente** : Entrée/sortie manquante estimée automatiquement
+- 🗑️ **Nettoyage** : Suppression pages redondantes
+- 🔍 **Filtres Avancés** : Statut + Employé + Date
 - 📋 **Colonnes Améliorées** : Date, Jour, Entrée, Sortie, Durée, H.Sup, Statut, Pointage
 - ⚡ **Import Direct** : Option import rapide sans prévisualisation
 
