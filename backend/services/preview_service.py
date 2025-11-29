@@ -1,11 +1,11 @@
 """
-Import Preview Endpoint
-Allows users to preview and validate attendance data before importing
+Import Preview Endpoint - Refactored
+Uses AttendanceCalculationService for proper daily calculations
 """
 
 from fastapi import APIRouter, Depends, UploadFile, File, HTTPException
 from sqlalchemy.orm import Session
-from typing import List
+from typing import List, Dict
 from datetime import datetime
 import uuid
 
@@ -21,94 +21,53 @@ from schemas import (
 )
 from services.import_service import ImportService
 from services.matching_service import EmployeeMatchingService
+from services.calculation_service import AttendanceCalculationService
 from services.attendance_service import AttendanceService
-from models import Pointage
 
-# In-memory cache for preview sessions (consider Redis for production)
+# In-memory cache for preview sessions
 preview_sessions = {}
-
-def validate_log(log: dict, employee_id: int, db: Session) -> tuple:
-    """
-    Validate a log and detect conflicts
-    Returns: (status, warnings, errors, has_conflict, existing_value)
-    """
-    warnings = []
-    errors = []
-    has_conflict = False
-    existing_value = None
-    
-    # Check if employee not found
-    if not employee_id:
-        errors.append("Employé non trouvé dans le système")
-        return LogPreviewStatus.ERROR, warnings, errors, False, None
-    
-    # Parse timestamp
-    try:
-        if isinstance(log['timestamp'], str):
-            timestamp = datetime.fromisoformat(log['timestamp'])
-        else:
-            timestamp = log['timestamp']
-        log_date = timestamp.date()
-    except Exception as e:
-        errors.append(f"Format de date invalide: {str(e)}")
-        return LogPreviewStatus.ERROR, warnings, errors, False, None
-    
-    # Check for conflicts (existing pointage data)
-    year = log_date.year
-    month = log_date.month
-    day = log_date.day
-    
-    pointage = db.query(Pointage).filter(
-        Pointage.employe_id == employee_id,
-        Pointage.annee == year,
-        Pointage.mois == month
-    ).first()
-    
-    if pointage:
-        existing_value = pointage.get_jour(day)
-        if existing_value is not None:
-            has_conflict = True
-            warnings.append(f"Conflit: Jour {day} déjà rempli (valeur: {existing_value})")
-    
-    # Check if log is incomplete
-    if not log.get('worked_minutes'):
-        warnings.append("Log incomplet - estimation sera appliquée")
-    
-    # Determine status
-    if errors:
-        status = LogPreviewStatus.ERROR
-    elif warnings:
-        status = LogPreviewStatus.WARNING
-    else:
-        status = LogPreviewStatus.OK
-    
-    return status, warnings, errors, has_conflict, existing_value
 
 async def preview_import_endpoint(
     file: UploadFile = File(...),
     db: Session = Depends(get_db)
 ) -> ImportPreviewResponse:
     """
-    Preview attendance import without applying changes
+    Preview attendance import with daily calculations
     """
     if not file.filename.endswith(('.xlsx', '.xls', '.csv')):
         raise HTTPException(400, "Format de fichier non supporté")
     
     content = await file.read()
     
-    # Parse file
+    # 1. Parse file
     import_service = ImportService()
     try:
         logs = import_service.parse_excel(content)
     except Exception as e:
         raise HTTPException(400, f"Erreur de parsing: {str(e)}")
     
-    # Match and validate each log
+    # 2. Initialize services
     matching_service = EmployeeMatchingService(db)
-    preview_items = []
+    calculation_service = AttendanceCalculationService(db)
     
+    # 3. Match employees for all logs first
+    for log in logs:
+        employee_id, match_method, confidence, alternatives = matching_service.match_employee(
+            log.get('employee_name', ''),
+            log.get('employee_id')
+        )
+        log['matched_employee_id'] = employee_id
+        log['match_method'] = match_method
+        log['match_confidence'] = confidence
+        log['alternative_matches'] = alternatives
+    
+    # 4. Group logs by employee + date
+    grouped_logs = calculation_service.group_logs_by_employee_date(logs)
+    
+    # 5. Process each day
+    preview_items = []
     stats = {
-        'total_logs': len(logs),
+        'total_logs': 0,
         'ok_count': 0,
         'warning_count': 0,
         'error_count': 0,
@@ -118,80 +77,111 @@ async def preview_import_endpoint(
         'duplicates_detected': 0
     }
     
-    seen_log_ids = set()
+    processed_employees = set()
     
-    for log in logs:
-        # Check for duplicates
-        log_id = log.get('id', str(uuid.uuid4()))
-        if log_id in seen_log_ids:
-            stats['duplicates_detected'] += 1
-            continue
-        seen_log_ids.add(log_id)
+    for (employee_id, work_date), day_logs in grouped_logs.items():
+        stats['total_logs'] += 1
         
-        # Match employee
-        employee_id, match_method, confidence, alternatives = matching_service.match_employee(
-            log.get('employee_name', ''),
-            log.get('employee_id')
-        )
+        # Track unique employees
+        if employee_id:
+            processed_employees.add(employee_id)
         
         # Get employee details
         employee_details = None
+        employee_name = day_logs[0].get('employee_name', 'Inconnu')
+        match_method = day_logs[0].get('match_method', 'none')
+        match_confidence = day_logs[0].get('match_confidence', 0)
+        alternatives = day_logs[0].get('alternative_matches', [])
+        
         if employee_id:
             employee_details = matching_service.get_employee_details(employee_id)
-            stats['matched_employees'] += 1
+        
+        # Extract entry and exit
+        entry_time, exit_time = calculation_service.extract_entry_exit(day_logs)
+        
+        # Calculate daily attendance
+        if employee_id:
+            calculation = calculation_service.calculate_daily_attendance(
+                entry_time, exit_time, work_date, employee_id
+            )
         else:
-            stats['unmatched_employees'] += 1
+            # Employee not matched
+            calculation = {
+                'worked_minutes': 0,
+                'worked_hours': 0.0,
+                'is_valid_day': False,
+                'overtime_hours': 0.0,
+                'status': 'error',
+                'warnings': [],
+                'errors': ['Employé non trouvé dans le système'],
+                'day_value': 0,
+                'entry_time': entry_time,
+                'exit_time': exit_time,
+                'was_estimated': False
+            }
         
-        # Validate log
-        status, warnings, errors, has_conflict, existing_value = validate_log(
-            log, employee_id, db
-        )
-        
-        if has_conflict:
-            stats['conflicts_detected'] += 1
-        
-        # Count by status
-        if status == LogPreviewStatus.OK:
+        # Update stats
+        if calculation['status'] == 'ok':
             stats['ok_count'] += 1
-        elif status == LogPreviewStatus.WARNING:
+        elif calculation['status'] == 'warning':
             stats['warning_count'] += 1
         else:
             stats['error_count'] += 1
         
+        # Check for conflicts
+        has_conflict = 'Conflit' in ' '.join(calculation['warnings'])
+        if has_conflict:
+            stats['conflicts_detected'] += 1
+        
         # Create preview item
         preview_item = LogPreviewItem(
-            log_id=log_id,
-            employee_name=log.get('employee_name', 'Inconnu'),
-            timestamp=log['timestamp'],
-            log_type=log.get('type', 'EXIT'),
-            worked_minutes=log.get('worked_minutes'),
+            log_id=f"{employee_id}_{work_date.isoformat()}",
+            employee_name=employee_name,
+            timestamp=datetime.combine(work_date, datetime.min.time()),
+            log_type='DAILY',  # Changed to daily view
+            worked_minutes=calculation['worked_minutes'],
             matched_employee_id=employee_id,
             matched_employee_name=employee_details['name'] if employee_details else None,
             matched_employee_poste=employee_details['poste'] if employee_details else None,
-            match_confidence=confidence,
+            match_confidence=match_confidence,
             match_method=MatchMethod(match_method),
             alternative_matches=alternatives,
-            status=status,
-            warnings=warnings,
-            errors=errors,
+            status=LogPreviewStatus(calculation['status']),
+            warnings=calculation['warnings'],
+            errors=calculation['errors'],
             has_conflict=has_conflict,
-            existing_value=existing_value,
-            conflict_date=log.get('timestamp')[:10] if has_conflict else None
+            existing_value=None,
+            conflict_date=work_date.isoformat() if has_conflict else None
         )
         
-        preview_items.append(preview_item)
+        # Add custom fields for display
+        preview_item_dict = preview_item.model_dump()
+        preview_item_dict['work_date'] = work_date.isoformat()
+        preview_item_dict['entry_time'] = calculation['entry_time'].isoformat() if calculation['entry_time'] else None
+        preview_item_dict['exit_time'] = calculation['exit_time'].isoformat() if calculation['exit_time'] else None
+        preview_item_dict['worked_hours'] = calculation['worked_hours']
+        preview_item_dict['overtime_hours'] = calculation['overtime_hours']
+        preview_item_dict['day_value'] = calculation['day_value']
+        preview_item_dict['was_estimated'] = calculation['was_estimated']
+        
+        preview_items.append(preview_item_dict)
+    
+    # Final stats
+    stats['matched_employees'] = len(processed_employees)
+    stats['unmatched_employees'] = stats['total_logs'] - stats['matched_employees']
     
     # Generate session ID and cache
     session_id = str(uuid.uuid4())
     preview_sessions[session_id] = {
         'items': preview_items,
         'created_at': datetime.now(),
-        'original_logs': logs
+        'original_logs': logs,
+        'grouped_logs': grouped_logs
     }
     
     return ImportPreviewResponse(
         session_id=session_id,
-        items=preview_items,
+        items=[LogPreviewItem(**item) for item in preview_items],
         stats=ImportPreviewStats(**stats)
     )
 
@@ -207,20 +197,65 @@ async def confirm_import_endpoint(
     if not session:
         raise HTTPException(404, "Session de preview expirée ou introuvable")
     
-    # Filter logs based on selected IDs
-    selected_logs = []
-    for log in session['original_logs']:
-        if log['id'] in request.selected_log_ids:
-            # Apply manual mappings if provided
-            if log['id'] in request.employee_mappings:
-                log['_manual_employee_id'] = request.employee_mappings[log['id']]
-            selected_logs.append(log)
+    # Get selected items
+    selected_items = [
+        item for item in session['items']
+        if item['log_id'] in request.selected_log_ids
+    ]
     
-    # Execute import
+    if not selected_items:
+        raise HTTPException(400, "Aucun log sélectionné")
+    
+    # Execute import using attendance service
     attendance_service = AttendanceService(db)
-    summary = attendance_service.process_attendance_logs(selected_logs)
+    
+    # Convert preview items to pointage updates
+    imported = 0
+    errors = 0
+    
+    for item in selected_items:
+        try:
+            employee_id = item['matched_employee_id']
+            work_date = datetime.fromisoformat(item['work_date']).date()
+            day_value = item['day_value']
+            
+            # Update pointage
+            year = work_date.year
+            month = work_date.month
+            day = work_date.day
+            
+            # Get or create pointage for this month
+            from models import Pointage
+            pointage = db.query(Pointage).filter(
+                Pointage.employe_id == employee_id,
+                Pointage.annee == year,
+                Pointage.mois == month
+            ).first()
+            
+            if not pointage:
+                pointage = Pointage(
+                    employe_id=employee_id,
+                    annee=year,
+                    mois=month
+                )
+                db.add(pointage)
+            
+            # Set day value
+            pointage.set_jour(day, day_value)
+            imported += 1
+            
+        except Exception as e:
+            errors += 1
+            print(f"Error importing {item['log_id']}: {str(e)}")
+    
+    db.commit()
     
     # Clean up session
     del preview_sessions[request.session_id]
     
-    return summary
+    return AttendanceImportSummary(
+        imported=imported,
+        errors=errors,
+        conflicts=0,
+        incomplete_logs=0
+    )
