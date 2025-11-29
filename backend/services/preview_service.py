@@ -259,20 +259,23 @@ async def confirm_import_endpoint(
                     # Important: flush pour avoir un ID si besoin, mais surtout pour que SQLAlchemy le gère
                     db.flush() 
                 
-                # --- NOUVEAU: Remplir automatiquement les vendredis à 1 ---
+                # --- NOUVEAU: Remplir automatiquement les vendredis à 1 et les autres à 0 ---
                 import calendar
                 # monthrange retourne (weekday du 1er jour, nombre de jours)
                 # weekday: 0=Lundi, ... 4=Vendredi
                 _, num_days = calendar.monthrange(year, month)
                 for d in range(1, num_days + 1):
+                    current_val = pointage.get_jour(d)
+                    
                     # Vérifier si c'est un vendredi (weekday 4)
                     if datetime(year, month, d).weekday() == 4:
-                        # On met à 1 seulement si c'est vide (None) ou 0 (Absent par défaut)
-                        # Mais l'utilisateur veut "ajouter", donc on force à 1 par défaut.
-                        # Les logs traités ensuite dans la boucle écraseront si nécessaire pour ce jour spécifique.
-                        current_val = pointage.get_jour(d)
+                        # Vendredi : Force à 1 si vide ou 0
                         if current_val is None or current_val == 0:
                             pointage.set_jour(d, 1)
+                    else:
+                        # Autre jour : Met à 0 (Absent) si vide
+                        if current_val is None:
+                            pointage.set_jour(d, 0)
                 # ----------------------------------------------------------
 
                 # Mettre en cache
