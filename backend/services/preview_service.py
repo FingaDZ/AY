@@ -173,6 +173,21 @@ async def preview_import_endpoint(
     # Generate session ID and cache
     session_id = str(uuid.uuid4())
     preview_sessions[session_id] = {
+        'items': preview_items,
+        'created_at': datetime.now(),
+        'original_logs': logs,
+        'grouped_logs': grouped_logs
+    }
+    
+    return ImportPreviewResponse(
+        session_id=session_id,
+        items=[LogPreviewItem(**item) for item in preview_items],
+        stats=ImportPreviewStats(**stats)
+    )
+
+async def confirm_import_endpoint(
+    request: ImportConfirmRequest,
+    db: Session = Depends(get_db)
 ) -> AttendanceImportSummary:
     """
     Execute import after user confirmation
