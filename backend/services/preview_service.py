@@ -239,10 +239,46 @@ async def confirm_import_endpoint(
             
             # Vérifier dans le cache d'abord
             if cache_key in pointage_cache:
+            else:
+                # Sinon chercher en DB
+                from models import Pointage
+                pointage = db.query(Pointage).filter(
+                    Pointage.employe_id == employee_id,
+                    Pointage.annee == year,
+                    Pointage.mois == month
+                ).first()
+                
+                if not pointage:
+                    pointage = Pointage(
+                        employe_id=employee_id,
+                        annee=year,
                         mois=month
                     )
-            
-            # Set day value
+                    db.add(pointage)
+                    # Important: flush pour avoir un ID si besoin, mais surtout pour que SQLAlchemy le gère
+                    db.flush() 
+                
+                # --- NOUVEAU: Remplir automatiquement les vendredis à 1 et les autres à 0 ---
+                import calendar
+                # monthrange retourne (weekday du 1er jour, nombre de jours)
+                # weekday: 0=Lundi, ... 4=Vendredi
+                _, num_days = calendar.monthrange(year, month)
+                for d in range(1, num_days + 1):
+                    current_val = pointage.get_jour(d)
+                    
+                    # Vérifier si c'est un vendredi (weekday 4)
+                    if datetime(year, month, d).weekday() == 4:
+                        # Vendredi : Force à 1 si vide ou 0
+                        if current_val is None or current_val == 0:
+                            pointage.set_jour(d, 1)
+                    else:
+                        # Autre jour : Met à 0 (Absent) si vide
+                        if current_val is None:
+                            pointage.set_jour(d, 0)
+                # ----------------------------------------------------------
+
+                # Mettre en cache
+                pointage_cache[cache_key] = pointage
             pointage.set_jour(day, day_value)
             imported += 1
             
