@@ -48,6 +48,18 @@ class LogPreviewItem(BaseModel):
     has_conflict: bool = False
     existing_value: Optional[int] = None
     conflict_date: Optional[str] = None
+    
+    # Daily Calculation Fields (added for v2.2.0)
+    work_date: Optional[str] = None
+    entry_time: Optional[str] = None
+    exit_time: Optional[str] = None
+    worked_hours: Optional[float] = None
+    overtime_hours: Optional[float] = None
+    day_value: Optional[int] = None
+    was_estimated: Optional[bool] = None
+    
+    class Config:
+        from_attributes = True
 
 class ImportPreviewStats(BaseModel):
     """Statistics for preview"""
