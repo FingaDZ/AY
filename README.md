@@ -1,10 +1,10 @@
 # HR System
 
-[![Version](https://img.shields.io/badge/version-2.1.0-blue.svg)](https://github.com/FingaDZ/AY/releases/tag/v2.1.0)
+[![Version](https://img.shields.io/badge/version-2.2.0-blue.svg)](https://github.com/FingaDZ/AY/releases/tag/v2.2.0)
 [![Status](https://img.shields.io/badge/status-stable-green.svg)](https://github.com/FingaDZ/AY)
 [![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20Linux-lightgrey.svg)]()
 
-> **Version actuelle** : 2.1.0 (Feature Release)  
+> **Version actuelle** : 2.2.0 (Major Refactoring)  
 > **Dernière mise à jour** : 29 novembre 2025  
 > **Statut** : ✅ Production Ready
 
@@ -198,8 +198,8 @@ ATTENDANCE_API_TIMEOUT=30
 
 | Module | Version | Statut | Dernière Mise à Jour |
 |--------|---------|--------|----------------------|
-| **Frontend** | v2.1.0 | ✅ Stable | 29 Nov 2025 |
-| **Backend** | v2.1.0 | ✅ Stable | 29 Nov 2025 |
+| **Frontend** | v2.2.0 | ✅ Stable | 29 Nov 2025 |
+| **Backend** | v2.2.0 | ✅ Stable | 29 Nov 2025 |
 | **Base de Données** | MariaDB | ✅ Connecté | 29 Nov 2025 |
 
 ## 🔐 Sécurité
@@ -213,7 +213,17 @@ ATTENDANCE_API_TIMEOUT=30
 
 ## 📝 Changelog
 
-### v2.1.0 - 29 novembre 2025 ✨ ACTUELLE
+### v2.2.0 - 29 novembre 2025 ✨ ACTUELLE
+- 🔄 **Refactoring Majeur** : Système d'import complètement refactoré
+- 📊 **Calculs Journaliers** : 1 entrée + 1 sortie par jour avec règles métier
+- ⚖️ **Règles Business** : Min 4h, Max 12h, Heures sup > 7h effectives
+- 🎯 **Estimation Intelligente** : Entrée/sortie manquante estimée automatiquement
+- 🗑️ **Nettoyage** : Suppression pages redondantes (ImportAttendance, Conflicts)
+- 🔍 **Filtres Avancés** : Statut + Employé + Date
+- 📋 **Colonnes Améliorées** : Date, Jour, Entrée, Sortie, Durée, H.Sup, Statut, Pointage
+- ⚡ **Import Direct** : Option import rapide sans prévisualisation
+
+### v2.1.0 - 29 novembre 2025
 - 🎯 **Import Preview** : Prévisualisation et validation avant import
 - 🧠 **Matching Intelligent** : Fuzzy matching avec Levenshtein (auto-match ≥85%)
 - ⚠️ **Validation Avancée** : Détection conflits, doublons, logs incomplets
@@ -293,5 +303,5 @@ Usage interne - Tous droits réservés
 ---
 
 **Développé par AIRBAND**  
-**Version** : 2.1.0  
+**Version** : 2.2.0  
 **Date** : 29 novembre 2025
