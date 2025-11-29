@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Date, ForeignKey
+from sqlalchemy import Column, Integer, String, Date, ForeignKey, UniqueConstraint
 from sqlalchemy.orm import relationship
 from database import Base
 
@@ -9,6 +9,10 @@ class Pointage(Base):
     employe_id = Column(Integer, ForeignKey("employes.id", ondelete="CASCADE"), nullable=False)
     annee = Column(Integer, nullable=False, index=True)
     mois = Column(Integer, nullable=False, index=True)
+
+    __table_args__ = (
+        UniqueConstraint('employe_id', 'annee', 'mois', name='uq_pointage_employe_periode'),
+    )
     
     # Jours du mois (1 à 31) - Valeur: 1=Travaillé/Férié, 0=Absent/Congé/Maladie/Arrêt, NULL=Non défini
     jour_01 = Column(Integer, nullable=True)

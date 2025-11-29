@@ -213,6 +213,9 @@ async def confirm_import_endpoint(
     imported = 0
     errors = 0
     
+    # Cache local pour éviter les requêtes répétitives et les doublons dans la même transaction
+    pointage_cache = {}
+
     for item in selected_items:
         try:
             employee_id = item.get('matched_employee_id')
@@ -231,21 +234,33 @@ async def confirm_import_endpoint(
             month = work_date.month
             day = work_date.day
             
-            # Get or create pointage for this month
-            from models import Pointage
-            pointage = db.query(Pointage).filter(
-                Pointage.employe_id == employee_id,
-                Pointage.annee == year,
-                Pointage.mois == month
-            ).first()
+            # Clé unique pour le cache
+            cache_key = (employee_id, year, month)
             
-            if not pointage:
-                pointage = Pointage(
-                    employe_id=employee_id,
-                    annee=year,
-                    mois=month
-                )
-                db.add(pointage)
+            # Vérifier dans le cache d'abord
+            if cache_key in pointage_cache:
+                pointage = pointage_cache[cache_key]
+            else:
+                # Sinon chercher en DB
+                from models import Pointage
+                pointage = db.query(Pointage).filter(
+                    Pointage.employe_id == employee_id,
+                    Pointage.annee == year,
+                    Pointage.mois == month
+                ).first()
+                
+                if not pointage:
+                    pointage = Pointage(
+                        employe_id=employee_id,
+                        annee=year,
+                        mois=month
+                    )
+                    db.add(pointage)
+                    # Important: flush pour avoir un ID si besoin, mais surtout pour que SQLAlchemy le gère
+                    db.flush() 
+                
+                # Mettre en cache
+                pointage_cache[cache_key] = pointage
             
             # Set day value
             pointage.set_jour(day, day_value)
