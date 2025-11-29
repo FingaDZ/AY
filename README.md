@@ -24,6 +24,28 @@ Système complet de gestion des ressources humaines développé avec FastAPI (ba
 - ✅ **Logs & Audit** : Traçabilité des actions critiques.
 - 🆕 **Intégration Attendance** : Synchronisation avec système de pointage biométrique (v1.3.0-beta).
 
+### 📸 Aperçu de l'Interface
+
+<div align="center">
+  <img src="docs/screenshots/dashboard.png" alt="Dashboard" width="800"/>
+  <p><em>Tableau de bord principal avec statistiques en temps réel</em></p>
+</div>
+
+<div align="center">
+  <img src="docs/screenshots/employees.png" alt="Gestion des Employés" width="800"/>
+  <p><em>Gestion complète des dossiers employés</em></p>
+</div>
+
+<div align="center">
+  <img src="docs/screenshots/attendance.png" alt="Pointages" width="800"/>
+  <p><em>Suivi des pointages et présences</em></p>
+</div>
+
+<div align="center">
+  <img src="docs/screenshots/payroll.png" alt="Paie" width="800"/>
+  <p><em>Calcul automatisé des salaires</em></p>
+</div>
+
 ## 🛠️ Stack Technique
 
 ### Backend
