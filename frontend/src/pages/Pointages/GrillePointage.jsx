@@ -26,6 +26,23 @@ const VALUE_TO_TYPE = {
 
 // Fonction pour convertir code vers valeur numérique
 const codeToValue = (code) => {
+  return TYPE_JOUR[code]?.value ?? null;
+};
+
+// Fonction pour convertir valeur numérique vers code (pour affichage)
+//const valueToCode = (value) => {
+//  if (value === null || value === undefined) return null;
+//  return VALUE_TO_TYPE[value] || null;
+//};
+const valueToCode = (value) => {
+  if (value === null || value === undefined) return null;
+  const numValue = typeof value === 'string' ? parseInt(value, 10) : value;
+  return VALUE_TO_TYPE[numValue] || null;
+};
+
+function GrillePointage() {
+  const [loading, setLoading] = useState(false);
+  const [saving, setSaving] = useState(false);
   const [employes, setEmployes] = useState([]);
   const [pointages, setPointages] = useState({});
   const [filteredEmployes, setFilteredEmployes] = useState([]);
