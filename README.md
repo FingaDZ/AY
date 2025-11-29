@@ -198,28 +198,14 @@ ATTENDANCE_API_TIMEOUT=30
 
 | Module | Version | Statut | Dernière Mise à Jour |
 |--------|---------|--------|----------------------|
-| **Frontend** | v2.2.0 | ✅ Stable | 29 Nov 2025 |
-| **Backend** | v2.2.0 | ✅ Stable | 29 Nov 2025 |
+| **Frontend** | v2.3.0 | ✅ Stable | 29 Nov 2025 |
+| **Backend** | v2.3.0 | ✅ Stable | 29 Nov 2025 |
 | **Base de Données** | MariaDB | ✅ Connecté | 29 Nov 2025 |
 
 ## 🔐 Sécurité
 
 - ✅ Authentification JWT
 - ✅ Hachage des mots de passe (bcrypt)
-- ✅ Validation des données (Pydantic)
-- ✅ CORS configuré
-- ✅ Soft delete pour données sensibles
-- ✅ Logging complet des actions
-
-## 📝 Changelog
-
-### v2.2.0 - 29 novembre 2025 ✨ ACTUELLE
-- 🔄 **Refactoring Majeur** : Système d'import complètement refactoré
-- 📊 **Calculs Journaliers** : 1 entrée + 1 sortie par jour avec règles métier
-- ⚖️ **Règles Business** : Min 4h, Max 12h, Heures sup > 7h effectives
-- 🎯 **Estimation Intelligente** : Entrée/sortie manquante estimée automatiquement
-- 🗑️ **Nettoyage** : Suppression pages redondantes (ImportAttendance, Conflicts)
-- 🔍 **Filtres Avancés** : Statut + Employé + Date
 - 📋 **Colonnes Améliorées** : Date, Jour, Entrée, Sortie, Durée, H.Sup, Statut, Pointage
 - ⚡ **Import Direct** : Option import rapide sans prévisualisation
 
@@ -303,5 +289,5 @@ Usage interne - Tous droits réservés
 ---
 
 **Développé par AIRBAND**  
-**Version** : 2.2.0  
+**Version** : 2.3.0  
 **Date** : 29 novembre 2025

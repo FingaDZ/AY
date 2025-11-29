@@ -42,7 +42,6 @@ const Sidebar = ({ isOpen, onClose }) => {
         { to: '/postes', label: 'Postes', icon: Briefcase },
         { to: '/pointages', label: 'Pointages', icon: ClipboardList },
         { to: '/pointages/import-preview', label: 'Import Pointages', icon: Eye },
-        { to: '/incomplete-logs', label: 'Logs Incomplets', icon: AlertCircle },
         { to: '/missions', label: 'Missions', icon: Clock },
         { to: '/avances', label: 'Avances', icon: DollarSign },
         { to: '/credits', label: 'Crédits', icon: DollarSign },
@@ -115,7 +114,7 @@ const Sidebar = ({ isOpen, onClose }) => {
 
                 <div className="p-4 border-t border-gray-800 text-xs text-gray-500 flex flex-col items-center space-y-1 shrink-0">
                     <div className="flex justify-between w-full">
-                        <span>v2.2.0</span>
+                        <span>v2.3.0</span>
                         <span>© 2025</span>
                     </div>
                     <div className="text-blue-400 font-semibold tracking-wider pt-2 opacity-80 text-[10px]">

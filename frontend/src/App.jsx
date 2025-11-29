@@ -18,7 +18,6 @@ import UtilisateursPage from './pages/Utilisateurs/UtilisateursPage';
 import LogsPage from './pages/Logs/LogsPage';
 import LoginPage from './pages/Login/LoginPage';
 import ImportPreview from './pages/Pointages/ImportPreview';
-import IncompleteLogsList from './pages/IncompleteLogs/IncompleteLogsList';
 
 // Composant pour protéger les routes
 function ProtectedRoute({ children }) {
@@ -58,7 +57,6 @@ function AppRoutes() {
               {/* Pointages */}
               <Route path="/pointages" element={<GrillePointage />} />
               <Route path="/pointages/import-preview" element={<ImportPreview />} />
-              <Route path="/incomplete-logs" element={<IncompleteLogsList />} />
 
               {/* Clients */}
               <Route path="/clients" element={<ClientsList />} />
