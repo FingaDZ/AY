@@ -1,11 +1,11 @@
 # HR System
 
-[![Version](https://img.shields.io/badge/version-1.7.0-blue.svg)](https://github.com/FingaDZ/AY/releases/tag/v1.7.0)
+[![Version](https://img.shields.io/badge/version-2.0.1-blue.svg)](https://github.com/FingaDZ/AY/releases/tag/v2.0.1)
 [![Status](https://img.shields.io/badge/status-stable-green.svg)](https://github.com/FingaDZ/AY)
 [![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20Linux-lightgrey.svg)]()
 
-> **Version actuelle** : 1.7.0 (Hybrid Incomplete Logs)  
-> **Dernière mise à jour** : 28 novembre 2025  
+> **Version actuelle** : 2.0.1 (Corrective Release)  
+> **Dernière mise à jour** : 29 novembre 2025  
 > **Statut** : ✅ Production Ready
 
 ## 📋 Description
@@ -202,8 +202,8 @@ ATTENDANCE_API_TIMEOUT=30
 
 | Module | Version | Statut | Dernière Mise à Jour |
 |--------|---------|--------|----------------------|
-| **Frontend** | v1.7.0 | ✅ Stable | 29 Nov 2025 |
-| **Backend** | v1.7.0 | ✅ Stable | 29 Nov 2025 |
+| **Frontend** | v2.0.1 | ✅ Stable | 29 Nov 2025 |
+| **Backend** | v2.0.1 | ✅ Stable | 29 Nov 2025 |
 | **Base de Données** | MariaDB | ✅ Connecté | 29 Nov 2025 |
 
 ## 🔐 Sécurité
@@ -217,7 +217,12 @@ ATTENDANCE_API_TIMEOUT=30
 
 ## 📝 Changelog
 
-### v1.7.0 - 29 novembre 2025 ✨ ACTUELLE
+### v2.0.1 - 29 novembre 2025 ✨ ACTUELLE
+- 🐛 **Correctif** : Résolution des problèmes de cache navigateur après mise à jour
+- 🐛 **Correctif** : Affichage de la version et branding sur tous les écrans
+- 🔄 **Système** : Amélioration du script de déploiement
+
+### v1.7.0 - 29 novembre 2025
 - 🛡️ **Gestion Logs Incomplets** : Solution hybride (Calcul Smart + Validation RH)
 - 📊 **Dashboard** : Interface de validation des estimations
 - 🚀 **Fiabilité** : Import robuste sans perte de données
@@ -276,5 +281,5 @@ Usage interne - Tous droits réservés
 ---
 
 **Développé par AIRBAND**  
-**Version** : 1.7.0  
+**Version** : 2.0.1  
 **Date** : 29 novembre 2025

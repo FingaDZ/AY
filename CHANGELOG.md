@@ -5,6 +5,12 @@ Tous les changements notables de ce projet seront documentés dans ce fichier.
 Le format est basé sur [Keep a Changelog](https://keepachangelog.com/fr/1.0.0/),
 et ce projet adhère à [Semantic Versioning](https://semver.org/lang/fr/).
 
+## [2.0.1] - 2025-11-29
+### 🐛 Correctifs
+- Résolution des problèmes de cache navigateur après mise à jour
+- Affichage de la version et branding sur tous les écrans
+- Amélioration du script de déploiement
+
 ## [1.7.0] - 2025-11-28
 ### ✨ Fonctionnalités Majeures
 - **Gestion Hybride des Logs Incomplets** : Solution complète pour les pointages manquants (ENTRY sans EXIT ou inversement)
