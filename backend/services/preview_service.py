@@ -239,6 +239,7 @@ async def confirm_import_endpoint(
             
             # Vérifier dans le cache d'abord
             if cache_key in pointage_cache:
+                pointage = pointage_cache[cache_key]
             else:
                 # Sinon chercher en DB
                 from models import Pointage
