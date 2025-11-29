@@ -1,10 +1,10 @@
 # HR System
 
-[![Version](https://img.shields.io/badge/version-2.0.3-blue.svg)](https://github.com/FingaDZ/AY/releases/tag/v2.0.3)
+[![Version](https://img.shields.io/badge/version-2.1.0-blue.svg)](https://github.com/FingaDZ/AY/releases/tag/v2.1.0)
 [![Status](https://img.shields.io/badge/status-stable-green.svg)](https://github.com/FingaDZ/AY)
 [![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20Linux-lightgrey.svg)]()
 
-> **Version actuelle** : 2.0.3 (Bugfix Release)  
+> **Version actuelle** : 2.1.0 (Feature Release)  
 > **Dernière mise à jour** : 29 novembre 2025  
 > **Statut** : ✅ Production Ready
 
@@ -198,8 +198,8 @@ ATTENDANCE_API_TIMEOUT=30
 
 | Module | Version | Statut | Dernière Mise à Jour |
 |--------|---------|--------|----------------------|
-| **Frontend** | v2.0.3 | ✅ Stable | 29 Nov 2025 |
-| **Backend** | v2.0.3 | ✅ Stable | 29 Nov 2025 |
+| **Frontend** | v2.1.0 | ✅ Stable | 29 Nov 2025 |
+| **Backend** | v2.1.0 | ✅ Stable | 29 Nov 2025 |
 | **Base de Données** | MariaDB | ✅ Connecté | 29 Nov 2025 |
 
 ## 🔐 Sécurité
@@ -213,7 +213,14 @@ ATTENDANCE_API_TIMEOUT=30
 
 ## 📝 Changelog
 
-### v2.0.3 - 29 novembre 2025 ✨ ACTUELLE
+### v2.1.0 - 29 novembre 2025 ✨ ACTUELLE
+- 🎯 **Import Preview** : Prévisualisation et validation avant import
+- 🧠 **Matching Intelligent** : Fuzzy matching avec Levenshtein (auto-match ≥85%)
+- ⚠️ **Validation Avancée** : Détection conflits, doublons, logs incomplets
+- 📊 **Statistiques** : Résumé complet (OK/Warning/Error)
+- 🔗 **Nouveaux Endpoints** : `/import-preview`, `/import-confirm`
+
+### v2.0.3 - 29 novembre 2025
 - 🐛 **Correctif Critique** : Fix compatibilité Pydantic v2 pour endpoint conflits (erreur 500)
 - ✨ **Amélioration** : Affichage noms et postes employés sur page Conflits Import
 - 📊 **UX** : Meilleure lisibilité des conflits d'importation
@@ -286,5 +293,5 @@ Usage interne - Tous droits réservés
 ---
 
 **Développé par AIRBAND**  
-**Version** : 2.0.3  
+**Version** : 2.1.0  
 **Date** : 29 novembre 2025
