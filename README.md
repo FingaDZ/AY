@@ -180,9 +180,9 @@ ATTENDANCE_API_TIMEOUT=30
 
 | Module | Version | Statut | Dernière Mise à Jour |
 |--------|---------|--------|----------------------|
-| **Frontend** | v1.3.0 | ✅ Stable | 25 Nov 2025 |
-| **Backend** | v1.3.0 | ✅ Stable | 25 Nov 2025 |
-| **Base de Données** | MariaDB | ✅ Connecté | 25 Nov 2025 |
+| **Frontend** | v1.7.0 | ✅ Stable | 29 Nov 2025 |
+| **Backend** | v1.7.0 | ✅ Stable | 29 Nov 2025 |
+| **Base de Données** | MariaDB | ✅ Connecté | 29 Nov 2025 |
 
 ## 🔐 Sécurité
 
@@ -195,7 +195,7 @@ ATTENDANCE_API_TIMEOUT=30
 
 ## 📝 Changelog
 
-### v1.7.0 - 26 novembre 2025 ✨ ACTUELLE
+### v1.7.0 - 29 novembre 2025 ✨ ACTUELLE
 - 🛡️ **Gestion Logs Incomplets** : Solution hybride (Calcul Smart + Validation RH)
 - 📊 **Dashboard** : Interface de validation des estimations
 - 🚀 **Fiabilité** : Import robuste sans perte de données
@@ -254,5 +254,5 @@ Usage interne - Tous droits réservés
 ---
 
 **Développé par AIRBAND**  
-**Version** : 1.3.0  
-**Date** : 25 novembre 2025
+**Version** : 1.7.0  
+**Date** : 29 novembre 2025

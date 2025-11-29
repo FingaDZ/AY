@@ -1,5 +1,5 @@
 import React from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import {
     LayoutDashboard,
     Users,
@@ -14,11 +14,26 @@ import {
     Database,
     UserCog,
     Download,
-    AlertCircle
+    AlertCircle,
+    LogOut
 } from 'lucide-react';
 
 const Sidebar = ({ isOpen, onClose }) => {
     const location = useLocation();
+    const navigate = useNavigate();
+
+    const handleLogout = () => {
+        // Clear any stored authentication data
+        localStorage.removeItem('user');
+        localStorage.removeItem('token');
+        sessionStorage.clear();
+
+        // Redirect to login page
+        navigate('/login');
+
+        // Close sidebar on mobile
+        onClose();
+    };
 
     const links = [
         { to: '/', label: 'Dashboard', icon: LayoutDashboard },
@@ -86,13 +101,25 @@ const Sidebar = ({ isOpen, onClose }) => {
                         );
                     })}
                 </nav>
+
+                {/* Logout Button */}
+                <div className="px-4 pb-4 shrink-0">
+                    <button
+                        onClick={handleLogout}
+                        className="flex items-center w-full px-4 py-3 rounded-lg transition-colors text-gray-400 hover:bg-red-600 hover:text-white border border-gray-700 hover:border-red-600"
+                    >
+                        <LogOut className="w-5 h-5 mr-3 shrink-0" />
+                        Déconnexion
+                    </button>
+                </div>
+
                 <div className="p-4 border-t border-gray-800 text-xs text-gray-500 flex flex-col items-center space-y-1 shrink-0">
                     <div className="flex justify-between w-full">
                         <span>v1.7.0</span>
                         <span>© 2025</span>
                     </div>
-                    <div className="text-blue-400 font-semibold tracking-wider pt-2 opacity-80">
-                        HR System
+                    <div className="text-blue-400 font-semibold tracking-wider pt-2 opacity-80 text-[10px]">
+                        Powered by AIRBAND
                     </div>
                 </div>
             </div>
