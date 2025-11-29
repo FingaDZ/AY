@@ -32,14 +32,10 @@ Système complet de gestion des ressources humaines développé avec FastAPI (ba
 </div>
 
 <div align="center">
-  <img src="docs/screenshots/employees.png" alt="Gestion des Employés" width="800"/>
-  <p><em>Gestion complète des dossiers employés</em></p>
-</div>
-
-<div align="center">
   <img src="docs/screenshots/attendance.png" alt="Pointages" width="800"/>
   <p><em>Suivi des pointages et présences</em></p>
 </div>
+
 
 <div align="center">
   <img src="docs/screenshots/payroll.png" alt="Paie" width="800"/>
