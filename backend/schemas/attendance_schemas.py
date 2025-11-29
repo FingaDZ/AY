@@ -69,6 +69,8 @@ class AttendanceImportConflictResponse(AttendanceImportConflictBase):
     created_at: datetime
     resolved_at: Optional[datetime] = None
     resolved_by: Optional[str] = None
+    employee_name: Optional[str] = None
+    employee_poste: Optional[str] = None
     
     class Config:
         from_attributes = True

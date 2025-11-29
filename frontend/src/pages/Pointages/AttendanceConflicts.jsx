@@ -50,9 +50,17 @@ function AttendanceConflicts() {
             sorter: (a, b) => dayjs(a.conflict_date).unix() - dayjs(b.conflict_date).unix(),
         },
         {
-            title: 'Employé ID',
-            dataIndex: 'hr_employee_id',
-            key: 'hr_employee_id',
+            title: 'Employé',
+            dataIndex: 'employee_name',
+            key: 'employee_name',
+            render: (name, record) => (
+                <div>
+                    <div style={{ fontWeight: 500 }}>{name || `ID: ${record.hr_employee_id}`}</div>
+                    {record.employee_poste && (
+                        <div style={{ fontSize: '12px', color: '#888' }}>{record.employee_poste}</div>
+                    )}
+                </div>
+            ),
         },
         {
             title: 'Valeur HR',

@@ -176,7 +176,20 @@ def list_conflicts(
             raise HTTPException(status_code=400, detail=f"Invalid status: {status}")
     
     conflicts = query.order_by(AttendanceImportConflict.created_at.desc()).offset(skip).limit(limit).all()
-    return [AttendanceImportConflictResponse.model_validate(c) for c in conflicts]
+    
+    # Enrich with employee details
+    result = []
+    for conflict in conflicts:
+        conflict_dict = AttendanceImportConflictResponse.model_validate(conflict).model_dump()
+        
+        # Add employee name and poste
+        if conflict.employe:
+            conflict_dict['employee_name'] = f"{conflict.employe.nom} {conflict.employe.prenom}"
+            conflict_dict['employee_poste'] = conflict.employe.poste_travail
+        
+        result.append(AttendanceImportConflictResponse(**conflict_dict))
+    
+    return result
 
 @router.post("/conflicts/{conflict_id}/resolve")
 def resolve_conflict(
