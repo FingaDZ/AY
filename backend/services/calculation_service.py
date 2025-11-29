@@ -149,9 +149,9 @@ class AttendanceCalculationService:
             warnings.append('Vendredi - Jour chomé et payé')
         
         # 9. Vérifier conflit avec pointage existant
-        has_conflict = self._check_existing_pointage(employee_id, work_date)
-        if has_conflict:
-            warnings.append('Conflit: Pointage déjà existant pour ce jour')
+        existing_value = self._check_existing_pointage(employee_id, work_date)
+        if existing_value is not None:
+            warnings.append(f'Conflit: Pointage déjà existant (valeur: {existing_value})')
         
         # 10. Déterminer statut final
         status = 'ok'
@@ -240,8 +240,11 @@ class AttendanceCalculationService:
         """Estimate exit time at 17:00 if missing"""
         return datetime.combine(entry_time.date(), time(17, 0))
     
-    def _check_existing_pointage(self, employee_id: int, work_date: date) -> bool:
-        """Check if pointage already exists for this employee and date"""
+    def _check_existing_pointage(self, employee_id: int, work_date: date) -> Optional[int]:
+        """
+        Check if pointage already exists for this employee and date
+        Returns the existing value if found, None otherwise
+        """
         year = work_date.year
         month = work_date.month
         day = work_date.day
@@ -254,6 +257,6 @@ class AttendanceCalculationService:
         
         if pointage:
             existing_value = pointage.get_jour(day)
-            return existing_value is not None
+            return existing_value
         
-        return False
+        return None

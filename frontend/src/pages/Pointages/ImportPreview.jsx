@@ -241,12 +241,14 @@ function ImportPreview() {
             title: 'Pointage',
             dataIndex: 'day_value',
             key: 'day_value',
-            render: (value) => value === 1 ? (
-                <Tag color="success">✓ Travaillé</Tag>
-            ) : (
-                <Tag color="default">✗ Absent</Tag>
-            ),
-            width: 100,
+            render: (value) => {
+                if (value === 1) {
+                    return <Tag color="success">✓ Travaillé</Tag>;
+                } else {
+                    return <Tag color="default">✗ Non Pointé</Tag>;
+                }
+            },
+            width: 120,
         },
     ];
 

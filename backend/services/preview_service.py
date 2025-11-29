@@ -215,9 +215,16 @@ async def confirm_import_endpoint(
     
     for item in selected_items:
         try:
-            employee_id = item['matched_employee_id']
-            work_date = datetime.fromisoformat(item['work_date']).date()
-            day_value = item['day_value']
+            employee_id = item.get('matched_employee_id')
+            work_date_str = item.get('work_date')
+            day_value = item.get('day_value')
+            
+            if not employee_id or not work_date_str or day_value is None:
+                print(f"Skipping item {item.get('log_id')}: missing required fields")
+                errors += 1
+                continue
+            
+            work_date = datetime.fromisoformat(work_date_str).date()
             
             # Update pointage
             year = work_date.year
@@ -246,9 +253,16 @@ async def confirm_import_endpoint(
             
         except Exception as e:
             errors += 1
-            print(f"Error importing {item['log_id']}: {str(e)}")
+            print(f"Error importing {item.get('log_id', 'unknown')}: {str(e)}")
+            import traceback
+            traceback.print_exc()
     
-    db.commit()
+    try:
+        db.commit()
+    except Exception as e:
+        db.rollback()
+        print(f"Error committing changes: {str(e)}")
+        raise HTTPException(500, f"Erreur lors de l'enregistrement: {str(e)}")
     
     # Clean up session
     del preview_sessions[request.session_id]
