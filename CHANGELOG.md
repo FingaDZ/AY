@@ -5,6 +5,20 @@ Tous les changements notables de ce projet seront documentés dans ce fichier.
 Le format est basé sur [Keep a Changelog](https://keepachangelog.com/fr/1.0.0/),
 et ce projet adhère à [Semantic Versioning](https://semver.org/lang/fr/).
 
+## [2.3.0] - 2025-11-29 ✅ ACTUELLE
+### ✨ Fonctionnalités
+- **Nettoyage** : Suppression du module "Logs Incomplets" (simplification du flux)
+- **Version** : Passage global à la version 2.3.0
+
+## [2.2.0] - 2025-11-29
+### ✨ Fonctionnalités
+- **Pointages** : Correction affichage (T/A au lieu de tirets)
+- **Règles Métier** : 
+  - Vendredis marqués automatiquement "Travaillé" (1) par défaut
+  - Règle "Vendredi entre Absences" : Si Jeudi (0) et Samedi (0) => Vendredi (0)
+  - Autres jours non pointés marqués "Absent" (0) par défaut
+- **Doublons** : Correction création doublons pointages + contrainte unicité DB
+
 ## [2.0.1] - 2025-11-29
 ### 🐛 Correctifs
 - Résolution des problèmes de cache navigateur après mise à jour

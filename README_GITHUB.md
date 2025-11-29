@@ -1,6 +1,6 @@
 # HR System - Système de Gestion des Ressources Humaines
 
-[![Version](https://img.shields.io/badge/version-1.7.0-blue.svg)](https://github.com/FingaDZ/AY/releases/tag/v1.7.0)
+[![Version](https://img.shields.io/badge/version-2.3.0-blue.svg)](https://github.com/FingaDZ/AY/releases/tag/v2.3.0)
 [![Status](https://img.shields.io/badge/status-stable-green.svg)](https://github.com/FingaDZ/AY)
 [![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20Linux-lightgrey.svg)]()
 [![License](https://img.shields.io/badge/license-Private-red.svg)]()
@@ -226,7 +226,7 @@ Tables HR (pointages, mapping, sync_log, incomplete_logs)
 
 ## 📝 Changelog
 
-### v1.7.0 - 28 novembre 2025 ✨ ACTUELLE
+### v2.3.0 - 29 novembre 2025 ✨ ACTUELLE
 
 **Gestion Hybride des Logs Incomplets**
 - 🛡️ Calcul intelligent des heures (ENTRY seul → sortie 17h, EXIT seul → entrée 8h)
