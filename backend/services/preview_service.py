@@ -268,8 +268,12 @@ async def confirm_import_endpoint(
     del preview_sessions[request.session_id]
     
     return AttendanceImportSummary(
-        imported=imported,
-        errors=errors,
-        conflicts=0,
-        incomplete_logs=0
-    )
+    total_logs=len(selected_items),
+    imported=imported,
+    skipped_duplicate=0,
+    skipped_no_mapping=0,
+    conflicts=0,
+    errors=errors,
+    incomplete_pending_validation=0,
+    details=[]
+)
