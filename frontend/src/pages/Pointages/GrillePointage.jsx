@@ -108,6 +108,13 @@ function GrillePointage() {
 
       if (Array.isArray(pointagesArray)) {
         pointagesArray.forEach(ptg => {
+          // Aplatir l'objet 'jours' s'il existe (format API: {jours: {1: 1, 2: 0...}})
+          if (ptg.jours && typeof ptg.jours === 'object') {
+            Object.entries(ptg.jours).forEach(([jour, val]) => {
+              const jourKey = `jour_${jour.toString().padStart(2, '0')}`;
+              ptg[jourKey] = val;
+            });
+          }
           ptgMap[ptg.employe_id] = ptg;
         });
       }
