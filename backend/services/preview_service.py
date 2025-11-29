@@ -288,6 +288,32 @@ async def confirm_import_endpoint(
             print(f"Error importing {item.get('log_id', 'unknown')}: {str(e)}")
             import traceback
             traceback.print_exc()
+
+    # --- Post-traitement : Règle "Vendredi entre deux absences" ---
+    # Si Jeudi (J-1) = 0 ET Samedi (J+1) = 0 => Vendredi (J) = 0
+    import calendar
+    for pointage in pointage_cache.values():
+        year = pointage.annee
+        month = pointage.mois
+        _, num_days = calendar.monthrange(year, month)
+        
+        for d in range(1, num_days + 1):
+            # Si c'est un Vendredi (4)
+            if datetime(year, month, d).weekday() == 4:
+                # Vérifier les bornes (on reste dans le mois courant pour l'instant)
+                if d - 1 >= 1 and d + 1 <= num_days:
+                    val_jeudi = pointage.get_jour(d - 1)
+                    val_samedi = pointage.get_jour(d + 1)
+                    
+                    # Si Jeudi absent (0) ET Samedi absent (0)
+                    # Note: None est considéré comme 0 (Absent) grâce à l'init précédente, mais on check explicitement
+                    is_jeudi_absent = val_jeudi == 0 or val_jeudi is None
+                    is_samedi_absent = val_samedi == 0 or val_samedi is None
+                    
+                    if is_jeudi_absent and is_samedi_absent:
+                        pointage.set_jour(d, 0)
+                        print(f"Règle appliquée: Vendredi {d}/{month} marqué absent (Jeudi et Samedi absents)")
+    # --------------------------------------------------------------
     
     try:
         db.commit()
