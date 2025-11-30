@@ -77,11 +77,11 @@ class AttendanceCalculationService:
         # 2. Estimer entrée ou sortie si manquante
         if not entry_time and exit_time:
             entry_time = self._estimate_entry(exit_time)
-            warnings.append('Entrée estimée à 08:00')
+            warnings.append('⚠️ JOUR INCOMPLET - Seulement SORTIE (Entrée estimée à 08:00)')
             was_estimated = True
         elif entry_time and not exit_time:
             exit_time = self._estimate_exit(entry_time)
-            warnings.append('Sortie estimée à 17:00')
+            warnings.append('⚠️ JOUR INCOMPLET - Seulement ENTRÉE (Sortie estimée à 17:00)')
             was_estimated = True
         
         # 3. Calculer durée brute
