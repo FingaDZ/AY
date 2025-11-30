@@ -80,12 +80,15 @@ async def preview_import_endpoint(
         'matched_employees': 0,
         'unmatched_employees': 0,
         'conflicts_detected': 0,
-        'duplicates_detected': 0
+        'duplicates_detected': 0,
+        'unmatched_employee_names': []
     }
     
     processed_employees = set()
+    unmatched_names = set()  # Track unique unmatched names
     
     for (employee_id, work_date), day_logs in grouped_logs.items():
+        print(f"[DEBUG] Processing day: {work_date} for employee_id: {employee_id}")
         stats['total_logs'] += 1
         
         # Track unique employees
@@ -104,6 +107,7 @@ async def preview_import_endpoint(
         
         # Extract entry and exit
         entry_time, exit_time = calculation_service.extract_entry_exit(day_logs)
+        print(f"[DEBUG] Entry: {entry_time}, Exit: {exit_time}")
         
         # Calculate daily attendance
         if employee_id:
@@ -111,7 +115,8 @@ async def preview_import_endpoint(
                 entry_time, exit_time, work_date, employee_id
             )
         else:
-            # Employee not matched
+            # Employee not matched - track name
+            unmatched_names.add(employee_name)
             calculation = {
                 'worked_minutes': 0,
                 'worked_hours': 0.0,
@@ -119,12 +124,14 @@ async def preview_import_endpoint(
                 'overtime_hours': 0.0,
                 'status': 'error',
                 'warnings': [],
-                'errors': ['Employé non trouvé dans le système'],
+                'errors': [f'Employé "{employee_name}" non trouvé dans le système'],
                 'day_value': 0,
                 'entry_time': entry_time,
                 'exit_time': exit_time,
                 'was_estimated': False
             }
+        
+        print(f"[DEBUG] Calculation status: {calculation['status']}, warnings: {calculation['warnings']}")
         
         # Update stats
         if calculation['status'] == 'ok':
@@ -182,10 +189,14 @@ async def preview_import_endpoint(
         preview_item_dict['was_estimated'] = calculation['was_estimated']
         
         preview_items.append(preview_item_dict)
+        print(f"[DEBUG] Added preview item for {employee_name} on {work_date}")
+    
+    print(f"[DEBUG] Total preview items created: {len(preview_items)}")
     
     # Final stats
     stats['matched_employees'] = len(processed_employees)
     stats['unmatched_employees'] = stats['total_logs'] - stats['matched_employees']
+    stats['unmatched_employee_names'] = list(unmatched_names)  # Convert set to list
     
     # Generate session ID and cache
     session_id = str(uuid.uuid4())

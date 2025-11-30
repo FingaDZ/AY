@@ -72,6 +72,7 @@ class ImportPreviewStats(BaseModel):
     unmatched_employees: int
     conflicts_detected: int
     duplicates_detected: int
+    unmatched_employee_names: List[str] = []  # Names of employees not found
 
 class ImportPreviewResponse(BaseModel):
     """Response for preview endpoint"""

@@ -40,6 +40,17 @@ function ImportPreview() {
             setSelectedRowKeys(autoSelect);
 
             hide();
+
+            // Show warning if there are unmatched employees
+            if (response.data.stats.unmatched_employee_names && response.data.stats.unmatched_employee_names.length > 0) {
+                const names = response.data.stats.unmatched_employee_names.join(', ');
+                message.warning({
+                    content: `Employés non trouvés dans le système: ${names}`,
+                    duration: 8,
+                    style: { marginTop: '20vh' }
+                });
+            }
+
             message.success(`Preview généré: ${response.data.stats.total_logs} jours`);
         } catch (error) {
             hide();
