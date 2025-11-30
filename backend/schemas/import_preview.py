@@ -57,6 +57,7 @@ class LogPreviewItem(BaseModel):
     overtime_hours: Optional[float] = None
     day_value: Optional[int] = None
     was_estimated: Optional[bool] = None
+    has_photo: Optional[str] = None
     
     class Config:
         from_attributes = True

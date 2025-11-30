@@ -151,7 +151,8 @@ async def preview_import_endpoint(
             errors=calculation['errors'],
             has_conflict=has_conflict,
             existing_value=None,
-            conflict_date=work_date.isoformat() if has_conflict else None
+            conflict_date=work_date.isoformat() if has_conflict else None,
+            has_photo=day_logs[0].get('has_photo')
         )
         
         # Add custom fields for display

@@ -24,6 +24,7 @@ function ImportPreview() {
     const [filterStatus, setFilterStatus] = useState('all');
     const [filterEmployee, setFilterEmployee] = useState('all');
     const [dateRange, setDateRange] = useState(null);
+    const [isPhotoAuthorized, setIsPhotoAuthorized] = useState(false);
 
     const handleFileUpload = async (file) => {
         try {
@@ -165,6 +166,16 @@ function ImportPreview() {
                 </div>
             ),
             width: 200,
+        },
+        {
+            title: 'Photo',
+            dataIndex: 'has_photo',
+            key: 'has_photo',
+            render: (hasPhoto) => {
+                if (!hasPhoto) return <Tag>Non</Tag>;
+                return <Tag color="blue">{hasPhoto}</Tag>;
+            },
+            width: 100,
         },
         {
             title: 'Entrée',
@@ -455,6 +466,7 @@ function ImportPreview() {
                                     setFilterStatus('all');
                                     setFilterEmployee('all');
                                     setDateRange(null);
+                                    setIsPhotoAuthorized(false);
                                 }}>
                                     Annuler
                                 </Button>
@@ -462,12 +474,22 @@ function ImportPreview() {
                                     type="primary"
                                     icon={<CheckOutlined />}
                                     onClick={handleConfirmImport}
-                                    disabled={selectedRowKeys.length === 0}
+                                    disabled={selectedRowKeys.length === 0 || !isPhotoAuthorized}
                                     loading={loading}
                                     size="large"
                                 >
                                     Confirmer Import ({selectedRowKeys.length} jours)
                                 </Button>
+                                {!isPhotoAuthorized && (
+                                    <Button
+                                        type="default"
+                                        danger
+                                        onClick={() => setIsPhotoAuthorized(true)}
+                                        size="large"
+                                    >
+                                        Autoriser
+                                    </Button>
+                                )}
                             </Space>
                         </div>
                     </>

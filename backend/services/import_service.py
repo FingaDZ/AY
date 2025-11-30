@@ -75,6 +75,21 @@ class ImportService:
                         # For now default to EXIT if unknown, but maybe "Face" means check time?
                         # The user sample had "Type" column.
                     
+                    # Parse Photo (Column F / Index 5)
+                    has_photo = None
+                    # Try by name first
+                    if 'Photo' in row:
+                        has_photo = str(row['Photo']) if not pd.isna(row['Photo']) else None
+                    elif 'Presence Photo' in row:
+                        has_photo = str(row['Presence Photo']) if not pd.isna(row['Presence Photo']) else None
+                    else:
+                        # Try by index (F is 5th index, 0-based is 5)
+                        try:
+                            val = df.iloc[index, 5]
+                            has_photo = str(val) if not pd.isna(val) else None
+                        except IndexError:
+                            pass
+
                     # Generate ID
                     log_id = f"excel_{timestamp.strftime('%Y%m%d%H%M%S')}_{index}"
                     
@@ -83,7 +98,8 @@ class ImportService:
                         "employee_name": str(row['Employee']).strip(),
                         "timestamp": timestamp.isoformat(),
                         "type": log_type,
-                        "source": "excel"
+                        "source": "excel",
+                        "has_photo": has_photo
                     })
                     
                 except Exception as e:
