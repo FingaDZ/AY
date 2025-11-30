@@ -27,9 +27,10 @@ function ImportPreview() {
     const [authorizedPhotos, setAuthorizedPhotos] = useState(new Set());
 
     const handleFileUpload = async (file) => {
-        const hide = message.loading('Traitement du fichier en cours...', 0);
         try {
             setLoading(true);
+            message.loading({ content: '📄 Traitement du fichier en cours...', key: 'upload', duration: 0 });
+
             const response = await attendanceService.previewImport(file);
             setPreviewData(response.data);
 
@@ -39,7 +40,7 @@ function ImportPreview() {
                 .map(item => item.log_id);
             setSelectedRowKeys(autoSelect);
 
-            hide();
+            message.destroy('upload');
 
             // Show warning if there are unmatched employees
             if (response.data.stats.unmatched_employee_names && response.data.stats.unmatched_employee_names.length > 0) {
@@ -53,7 +54,7 @@ function ImportPreview() {
 
             message.success(`Preview généré: ${response.data.stats.total_logs} jours`);
         } catch (error) {
-            hide();
+            message.destroy('upload');
             message.error('Erreur lors de la prévisualisation');
             console.error('Preview error:', error);
             console.error('Response:', error.response?.data);
