@@ -24,7 +24,7 @@ function ImportPreview() {
     const [filterStatus, setFilterStatus] = useState('all');
     const [filterEmployee, setFilterEmployee] = useState('all');
     const [dateRange, setDateRange] = useState(null);
-    const [isPhotoAuthorized, setIsPhotoAuthorized] = useState(false);
+    const [authorizedPhotos, setAuthorizedPhotos] = useState(new Set());
 
     const handleFileUpload = async (file) => {
         try {
@@ -171,11 +171,32 @@ function ImportPreview() {
             title: 'Photo',
             dataIndex: 'has_photo',
             key: 'has_photo',
-            render: (hasPhoto) => {
-                if (!hasPhoto) return <Tag>Non</Tag>;
+            render: (hasPhoto, record) => {
+                if (!hasPhoto) return <Tag>Vide</Tag>;
+                if (hasPhoto === 'Verifier') {
+                    const isAuthorized = authorizedPhotos.has(record.log_id);
+                    return (
+                        <Space>
+                            <Tag color="warning">Verifier</Tag>
+                            {!isAuthorized && (
+                                <Button
+                                    size="small"
+                                    type="primary"
+                                    onClick={() => {
+                                        setAuthorizedPhotos(prev => new Set([...prev, record.log_id]));
+                                        message.success('Photo autorisée');
+                                    }}
+                                >
+                                    Autoriser
+                                </Button>
+                            )}
+                            {isAuthorized && <Tag color="success">✓ Autorisé</Tag>}
+                        </Space>
+                    );
+                }
                 return <Tag color="blue">{hasPhoto}</Tag>;
             },
-            width: 100,
+            width: 200,
         },
         {
             title: 'Entrée',
@@ -466,7 +487,7 @@ function ImportPreview() {
                                     setFilterStatus('all');
                                     setFilterEmployee('all');
                                     setDateRange(null);
-                                    setIsPhotoAuthorized(false);
+                                    setAuthorizedPhotos(new Set());
                                 }}>
                                     Annuler
                                 </Button>
@@ -474,22 +495,19 @@ function ImportPreview() {
                                     type="primary"
                                     icon={<CheckOutlined />}
                                     onClick={handleConfirmImport}
-                                    disabled={selectedRowKeys.length === 0 || !isPhotoAuthorized}
+                                    disabled={
+                                        selectedRowKeys.length === 0 ||
+                                        (filteredData.some(item =>
+                                            item.has_photo === 'Verifier' &&
+                                            selectedRowKeys.includes(item.log_id) &&
+                                            !authorizedPhotos.has(item.log_id)
+                                        ))
+                                    }
                                     loading={loading}
                                     size="large"
                                 >
                                     Confirmer Import ({selectedRowKeys.length} jours)
                                 </Button>
-                                {!isPhotoAuthorized && (
-                                    <Button
-                                        type="default"
-                                        danger
-                                        onClick={() => setIsPhotoAuthorized(true)}
-                                        size="large"
-                                    >
-                                        Autoriser
-                                    </Button>
-                                )}
                             </Space>
                         </div>
                     </>
