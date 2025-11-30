@@ -133,6 +133,16 @@ async def preview_import_endpoint(
         if has_conflict:
             stats['conflicts_detected'] += 1
         
+        # Aggregate Photo status across ALL logs for this day (Option 2)
+        aggregated_photo = None
+        for log in day_logs:
+            log_photo = log.get('has_photo')
+            if log_photo == 'Verifier':
+                aggregated_photo = 'Verifier'
+                break  # If any log has Verifier, mark the day as Verifier
+            elif log_photo and not aggregated_photo:
+                aggregated_photo = log_photo  # Keep first non-empty value
+        
         # Create preview item
         preview_item = LogPreviewItem(
             log_id=f"{employee_id}_{work_date.isoformat()}",
@@ -152,7 +162,7 @@ async def preview_import_endpoint(
             has_conflict=has_conflict,
             existing_value=None,
             conflict_date=work_date.isoformat() if has_conflict else None,
-            has_photo=day_logs[0].get('has_photo')
+            has_photo=aggregated_photo
         )
         
         # Add custom fields for display
