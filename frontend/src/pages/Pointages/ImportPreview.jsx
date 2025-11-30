@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Table, Button, Tag, message, Space, Card, Upload, Select, Statistic, Row, Col, Modal, DatePicker } from 'antd';
+import { Table, Button, Tag, message, Space, Card, Upload, Select, Statistic, Row, Col, Modal, DatePicker, Spin } from 'antd';
 import {
     UploadOutlined,
     CheckCircleOutlined,
@@ -334,201 +334,219 @@ function ImportPreview() {
     };
 
     return (
-        <div style={{ padding: '24px' }}>
-            <Card
-                title="Import Pointages - Prévisualisation"
-                extra={
-                    !previewData ? (
-                        <Space>
-                            <Upload
-                                beforeUpload={(file) => {
-                                    handleFileUpload(file);
-                                    return false;
-                                }}
-                                showUploadList={false}
-                                accept=".xlsx,.xls,.csv"
-                            >
-                                <Button
-                                    icon={<UploadOutlined />}
-                                    type="primary"
-                                    loading={loading}
-                                    size="large"
+        <Spin
+            spinning={loading}
+            size="large"
+            tip="📄 Traitement du fichier en cours..."
+            style={{
+                position: 'fixed',
+                top: 0,
+                left: 0,
+                right: 0,
+                bottom: 0,
+                zIndex: 9999,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                backgroundColor: loading ? 'rgba(0, 0, 0, 0.45)' : 'transparent'
+            }}
+        >
+            <div style={{ padding: '24px' }}>
+                <Card
+                    title="Import Pointages - Prévisualisation"
+                    extra={
+                        !previewData ? (
+                            <Space size="large">
+                                <Upload
+                                    beforeUpload={(file) => {
+                                        handleFileUpload(file);
+                                        return false;
+                                    }}
+                                    showUploadList={false}
+                                    accept=".xlsx,.xls,.csv"
                                 >
-                                    Charger & Prévisualiser
-                                </Button>
-                            </Upload>
-                            <Upload
-                                beforeUpload={(file) => {
-                                    handleDirectImport(file);
-                                    return false;
-                                }}
-                                showUploadList={false}
-                                accept=".xlsx,.xls,.csv"
-                            >
-                                <Button
-                                    icon={<ThunderboltOutlined />}
-                                    danger
-                                    loading={loading}
-                                    size="large"
+                                    <Button
+                                        icon={<UploadOutlined />}
+                                        type="primary"
+                                        loading={loading}
+                                        size="large"
+                                    >
+                                        Charger & Prévisualiser
+                                    </Button>
+                                </Upload>
+                                <Upload
+                                    beforeUpload={(file) => {
+                                        handleDirectImport(file);
+                                        return false;
+                                    }}
+                                    showUploadList={false}
+                                    accept=".xlsx,.xls,.csv"
                                 >
-                                    Import Direct
-                                </Button>
-                            </Upload>
-                        </Space>
-                    ) : null
-                }
-            >
-                {!previewData ? (
-                    <div style={{ textAlign: 'center', padding: '60px 0' }}>
-                        <UploadOutlined style={{ fontSize: '64px', color: '#d9d9d9' }} />
-                        <p style={{ marginTop: '16px', color: '#999', fontSize: '16px' }}>
-                            Uploadez un fichier Excel pour prévisualiser l'import
-                        </p>
-                        <p style={{ color: '#999', fontSize: '12px' }}>
-                            * Estimation automatique si entrée ou sortie manquante
-                        </p>
-                    </div>
-                ) : (
-                    <>
-                        {/* Statistics */}
-                        <Row gutter={16} style={{ marginBottom: '24px' }}>
-                            <Col span={4}>
-                                <Statistic
-                                    title="Total Jours"
-                                    value={previewData.stats.total_logs}
-                                    prefix={<ReloadOutlined />}
-                                />
-                            </Col>
-                            <Col span={4}>
-                                <Statistic
-                                    title="OK"
-                                    value={previewData.stats.ok_count}
-                                    valueStyle={{ color: '#52c41a' }}
-                                    prefix={<CheckCircleOutlined />}
-                                />
-                            </Col>
-                            <Col span={4}>
-                                <Statistic
-                                    title="Warnings"
-                                    value={previewData.stats.warning_count}
-                                    valueStyle={{ color: '#faad14' }}
-                                    prefix={<WarningOutlined />}
-                                />
-                            </Col>
-                            <Col span={4}>
-                                <Statistic
-                                    title="Errors"
-                                    value={previewData.stats.error_count}
-                                    valueStyle={{ color: '#ff4d4f' }}
-                                    prefix={<CloseCircleOutlined />}
-                                />
-                            </Col>
-                            <Col span={4}>
-                                <Statistic
-                                    title="Employés"
-                                    value={previewData.stats.matched_employees}
-                                    valueStyle={{ color: '#1890ff' }}
-                                />
-                            </Col>
-                            <Col span={4}>
-                                <Statistic
-                                    title="Conflits"
-                                    value={previewData.stats.conflicts_detected}
-                                    valueStyle={{ color: '#ff4d4f' }}
-                                />
-                            </Col>
-                        </Row>
+                                    <Button
+                                        icon={<ThunderboltOutlined />}
+                                        danger
+                                        loading={loading}
+                                        size="large"
+                                    >
+                                        Import Direct
+                                    </Button>
+                                </Upload>
+                            </Space>
+                        ) : null
+                    }
+                >
+                    {!previewData ? (
+                        <div style={{ textAlign: 'center', padding: '60px 0' }}>
+                            <UploadOutlined style={{ fontSize: '64px', color: '#d9d9d9' }} />
+                            <p style={{ marginTop: '16px', color: '#999', fontSize: '16px' }}>
+                                Uploadez un fichier Excel pour prévisualiser l'import
+                            </p>
+                            <p style={{ color: '#999', fontSize: '12px' }}>
+                                * Estimation automatique si entrée ou sortie manquante
+                            </p>
+                        </div>
+                    ) : (
+                        <>
+                            {/* Statistics */}
+                            <Row gutter={16} style={{ marginBottom: '24px' }}>
+                                <Col span={4}>
+                                    <Statistic
+                                        title="Total Jours"
+                                        value={previewData.stats.total_logs}
+                                        prefix={<ReloadOutlined />}
+                                    />
+                                </Col>
+                                <Col span={4}>
+                                    <Statistic
+                                        title="OK"
+                                        value={previewData.stats.ok_count}
+                                        valueStyle={{ color: '#52c41a' }}
+                                        prefix={<CheckCircleOutlined />}
+                                    />
+                                </Col>
+                                <Col span={4}>
+                                    <Statistic
+                                        title="Warnings"
+                                        value={previewData.stats.warning_count}
+                                        valueStyle={{ color: '#faad14' }}
+                                        prefix={<WarningOutlined />}
+                                    />
+                                </Col>
+                                <Col span={4}>
+                                    <Statistic
+                                        title="Errors"
+                                        value={previewData.stats.error_count}
+                                        valueStyle={{ color: '#ff4d4f' }}
+                                        prefix={<CloseCircleOutlined />}
+                                    />
+                                </Col>
+                                <Col span={4}>
+                                    <Statistic
+                                        title="Employés"
+                                        value={previewData.stats.matched_employees}
+                                        valueStyle={{ color: '#1890ff' }}
+                                    />
+                                </Col>
+                                <Col span={4}>
+                                    <Statistic
+                                        title="Conflits"
+                                        value={previewData.stats.conflicts_detected}
+                                        valueStyle={{ color: '#ff4d4f' }}
+                                    />
+                                </Col>
+                            </Row>
 
-                        {/* Filters */}
-                        <Space style={{ marginBottom: '16px' }} wrap>
-                            <span>Filtrer par:</span>
-                            <Select
-                                value={filterStatus}
-                                onChange={setFilterStatus}
-                                style={{ width: 150 }}
-                            >
-                                <Select.Option value="all">Tous statuts</Select.Option>
-                                <Select.Option value="ok">OK</Select.Option>
-                                <Select.Option value="warning">Warning</Select.Option>
-                                <Select.Option value="error">Error</Select.Option>
-                            </Select>
+                            {/* Filters */}
+                            <Space style={{ marginBottom: '16px' }} wrap>
+                                <span>Filtrer par:</span>
+                                <Select
+                                    value={filterStatus}
+                                    onChange={setFilterStatus}
+                                    style={{ width: 150 }}
+                                >
+                                    <Select.Option value="all">Tous statuts</Select.Option>
+                                    <Select.Option value="ok">OK</Select.Option>
+                                    <Select.Option value="warning">Warning</Select.Option>
+                                    <Select.Option value="error">Error</Select.Option>
+                                </Select>
 
-                            <Select
-                                value={filterEmployee}
-                                onChange={setFilterEmployee}
-                                style={{ width: 200 }}
-                                showSearch
-                                placeholder="Tous les employés"
-                                optionFilterProp="children"
-                            >
-                                <Select.Option value="all">Tous les employés</Select.Option>
-                                {uniqueEmployees.map(emp => (
-                                    <Select.Option key={emp.id} value={emp.id}>
-                                        {emp.name}
-                                    </Select.Option>
-                                ))}
-                            </Select>
+                                <Select
+                                    value={filterEmployee}
+                                    onChange={setFilterEmployee}
+                                    style={{ width: 200 }}
+                                    showSearch
+                                    placeholder="Tous les employés"
+                                    optionFilterProp="children"
+                                >
+                                    <Select.Option value="all">Tous les employés</Select.Option>
+                                    {uniqueEmployees.map(emp => (
+                                        <Select.Option key={emp.id} value={emp.id}>
+                                            {emp.name}
+                                        </Select.Option>
+                                    ))}
+                                </Select>
 
-                            <RangePicker
-                                value={dateRange}
-                                onChange={setDateRange}
-                                format="DD/MM/YYYY"
-                                placeholder={['Date début', 'Date fin']}
+                                <RangePicker
+                                    value={dateRange}
+                                    onChange={setDateRange}
+                                    format="DD/MM/YYYY"
+                                    placeholder={['Date début', 'Date fin']}
+                                />
+
+                                <span style={{ marginLeft: '16px', color: '#666' }}>
+                                    {selectedRowKeys.length} / {filteredData.length} jours sélectionnés
+                                </span>
+                            </Space>
+
+                            {/* Table */}
+                            <Table
+                                rowSelection={rowSelection}
+                                columns={columns}
+                                dataSource={filteredData}
+                                rowKey="log_id"
+                                loading={loading}
+                                pagination={{ pageSize: 50, showSizeChanger: true, showTotal: (total) => `Total: ${total} jours` }}
+                                scroll={{ x: 1400 }}
+                                size="small"
                             />
 
-                            <span style={{ marginLeft: '16px', color: '#666' }}>
-                                {selectedRowKeys.length} / {filteredData.length} jours sélectionnés
-                            </span>
-                        </Space>
-
-                        {/* Table */}
-                        <Table
-                            rowSelection={rowSelection}
-                            columns={columns}
-                            dataSource={filteredData}
-                            rowKey="log_id"
-                            loading={loading}
-                            pagination={{ pageSize: 50, showSizeChanger: true, showTotal: (total) => `Total: ${total} jours` }}
-                            scroll={{ x: 1400 }}
-                            size="small"
-                        />
-
-                        {/* Actions */}
-                        <div style={{ marginTop: '16px', textAlign: 'right' }}>
-                            <Space>
-                                <Button onClick={() => {
-                                    setPreviewData(null);
-                                    setSelectedRowKeys([]);
-                                    setFilterStatus('all');
-                                    setFilterEmployee('all');
-                                    setDateRange(null);
-                                    setAuthorizedPhotos(new Set());
-                                }}>
-                                    Annuler
-                                </Button>
-                                <Button
-                                    type="primary"
-                                    icon={<CheckOutlined />}
-                                    onClick={handleConfirmImport}
-                                    disabled={
-                                        selectedRowKeys.length === 0 ||
-                                        (filteredData.some(item =>
-                                            item.has_photo === 'Verifier' &&
-                                            selectedRowKeys.includes(item.log_id) &&
-                                            !authorizedPhotos.has(item.log_id)
-                                        ))
-                                    }
-                                    loading={loading}
-                                    size="large"
-                                >
-                                    Confirmer Import ({selectedRowKeys.length} jours)
-                                </Button>
-                            </Space>
-                        </div>
-                    </>
-                )}
-            </Card>
-        </div>
+                            {/* Actions */}
+                            <div style={{ marginTop: '16px', textAlign: 'right' }}>
+                                <Space>
+                                    <Button onClick={() => {
+                                        setPreviewData(null);
+                                        setSelectedRowKeys([]);
+                                        setFilterStatus('all');
+                                        setFilterEmployee('all');
+                                        setDateRange(null);
+                                        setAuthorizedPhotos(new Set());
+                                    }}>
+                                        Annuler
+                                    </Button>
+                                    <Button
+                                        type="primary"
+                                        icon={<CheckOutlined />}
+                                        onClick={handleConfirmImport}
+                                        disabled={
+                                            selectedRowKeys.length === 0 ||
+                                            (filteredData.some(item =>
+                                                item.has_photo === 'Verifier' &&
+                                                selectedRowKeys.includes(item.log_id) &&
+                                                !authorizedPhotos.has(item.log_id)
+                                            ))
+                                        }
+                                        loading={loading}
+                                        size="large"
+                                    >
+                                        Confirmer Import ({selectedRowKeys.length} jours)
+                                    </Button>
+                                </Space>
+                            </div>
+                        </>
+                    )}
+                </Card>
+            </div>
+        </Spin>
     );
 }
 
