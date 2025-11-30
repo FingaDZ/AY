@@ -43,7 +43,11 @@ async def preview_import_endpoint(
     import_service = ImportService()
     try:
         logs = import_service.parse_excel(content)
+        print(f"[DEBUG] Parsed {len(logs)} logs from Excel")
+        if logs:
+            print(f"[DEBUG] First log: {logs[0]}")
     except Exception as e:
+        print(f"[ERROR] Parse error: {e}")
         raise HTTPException(400, f"Erreur de parsing: {str(e)}")
     
     # 2. Initialize services
@@ -60,9 +64,11 @@ async def preview_import_endpoint(
         log['match_method'] = match_method
         log['match_confidence'] = confidence
         log['alternative_matches'] = alternatives
+        print(f"[DEBUG] Matched '{log.get('employee_name')}' -> ID: {employee_id}, confidence: {confidence}")
     
     # 4. Group logs by employee + date
     grouped_logs = calculation_service.group_logs_by_employee_date(logs)
+    print(f"[DEBUG] Grouped into {len(grouped_logs)} days")
     
     # 5. Process each day
     preview_items = []

@@ -27,6 +27,7 @@ function ImportPreview() {
     const [authorizedPhotos, setAuthorizedPhotos] = useState(new Set());
 
     const handleFileUpload = async (file) => {
+        const hide = message.loading('Traitement du fichier en cours...', 0);
         try {
             setLoading(true);
             const response = await attendanceService.previewImport(file);
@@ -38,10 +39,13 @@ function ImportPreview() {
                 .map(item => item.log_id);
             setSelectedRowKeys(autoSelect);
 
+            hide();
             message.success(`Preview généré: ${response.data.stats.total_logs} jours`);
         } catch (error) {
+            hide();
             message.error('Erreur lors de la prévisualisation');
-            console.error(error);
+            console.error('Preview error:', error);
+            console.error('Response:', error.response?.data);
         } finally {
             setLoading(false);
         }
