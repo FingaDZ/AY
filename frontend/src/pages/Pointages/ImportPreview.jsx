@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Table, Button, Tag, message, Space, Card, Upload, Select, Statistic, Row, Col, Modal, DatePicker, Spin } from 'antd';
+import { Table, Button, Tag, message, Space, Card, Upload, Select, Statistic, Row, Col, Modal, DatePicker, Spin, List } from 'antd';
 import {
     UploadOutlined,
     CheckCircleOutlined,
@@ -25,6 +25,7 @@ function ImportPreview() {
     const [filterEmployee, setFilterEmployee] = useState('all');
     const [dateRange, setDateRange] = useState(null);
     const [authorizedPhotos, setAuthorizedPhotos] = useState(new Set());
+    const [detailsModal, setDetailsModal] = useState({ visible: false, title: '', items: [], type: '' });
 
     const handleFileUpload = async (file) => {
         try {
@@ -334,6 +335,32 @@ function ImportPreview() {
         }),
     };
 
+    const handleShowDetails = (type) => {
+        if (!previewData) return;
+
+        let items = [];
+        let title = '';
+
+        switch (type) {
+            case 'warning':
+                items = previewData.items.filter(item => item.status === 'warning' || (item.warnings && item.warnings.length > 0));
+                title = 'Détails des Avertissements';
+                break;
+            case 'error':
+                items = previewData.items.filter(item => item.status === 'error' || (item.errors && item.errors.length > 0));
+                title = 'Détails des Erreurs';
+                break;
+            case 'conflict':
+                items = previewData.items.filter(item => item.has_conflict);
+                title = 'Détails des Conflits';
+                break;
+            default:
+                return;
+        }
+
+        setDetailsModal({ visible: true, title, items, type });
+    };
+
     return (
         <Spin
             spinning={loading}
@@ -426,20 +453,32 @@ function ImportPreview() {
                                     />
                                 </Col>
                                 <Col span={4}>
-                                    <Statistic
-                                        title="Warnings"
-                                        value={previewData.stats.warning_count}
-                                        valueStyle={{ color: '#faad14' }}
-                                        prefix={<WarningOutlined />}
-                                    />
+                                    <div
+                                        onClick={() => handleShowDetails('warning')}
+                                        style={{ cursor: 'pointer', padding: '4px', borderRadius: '4px', transition: 'background 0.3s' }}
+                                        className="stat-clickable"
+                                    >
+                                        <Statistic
+                                            title="Warnings"
+                                            value={previewData.stats.warning_count}
+                                            valueStyle={{ color: '#faad14' }}
+                                            prefix={<WarningOutlined />}
+                                        />
+                                    </div>
                                 </Col>
                                 <Col span={4}>
-                                    <Statistic
-                                        title="Errors"
-                                        value={previewData.stats.error_count}
-                                        valueStyle={{ color: '#ff4d4f' }}
-                                        prefix={<CloseCircleOutlined />}
-                                    />
+                                    <div
+                                        onClick={() => handleShowDetails('error')}
+                                        style={{ cursor: 'pointer', padding: '4px', borderRadius: '4px', transition: 'background 0.3s' }}
+                                        className="stat-clickable"
+                                    >
+                                        <Statistic
+                                            title="Errors"
+                                            value={previewData.stats.error_count}
+                                            valueStyle={{ color: '#ff4d4f' }}
+                                            prefix={<CloseCircleOutlined />}
+                                        />
+                                    </div>
                                 </Col>
                                 <Col span={4}>
                                     <Statistic
@@ -449,11 +488,17 @@ function ImportPreview() {
                                     />
                                 </Col>
                                 <Col span={4}>
-                                    <Statistic
-                                        title="Conflits"
-                                        value={previewData.stats.conflicts_detected}
-                                        valueStyle={{ color: '#ff4d4f' }}
-                                    />
+                                    <div
+                                        onClick={() => handleShowDetails('conflict')}
+                                        style={{ cursor: 'pointer', padding: '4px', borderRadius: '4px', transition: 'background 0.3s' }}
+                                        className="stat-clickable"
+                                    >
+                                        <Statistic
+                                            title="Conflits"
+                                            value={previewData.stats.conflicts_detected}
+                                            valueStyle={{ color: '#ff4d4f' }}
+                                        />
+                                    </div>
                                 </Col>
                             </Row>
 
@@ -547,6 +592,56 @@ function ImportPreview() {
                     )}
                 </Card>
             </div>
+
+            <Modal
+                title={detailsModal.title}
+                open={detailsModal.visible}
+                onCancel={() => setDetailsModal({ ...detailsModal, visible: false })}
+                footer={[
+                    <Button key="close" onClick={() => setDetailsModal({ ...detailsModal, visible: false })}>
+                        Fermer
+                    </Button>
+                ]}
+                width={800}
+            >
+                <List
+                    dataSource={detailsModal.items}
+                    renderItem={item => (
+                        <List.Item>
+                            <List.Item.Meta
+                                title={
+                                    <Space>
+                                        <span style={{ fontWeight: 'bold' }}>{item.matched_employee_name || item.employee_name}</span>
+                                        <Tag>{dayjs(item.work_date).format('DD/MM/YYYY')}</Tag>
+                                        {item.status === 'warning' && <Tag color="warning">Warning</Tag>}
+                                        {item.status === 'error' && <Tag color="error">Error</Tag>}
+                                        {item.has_conflict && <Tag color="red">Conflit</Tag>}
+                                    </Space>
+                                }
+                                description={
+                                    <div>
+                                        {detailsModal.type === 'warning' && item.warnings && item.warnings.map((w, i) => (
+                                            <div key={i} style={{ color: '#faad14' }}>⚠️ {w}</div>
+                                        ))}
+                                        {detailsModal.type === 'error' && item.errors && item.errors.map((e, i) => (
+                                            <div key={i} style={{ color: '#ff4d4f' }}>❌ {e}</div>
+                                        ))}
+                                        {detailsModal.type === 'conflict' && (
+                                            <div style={{ color: '#ff4d4f' }}>
+                                                Un pointage existe déjà pour cette date.
+                                            </div>
+                                        )}
+                                    </div>
+                                }
+                            />
+                        </List.Item>
+                    )}
+                    pagination={{
+                        pageSize: 5,
+                        size: 'small'
+                    }}
+                />
+            </Modal>
         </Spin>
     );
 }
