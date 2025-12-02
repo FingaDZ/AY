@@ -40,7 +40,7 @@ const MissionFormEnhanced = ({ visible, onCancel, onSuccess, editingMission, emp
 
     const fetchLogisticsTypes = async () => {
         try {
-            const response = await axios.get('http://localhost:8000/api/logistics-types');
+            const response = await axios.get('/api/logistics-types');
             setLogisticsTypes(response.data);
         } catch (error) {
             message.error('Erreur lors du chargement des types logistiques');
@@ -58,8 +58,8 @@ const MissionFormEnhanced = ({ visible, onCancel, onSuccess, editingMission, emp
             };
 
             const url = editingMission
-                ? `http://localhost:8000/api/missions/${editingMission.id}`
-                : 'http://localhost:8000/api/missions';
+                ? `/api/missions/${editingMission.id}`
+                : '/api/missions';
 
             const method = editingMission ? 'put' : 'post';
 

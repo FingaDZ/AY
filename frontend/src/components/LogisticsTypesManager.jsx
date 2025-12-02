@@ -10,7 +10,7 @@ const LogisticsTypesManager = () => {
     const [editingType, setEditingType] = useState(null);
     const [form] = Form.useForm();
 
-    const API_URL = 'http://localhost:8000/api/logistics-types';
+    const API_URL = '/api/logistics-types';
 
     useEffect(() => {
         fetchTypes();
