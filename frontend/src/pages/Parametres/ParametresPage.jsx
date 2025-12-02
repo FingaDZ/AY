@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Card, Typography, Form, Input, Button, message, Spin, Divider } from 'antd';
 import { SaveOutlined, ReloadOutlined } from '@ant-design/icons';
 import parametresService from '../../services/parametres';
+import LogisticsTypesManager from '../../components/LogisticsTypesManager';
 
 const { Title, Text } = Typography;
 
@@ -65,7 +66,7 @@ function ParametresPage() {
           initialValues={initialData}
         >
           <Divider orientation="left">Identification de l'Entreprise</Divider>
-          
+
           <Form.Item
             label="Raison Sociale"
             name="raison_sociale"
@@ -86,9 +87,9 @@ function ParametresPage() {
             label="Adresse"
             name="adresse"
           >
-            <Input.TextArea 
-              rows={2} 
-              placeholder="Ex: 123 Rue de la République, Alger 16000" 
+            <Input.TextArea
+              rows={2}
+              placeholder="Ex: 123 Rue de la République, Alger 16000"
             />
           </Form.Item>
 
@@ -161,16 +162,16 @@ function ParametresPage() {
           </div>
 
           <Form.Item style={{ marginTop: 24 }}>
-            <Button 
-              type="primary" 
-              htmlType="submit" 
+            <Button
+              type="primary"
+              htmlType="submit"
               icon={<SaveOutlined />}
               loading={loading}
               size="large"
             >
               Enregistrer les Paramètres
             </Button>
-            <Button 
+            <Button
               icon={<ReloadOutlined />}
               onClick={fetchParametres}
               style={{ marginLeft: 8 }}
@@ -181,6 +182,11 @@ function ParametresPage() {
           </Form.Item>
         </Form>
       </Card>
+
+      {/* Logistics Types Section */}
+      <div style={{ marginTop: 32 }}>
+        <LogisticsTypesManager />
+      </div>
     </div>
   );
 }

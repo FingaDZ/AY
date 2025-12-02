@@ -8,14 +8,51 @@ class MissionBase(BaseModel):
     chauffeur_id: int
     client_id: int
 
-class MissionCreate(MissionBase):
+class MissionLogisticsMovementBase(BaseModel):
+    logistics_type_id: int
+    quantity_out: int = 0
+    quantity_in: int = 0
+
+class MissionLogisticsMovementCreate(MissionLogisticsMovementBase):
     pass
+
+class MissionLogisticsMovementResponse(MissionLogisticsMovementBase):
+    id: int
+    logistics_type_name: Optional[str] = None
+
+    class Config:
+        from_attributes = True
+
+class MissionClientDetailBase(BaseModel):
+    client_id: int
+    montant_encaisse: Decimal = Decimal('0.00')
+    statut_versement: str = "EN_ATTENTE"
+    observations: Optional[str] = None
+
+class MissionClientDetailCreate(MissionClientDetailBase):
+    logistics: list[MissionLogisticsMovementCreate] = []
+
+class MissionClientDetailResponse(MissionClientDetailBase):
+    id: int
+    client_name: Optional[str] = None
+    logistics_movements: list[MissionLogisticsMovementResponse] = []
+
+    class Config:
+        from_attributes = True
+
+class MissionCreate(BaseModel):
+    date_mission: date
+    chauffeur_id: int
+    # Legacy field for backward compatibility, optional if clients list is provided
+    client_id: Optional[int] = None 
+    clients: list[MissionClientDetailCreate] = []
 
 class MissionResponse(MissionBase):
     id: int
     distance: Decimal
     tarif_km: Decimal
     prime_calculee: Decimal
+    client_details: list[MissionClientDetailResponse] = []
     
     class Config:
         from_attributes = True

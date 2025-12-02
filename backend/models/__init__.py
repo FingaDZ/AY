@@ -19,6 +19,8 @@ from .user import User, UserRole
 from .database_config import DatabaseConfig
 from .logging import Logging, ActionType
 from .salaire import Salaire
+from .logistics_type import LogisticsType
+from .mission_client_detail import MissionClientDetail, MissionLogisticsMovement
 
 __all__ = [
     "Employe",
@@ -48,4 +50,7 @@ __all__ = [
     "ConflictStatus",
     "LogType",
     "IncompleteAttendanceLog",
+    "LogisticsType",
+    "MissionClientDetail",
+    "MissionLogisticsMovement",
 ]

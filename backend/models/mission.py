@@ -17,6 +17,7 @@ class Mission(Base):
     # Relations
     chauffeur = relationship("Employe", back_populates="missions")
     client = relationship("Client")
+    client_details = relationship("MissionClientDetail", back_populates="mission", cascade="all, delete-orphan")
     
     def __repr__(self):
         return f"<Mission {self.id}: Chauffeur {self.chauffeur_id} - {self.date_mission}>"

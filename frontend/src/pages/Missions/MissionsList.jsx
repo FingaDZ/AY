@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Table, Button, DatePicker, Select, message, Modal, Form, InputNumber, Space, Popconfirm, Card } from 'antd';
 import { PlusOutlined, EditOutlined, DeleteOutlined, PrinterOutlined, FilterOutlined } from '@ant-design/icons';
 import { missionService, employeService, clientService } from '../../services';
+import MissionFormEnhanced from '../../components/MissionFormEnhanced';
 import dayjs from 'dayjs';
 
 const { Option } = Select;
@@ -33,7 +34,7 @@ function MissionsList() {
         missionService.getTarifKm(),
         missionService.getTotauxChauffeur(filters),
       ]);
-      
+
       setMissions(missionsRes.data.missions || []);
       setEmployes(employesRes.data.employes || []);
       setClients(clientsRes.data.clients || []);
@@ -52,7 +53,7 @@ function MissionsList() {
         ...values,
         date_mission: values.date_mission.format('YYYY-MM-DD'),
       };
-      
+
       if (editingMission) {
         await missionService.update(editingMission.id, missionData);
         message.success('Mission modifiée avec succès');
@@ -60,7 +61,7 @@ function MissionsList() {
         await missionService.create(missionData);
         message.success('Mission créée avec succès');
       }
-      
+
       setModalVisible(false);
       setEditingMission(null);
       form.resetFields();
@@ -126,39 +127,39 @@ function MissionsList() {
 
   const columns = [
     { title: 'Date', dataIndex: 'date_mission', key: 'date_mission' },
-    { 
-      title: 'Chauffeur', 
-      dataIndex: 'chauffeur_id', 
+    {
+      title: 'Chauffeur',
+      dataIndex: 'chauffeur_id',
       key: 'chauffeur_id',
       render: (id) => {
         const emp = employes.find(e => e.id === id);
         return emp ? `${emp.prenom} ${emp.nom}` : id;
       }
     },
-    { 
-      title: 'Client', 
-      dataIndex: 'client_id', 
+    {
+      title: 'Client',
+      dataIndex: 'client_id',
       key: 'client_id',
       render: (id) => {
         const cli = clients.find(c => c.id === id);
         return cli ? `${cli.prenom} ${cli.nom}` : id;
       }
     },
-    { 
-      title: 'Distance (km)', 
-      dataIndex: 'distance', 
+    {
+      title: 'Distance (km)',
+      dataIndex: 'distance',
       key: 'distance',
       render: (val) => `${parseFloat(val).toFixed(2)} km`
     },
-    { 
-      title: 'Tarif/km', 
-      dataIndex: 'tarif_km', 
+    {
+      title: 'Tarif/km',
+      dataIndex: 'tarif_km',
       key: 'tarif_km',
       render: (val) => `${parseFloat(val).toFixed(2)} DA`
     },
-    { 
-      title: 'Prime', 
-      dataIndex: 'prime_calculee', 
+    {
+      title: 'Prime',
+      dataIndex: 'prime_calculee',
       key: 'prime_calculee',
       render: (val) => `${parseFloat(val).toLocaleString('fr-FR')} DA`
     },
@@ -203,8 +204,8 @@ function MissionsList() {
         <div>
           <span style={{ marginRight: 16 }}>Tarif/km: {tarifKm} DA</span>
           {missions.length > 0 && (
-            <Button 
-              icon={<PrinterOutlined />} 
+            <Button
+              icon={<PrinterOutlined />}
               onClick={handleDownloadRapport}
               style={{ marginRight: 8 }}
             >
@@ -345,58 +346,25 @@ function MissionsList() {
           form.resetFields();
         }}
         footer={null}
+        width={800}
       >
-        <Form form={form} layout="vertical" onFinish={handleSubmit}>
-          <Form.Item
-            label="Date"
-            name="date_mission"
-            rules={[{ required: true }]}
-            initialValue={dayjs()}
-          >
-            <DatePicker style={{ width: '100%' }} format="DD/MM/YYYY" />
-          </Form.Item>
-
-          <Form.Item
-            label="Chauffeur"
-            name="chauffeur_id"
-            rules={[{ required: true }]}
-          >
-            <Select>
-              {employes.filter(e => e.poste_travail.toLowerCase().includes('chauffeur')).map(emp => (
-                <Option key={emp.id} value={emp.id}>
-                  {emp.prenom} {emp.nom}
-                </Option>
-              ))}
-            </Select>
-          </Form.Item>
-
-          <Form.Item
-            label="Client"
-            name="client_id"
-            rules={[{ required: true }]}
-          >
-            <Select>
-              {clients.map(cli => (
-                <Option key={cli.id} value={cli.id}>
-                  {cli.prenom} {cli.nom} ({cli.distance} km @ {cli.tarif_km} DA/km)
-                </Option>
-              ))}
-            </Select>
-          </Form.Item>
-
-          <Form.Item>
-            <Button type="primary" htmlType="submit">
-              {editingMission ? "Modifier" : "Créer"}
-            </Button>
-            <Button onClick={() => {
-              setModalVisible(false);
-              setEditingMission(null);
-              form.resetFields();
-            }} style={{ marginLeft: 8 }}>
-              Annuler
-            </Button>
-          </Form.Item>
-        </Form>
+        <MissionFormEnhanced
+          visible={modalVisible}
+          onCancel={() => {
+            setModalVisible(false);
+            setEditingMission(null);
+            form.resetFields();
+          }}
+          onSuccess={() => {
+            setModalVisible(false);
+            setEditingMission(null);
+            form.resetFields();
+            loadData();
+          }}
+          editingMission={editingMission}
+          employes={employes}
+          clients={clients}
+        />
       </Modal>
     </div>
   );

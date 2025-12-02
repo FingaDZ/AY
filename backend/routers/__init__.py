@@ -1,4 +1,4 @@
-from . import employes, pointages, clients, missions, avances, credits, salaires, rapports, parametres, utilisateurs, database_config, logs, postes_travail, conges, attendance_integration, incomplete_logs
+from . import employes, pointages, clients, missions, avances, credits, salaires, rapports, parametres, utilisateurs, database_config, logs, postes_travail, conges, attendance_integration, incomplete_logs, certificates, import_preview, logistics_types
 
 __all__ = [
     "employes",
@@ -17,4 +17,7 @@ __all__ = [
     "conges",
     "attendance_integration",
     "incomplete_logs",
+    "certificates",
+    "import_preview",
+    "logistics_types",
 ]

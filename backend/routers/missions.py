@@ -36,47 +36,18 @@ def get_tarif_km(db: Session) -> Decimal:
         db.commit()
     return Decimal(param.valeur)
 
+from services.mission_service import MissionService
+
 @router.post("/", response_model=MissionResponse, status_code=201)
 def create_mission(mission: MissionCreate, db: Session = Depends(get_db)):
     """Créer une nouvelle mission"""
-    
-    # Vérifier que le chauffeur existe et a le poste "Chauffeur"
-    chauffeur = db.query(Employe).filter(Employe.id == mission.chauffeur_id).first()
-    if not chauffeur:
-        raise HTTPException(status_code=404, detail="Chauffeur non trouvé")
-    
-    if "chauffeur" not in chauffeur.poste_travail.lower():
-        raise HTTPException(
-            status_code=400,
-            detail="L'employé sélectionné n'est pas un chauffeur"
-        )
-    
-    # Vérifier que le client existe
-    client = db.query(Client).filter(Client.id == mission.client_id).first()
-    if not client:
-        raise HTTPException(status_code=404, detail="Client non trouvé")
-    
-    # Utiliser le tarif kilométrique du client
-    tarif_km = client.tarif_km
-    
-    # Calculer la prime
-    prime_calculee = client.distance * tarif_km
-    
-    # Créer la mission
-    db_mission = Mission(
-        date_mission=mission.date_mission,
-        chauffeur_id=mission.chauffeur_id,
-        client_id=mission.client_id,
-        distance=client.distance,
-        tarif_km=tarif_km,
-        prime_calculee=prime_calculee
-    )
-    
-    db.add(db_mission)
-    db.commit()
-    db.refresh(db_mission)
+    service = MissionService(db)
+    db_mission = service.create_mission(mission)
     
     # Log action
+    chauffeur = db.query(Employe).filter(Employe.id == db_mission.chauffeur_id).first()
+    client = db.query(Client).filter(Client.id == db_mission.client_id).first()
+    
     log_action(
         db=db,
         module="missions",
@@ -94,33 +65,8 @@ def update_mission(
     db: Session = Depends(get_db)
 ):
     """Modifier une mission existante"""
-    
-    # Vérifier que la mission existe
-    db_mission = db.query(Mission).filter(Mission.id == mission_id).first()
-    if not db_mission:
-        raise HTTPException(status_code=404, detail="Mission non trouvée")
-    
-    # Vérifier que le chauffeur existe
-    chauffeur = db.query(Employe).filter(Employe.id == mission.chauffeur_id).first()
-    if not chauffeur:
-        raise HTTPException(status_code=404, detail="Chauffeur non trouvé")
-    
-    # Vérifier que le client existe
-    client = db.query(Client).filter(Client.id == mission.client_id).first()
-    if not client:
-        raise HTTPException(status_code=404, detail="Client non trouvé")
-    
-    # Recalculer la prime avec le tarif du client
-    distance = client.distance
-    tarif_km = client.tarif_km
-    prime_calculee = distance * tarif_km
-    
-    # Mettre à jour les champs
-    db_mission.date_mission = mission.date_mission
-    db_mission.chauffeur_id = mission.chauffeur_id
-    db_mission.client_id = mission.client_id
-    db_mission.distance = distance
-    db_mission.prime_calculee = prime_calculee
+    service = MissionService(db)
+    db_mission = service.update_mission(mission_id, mission)
     
     # Log action
     log_action(
@@ -130,9 +76,6 @@ def update_mission(
         description=f"Modification mission #{mission_id}",
         new_data=clean_data_for_logging(db_mission)
     )
-    
-    db.commit()
-    db.refresh(db_mission)
     
     return db_mission
 
@@ -160,6 +103,70 @@ def delete_mission(
     db.commit()
     
     return None
+
+@router.get("/{mission_id}/client/{client_detail_id}/ordre-mission/pdf")
+def generate_client_ordre_mission_pdf(
+    mission_id: int,
+    client_detail_id: int,
+    db: Session = Depends(get_db)
+):
+    """Générer un ordre de mission PDF pour un client spécifique"""
+    from models import MissionClientDetail, LogisticsType
+    
+    mission = db.query(Mission).filter(Mission.id == mission_id).first()
+    if not mission:
+        raise HTTPException(status_code=404, detail="Mission non trouvée")
+    
+    client_detail = db.query(MissionClientDetail).filter(
+        MissionClientDetail.id == client_detail_id,
+        MissionClientDetail.mission_id == mission_id
+    ).first()
+    
+    if not client_detail:
+        raise HTTPException(status_code=404, detail="Détail client non trouvé")
+    
+    chauffeur = db.query(Employe).filter(Employe.id == mission.chauffeur_id).first()
+    client = db.query(Client).filter(Client.id == client_detail.client_id).first()
+    
+    if not chauffeur or not client:
+        raise HTTPException(status_code=404, detail="Données manquantes")
+    
+    # Prepare logistics data
+    logistics_data = []
+    for movement in client_detail.logistics_movements:
+        logistics_type = db.query(LogisticsType).filter(
+            LogisticsType.id == movement.logistics_type_id
+        ).first()
+        
+        logistics_data.append({
+            'type_name': logistics_type.name if logistics_type else 'Inconnu',
+            'quantity_out': movement.quantity_out,
+            'quantity_in': movement.quantity_in
+        })
+    
+    mission_data = {
+        'id': mission.id,
+        'date_mission': str(mission.date_mission),
+        'chauffeur_nom': chauffeur.nom,
+        'chauffeur_prenom': chauffeur.prenom,
+        'client_nom': client.nom,
+        'client_prenom': client.prenom,
+        'distance': float(mission.distance),
+        'prime_calculee': float(mission.prime_calculee),
+        'montant_encaisse': float(client_detail.montant_encaisse),
+        'observations': client_detail.observations or '',
+        'logistics': logistics_data
+    }
+    
+    pdf_buffer = pdf_generator.generate_ordre_mission_enhanced(mission_data)
+    
+    return StreamingResponse(
+        pdf_buffer,
+        media_type='application/pdf',
+        headers={
+            'Content-Disposition': f'attachment; filename="ordre_mission_{mission_id}_client_{client_detail.client_id}.pdf"'
+        }
+    )
 
 @router.get("/", response_model=MissionListResponse)
 def list_missions(
