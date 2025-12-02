@@ -16,7 +16,8 @@ import {
     Download,
     AlertCircle,
     LogOut,
-    Eye
+    Eye,
+    Building2
 } from 'lucide-react';
 
 const Sidebar = ({ isOpen, onClose }) => {
@@ -42,6 +43,7 @@ const Sidebar = ({ isOpen, onClose }) => {
         { to: '/postes', label: 'Postes', icon: Briefcase },
         { to: '/pointages', label: 'Pointages', icon: ClipboardList },
         { to: '/pointages/import-preview', label: 'Import Pointages', icon: Eye },
+        { to: '/clients', label: 'Clients', icon: Building2 },
         { to: '/missions', label: 'Missions', icon: Clock },
         { to: '/avances', label: 'Avances', icon: DollarSign },
         { to: '/credits', label: 'Crédits', icon: DollarSign },
