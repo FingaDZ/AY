@@ -58,8 +58,8 @@ const MissionFormEnhanced = ({ visible, onCancel, onSuccess, editingMission, emp
             };
 
             const url = editingMission
-                ? `/api/missions/${editingMission.id}`
-                : '/api/missions';
+                ? `/missions/${editingMission.id}`
+                : '/missions';
 
             const method = editingMission ? 'put' : 'post';
 
