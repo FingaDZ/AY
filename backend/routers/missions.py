@@ -50,8 +50,8 @@ def create_mission(mission: MissionCreate, db: Session = Depends(get_db)):
     
     log_action(
         db=db,
-        module="missions",
-        action=ActionType.CREATE,
+        module_name="missions",
+        action_type=ActionType.CREATE,
         description=f"Création mission #{db_mission.id} pour {chauffeur.prenom} {chauffeur.nom} - Client: {client.nom}",
         new_data=clean_data_for_logging(db_mission)
     )
@@ -71,8 +71,8 @@ def update_mission(
     # Log action
     log_action(
         db=db,
-        module="missions",
-        action=ActionType.UPDATE,
+        module_name="missions",
+        action_type=ActionType.UPDATE,
         description=f"Modification mission #{mission_id}",
         new_data=clean_data_for_logging(db_mission)
     )
@@ -93,8 +93,8 @@ def delete_mission(
     # Log action before delete
     log_action(
         db=db,
-        module="missions",
-        action=ActionType.DELETE,
+        module_name="missions",
+        action_type=ActionType.DELETE,
         description=f"Suppression mission #{mission_id}",
         old_data=clean_data_for_logging(db_mission)
     )
