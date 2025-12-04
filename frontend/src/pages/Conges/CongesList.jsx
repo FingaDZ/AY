@@ -48,7 +48,7 @@ const CongesList = () => {
     const fetchConges = async () => {
         setLoading(true);
         try {
-            let url = `/api/conges/?annee=${selectedAnnee}`;
+            let url = `/conges/?annee=${selectedAnnee}`;
             if (selectedEmploye) {
                 url += `&employe_id=${selectedEmploye}`;
             }

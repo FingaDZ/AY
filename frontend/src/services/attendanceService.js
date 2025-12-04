@@ -1,31 +1,29 @@
-import axios from 'axios';
-
-const API_URL = '/api/attendance-integration';
+import api from './api';
 
 const attendanceService = {
     // Sync single employee
     syncEmployee: (employeeId) => {
-        return axios.post(`${API_URL}/sync-employee`, { employee_id: employeeId });
+        return api.post('/attendance-integration/sync-employee', { employee_id: employeeId });
     },
 
     // Sync all employees
     syncAllEmployees: () => {
-        return axios.post(`${API_URL}/sync-all-employees`);
+        return api.post('/attendance-integration/sync-all-employees');
     },
 
     // Get mappings
     getMappings: (params = {}) => {
-        return axios.get(`${API_URL}/mappings`, { params });
+        return api.get('/attendance-integration/mappings', { params });
     },
 
     // Delete mapping
     deleteMapping: (mappingId) => {
-        return axios.delete(`${API_URL}/mappings/${mappingId}`);
+        return api.delete(`/attendance-integration/mappings/${mappingId}`);
     },
 
     // Import logs
     importLogs: (startDate, endDate, employeeId = null) => {
-        return axios.post(`${API_URL}/import-logs`, {
+        return api.post('/attendance-integration/import-logs', {
             start_date: startDate,
             end_date: endDate,
             employee_id: employeeId
@@ -36,7 +34,7 @@ const attendanceService = {
     importFile: (file) => {
         const formData = new FormData();
         formData.append('file', file);
-        return axios.post(`${API_URL}/import-file`, formData, {
+        return api.post('/attendance-integration/import-file', formData, {
             headers: {
                 'Content-Type': 'multipart/form-data'
             }
@@ -47,12 +45,12 @@ const attendanceService = {
     getConflicts: (status = null, params = {}) => {
         const queryParams = { ...params };
         if (status) queryParams.status = status;
-        return axios.get(`${API_URL}/conflicts`, { params: queryParams });
+        return api.get('/attendance-integration/conflicts', { params: queryParams });
     },
 
     // Resolve conflict
     resolveConflict: (conflictId, resolution, resolvedBy) => {
-        return axios.post(`${API_URL}/conflicts/${conflictId}/resolve`, {
+        return api.post(`/attendance-integration/conflicts/${conflictId}/resolve`, {
             resolution,
             resolved_by: resolvedBy
         });
@@ -62,7 +60,7 @@ const attendanceService = {
     previewImport: (file) => {
         const formData = new FormData();
         formData.append('file', file);
-        return axios.post(`${API_URL}/import-preview`, formData, {
+        return api.post('/attendance-integration/import-preview', formData, {
             headers: {
                 'Content-Type': 'multipart/form-data'
             }
@@ -71,12 +69,12 @@ const attendanceService = {
 
     // Confirm import
     confirmImport: (data) => {
-        return axios.post(`${API_URL}/import-confirm`, data);
+        return api.post('/attendance-integration/import-confirm', data);
     },
 
     // Delete conflict
     deleteConflict: (conflictId) => {
-        return axios.delete(`${API_URL}/conflicts/${conflictId}`);
+        return api.delete(`/attendance-integration/conflicts/${conflictId}`);
     }
 };
 
