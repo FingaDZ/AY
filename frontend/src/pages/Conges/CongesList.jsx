@@ -39,7 +39,7 @@ const CongesList = () => {
     const fetchEmployes = async () => {
         try {
             const response = await api.get('/employes');
-            setEmployes(response.data);
+            setEmployes(response.data.employes || []);
         } catch (error) {
             console.error("Erreur chargement employés", error);
         }
