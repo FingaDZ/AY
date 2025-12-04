@@ -50,8 +50,8 @@ def create_credit(credit: CreditCreate, db: Session = Depends(get_db)):
     # Log action
     log_action(
         db=db,
-        module="credits",
-        action=ActionType.CREATE,
+        module_name="credits",
+        action_type=ActionType.CREATE,
         description=f"Création crédit #{db_credit.id} pour {employe.prenom} {employe.nom} - Montant: {credit.montant_total} DA",
         new_data=clean_data_for_logging(db_credit)
     )
@@ -251,8 +251,8 @@ def update_credit(
     # Log action
     log_action(
         db=db,
-        module="credits",
-        action=ActionType.UPDATE,
+        module_name="credits",
+        action_type=ActionType.UPDATE,
         description=f"Modification crédit #{credit_id}",
         new_data=clean_data_for_logging(credit)
     )
@@ -371,8 +371,8 @@ def delete_credit(credit_id: int, db: Session = Depends(get_db)):
     # Log action before delete
     log_action(
         db=db,
-        module="credits",
-        action=ActionType.DELETE,
+        module_name="credits",
+        action_type=ActionType.DELETE,
         description=f"Suppression crédit #{credit_id}",
         old_data=clean_data_for_logging(credit)
     )
