@@ -360,6 +360,10 @@ def update_tarif_km(
     
     return param
 
+from sqlalchemy.orm import Session, joinedload
+
+# ... (imports existants)
+
 @router.get("/{mission_id}/ordre-mission/pdf")
 def generate_ordre_mission_pdf(
     mission_id: int,
@@ -367,49 +371,98 @@ def generate_ordre_mission_pdf(
 ):
     """Générer un ordre de mission PDF pour un chauffeur"""
     
-    mission = db.query(Mission).filter(Mission.id == mission_id).first()
-    if not mission:
-        raise HTTPException(status_code=404, detail="Mission non trouvée")
-    
-    chauffeur = db.query(Employe).filter(Employe.id == mission.chauffeur_id).first()
-    client = db.query(Client).filter(Client.id == mission.client_id).first()
-    
-    if not chauffeur or not client:
-        raise HTTPException(status_code=404, detail="Données manquantes")
-    
-    # Récupérer la logistique
-    logistics = []
-    for detail in mission.client_details:
-        logistics.append({
-            'type_name': detail.logistics_type.name,
-            'quantity_out': detail.quantity_out,
-            'quantity_in': detail.quantity_in
-        })
-    
-    mission_data = {
-        'id': mission.id,
-        'date_mission': str(mission.date_mission),
-        'chauffeur_nom': chauffeur.nom,
-        'chauffeur_prenom': chauffeur.prenom,
-        'client_nom': client.nom,
-        'client_prenom': client.prenom,
-        'distance': float(mission.distance),
-        'prime_calculee': float(mission.prime_calculee),
-        'montant_encaisse': float(mission.montant_encaisse or 0),
-        'observations': mission.observations or "",
-        'logistics': logistics
-    }
-    
-    # Utiliser la méthode enhanced
-    pdf_buffer = pdf_generator.generate_ordre_mission_enhanced(mission_data)
-    
-    return StreamingResponse(
-        pdf_buffer,
-        media_type='application/pdf',
-        headers={
-            'Content-Disposition': f'attachment; filename="ordre_mission_{mission_id:05d}.pdf"'
+    try:
+        # Charger la mission avec toute la hiérarchie logistique
+        # Mission -> ClientDetails -> LogisticsMovements -> LogisticsType
+        from models.mission_client_detail import MissionClientDetail, MissionLogisticsMovement
+        
+        print(f"DEBUG: Generating PDF for mission {mission_id}")
+        
+        mission = db.query(Mission).options(
+            joinedload(Mission.client_details)
+            .joinedload(MissionClientDetail.logistics_movements)
+            .joinedload(MissionLogisticsMovement.logistics_type)
+        ).filter(Mission.id == mission_id).first()
+        
+        if not mission:
+            print("DEBUG: Mission not found")
+            raise HTTPException(status_code=404, detail="Mission non trouvée")
+        
+        chauffeur = db.query(Employe).filter(Employe.id == mission.chauffeur_id).first()
+        client = db.query(Client).filter(Client.id == mission.client_id).first()
+        
+        if not chauffeur or not client:
+            print("DEBUG: Chauffeur or Client not found")
+            raise HTTPException(status_code=404, detail="Données manquantes")
+        
+        # Récupérer la logistique et les infos financières depuis les détails client
+        logistics = []
+        montant_encaisse_total = 0
+        observations_list = []
+        
+        print("DEBUG: Processing client details")
+        if mission.client_details:
+            for detail in mission.client_details:
+                # Cumuler les montants encaissés
+                if detail.montant_encaisse:
+                    montant_encaisse_total += float(detail.montant_encaisse)
+                
+                # Cumuler les observations
+                if detail.observations:
+                    observations_list.append(detail.observations)
+                    
+                # Récupérer les mouvements logistiques
+                if detail.logistics_movements:
+                    for movement in detail.logistics_movements:
+                        if movement.logistics_type:
+                            logistics.append({
+                                'type_name': movement.logistics_type.name,
+                                'quantity_out': movement.quantity_out,
+                                'quantity_in': movement.quantity_in
+                            })
+        
+        print(f"DEBUG: Logistics count: {len(logistics)}")
+        
+        # Si pas de détails client (ancienne structure ou mission simple), fallback sur les champs de la mission
+        if montant_encaisse_total == 0 and mission.montant_encaisse:
+            montant_encaisse_total = float(mission.montant_encaisse)
+            
+        if not observations_list and mission.observations:
+            observations_list.append(mission.observations)
+            
+        observations_str = "\n".join(observations_list)
+        
+        mission_data = {
+            'id': mission.id,
+            'date_mission': str(mission.date_mission),
+            'chauffeur_nom': chauffeur.nom,
+            'chauffeur_prenom': chauffeur.prenom,
+            'client_nom': client.nom,
+            'client_prenom': client.prenom,
+            'distance': float(mission.distance),
+            'prime_calculee': float(mission.prime_calculee),
+            'montant_encaisse': montant_encaisse_total,
+            'observations': observations_str,
+            'logistics': logistics
         }
-    )
+        
+        print("DEBUG: Calling PDF generator")
+        # Utiliser la méthode enhanced
+        pdf_buffer = pdf_generator.generate_ordre_mission_enhanced(mission_data)
+        
+        print("DEBUG: PDF generated successfully")
+        return StreamingResponse(
+            pdf_buffer,
+            media_type='application/pdf',
+            headers={
+                'Content-Disposition': f'attachment; filename="ordre_mission_{mission_id:05d}.pdf"'
+            }
+        )
+    except Exception as e:
+        import traceback
+        print(f"ERROR generating PDF: {str(e)}")
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=f"Erreur lors de la génération du PDF: {str(e)}")
 
 @router.post("/rapport/pdf")
 def generate_rapport_missions_pdf(
