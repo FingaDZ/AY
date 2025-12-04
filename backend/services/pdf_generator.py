@@ -328,7 +328,6 @@ class PDFGenerator:
         info_data = [
             ['CHAUFFEUR', f"{mission_data['chauffeur_prenom']} {mission_data['chauffeur_nom']}"],
             ['CLIENT', f"{mission_data['client_prenom']} {mission_data['client_nom']}"],
-            ['Prime', f"{mission_data['prime_calculee']:.2f} DA"],
         ]
         
         if mission_data.get('montant_encaisse', 0) > 0:
