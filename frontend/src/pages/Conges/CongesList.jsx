@@ -38,7 +38,7 @@ const CongesList = () => {
 
     const fetchEmployes = async () => {
         try {
-            const response = await axios.get(`${import.meta.env.VITE_API_URL}/api/employes`);
+            const response = await axios.get('/api/employes');
             setEmployes(response.data);
         } catch (error) {
             console.error("Erreur chargement employés", error);
@@ -48,7 +48,7 @@ const CongesList = () => {
     const fetchConges = async () => {
         setLoading(true);
         try {
-            let url = `${import.meta.env.VITE_API_URL}/api/conges/?annee=${selectedAnnee}`;
+            let url = `/api/conges/?annee=${selectedAnnee}`;
             if (selectedEmploye) {
                 url += `&employe_id=${selectedEmploye}`;
             }
@@ -63,7 +63,7 @@ const CongesList = () => {
 
     const fetchSynthese = async (employeId) => {
         try {
-            const response = await axios.get(`${import.meta.env.VITE_API_URL}/api/conges/synthese/${employeId}`);
+            const response = await axios.get(`/api/conges/synthese/${employeId}`);
             setSynthese(response.data);
         } catch (error) {
             console.error("Erreur synthèse", error);
@@ -81,7 +81,7 @@ const CongesList = () => {
     const handleSave = async () => {
         try {
             const values = await form.validateFields();
-            await axios.put(`${import.meta.env.VITE_API_URL}/api/conges/${currentConge.id}/consommation`, {
+            await axios.put(`/api/conges/${currentConge.id}/consommation`, {
                 jours_pris: values.jours_pris
             });
             message.success("Consommation mise à jour");
