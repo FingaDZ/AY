@@ -372,17 +372,10 @@ def generate_ordre_mission_pdf(
     """Générer un ordre de mission PDF pour un chauffeur"""
     
     try:
-        # Charger la mission avec toute la hiérarchie logistique
-        # Mission -> ClientDetails -> LogisticsMovements -> LogisticsType
-        from models.mission_client_detail import MissionClientDetail, MissionLogisticsMovement
-        
         print(f"DEBUG: Generating PDF for mission {mission_id}")
         
-        mission = db.query(Mission).options(
-            joinedload(Mission.client_details)
-            .joinedload(MissionClientDetail.logistics_movements)
-            .joinedload(MissionLogisticsMovement.logistics_type)
-        ).filter(Mission.id == mission_id).first()
+        # Requête simple sans joinedload complexe pour éviter les erreurs
+        mission = db.query(Mission).filter(Mission.id == mission_id).first()
         
         if not mission:
             print("DEBUG: Mission not found")
@@ -401,25 +394,30 @@ def generate_ordre_mission_pdf(
         observations_list = []
         
         print("DEBUG: Processing client details")
-        if mission.client_details:
+        # Accès lazy loading - plus sûr
+        if hasattr(mission, 'client_details') and mission.client_details:
             for detail in mission.client_details:
-                # Cumuler les montants encaissés
-                if detail.montant_encaisse:
-                    montant_encaisse_total += float(detail.montant_encaisse)
-                
-                # Cumuler les observations
-                if detail.observations:
-                    observations_list.append(detail.observations)
+                try:
+                    # Cumuler les montants encaissés
+                    if detail.montant_encaisse:
+                        montant_encaisse_total += float(detail.montant_encaisse)
                     
-                # Récupérer les mouvements logistiques
-                if detail.logistics_movements:
-                    for movement in detail.logistics_movements:
-                        if movement.logistics_type:
-                            logistics.append({
-                                'type_name': movement.logistics_type.name,
-                                'quantity_out': movement.quantity_out,
-                                'quantity_in': movement.quantity_in
-                            })
+                    # Cumuler les observations
+                    if detail.observations:
+                        observations_list.append(detail.observations)
+                        
+                    # Récupérer les mouvements logistiques
+                    if hasattr(detail, 'logistics_movements') and detail.logistics_movements:
+                        for movement in detail.logistics_movements:
+                            if movement.logistics_type:
+                                logistics.append({
+                                    'type_name': movement.logistics_type.name,
+                                    'quantity_out': movement.quantity_out,
+                                    'quantity_in': movement.quantity_in
+                                })
+                except Exception as e:
+                    print(f"DEBUG: Error processing detail {detail.id}: {str(e)}")
+                    continue
         
         print(f"DEBUG: Logistics count: {len(logistics)}")
         
