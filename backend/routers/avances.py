@@ -59,8 +59,8 @@ def create_avance(avance: AvanceCreate, db: Session = Depends(get_db)):
     # Log action
     log_action(
         db=db,
-        module="avances",
-        action=ActionType.CREATE,
+        module_name="avances",
+        action_type=ActionType.CREATE,
         description=f"Création avance #{db_avance.id} pour {employe.prenom} {employe.nom} - Montant: {avance.montant} DA",
         new_data=clean_data_for_logging(db_avance)
     )
@@ -207,8 +207,8 @@ def update_avance(
     # Log action
     log_action(
         db=db,
-        module="avances",
-        action=ActionType.UPDATE,
+        module_name="avances",
+        action_type=ActionType.UPDATE,
         description=f"Modification avance #{avance_id}",
         new_data=clean_data_for_logging(avance)
     )
@@ -230,8 +230,8 @@ def delete_avance(avance_id: int, db: Session = Depends(get_db)):
     # Log action before delete
     log_action(
         db=db,
-        module="avances",
-        action=ActionType.DELETE,
+        module_name="avances",
+        action_type=ActionType.DELETE,
         description=f"Suppression avance #{avance_id}",
         old_data=clean_data_for_logging(avance)
     )
