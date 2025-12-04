@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Card, Table, Button, Modal, Form, Input, message, Popconfirm, Tag } from 'antd';
 import { PlusOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons';
-import axios from 'axios';
+import api from '../services/api';
 
 const LogisticsTypesManager = () => {
     const [types, setTypes] = useState([]);
@@ -10,7 +10,7 @@ const LogisticsTypesManager = () => {
     const [editingType, setEditingType] = useState(null);
     const [form] = Form.useForm();
 
-    const API_URL = '/api/logistics-types';
+    const API_URL = '/logistics-types';
 
     useEffect(() => {
         fetchTypes();
@@ -19,7 +19,7 @@ const LogisticsTypesManager = () => {
     const fetchTypes = async () => {
         setLoading(true);
         try {
-            const response = await axios.get(API_URL);
+            const response = await api.get(API_URL);
             setTypes(response.data);
         } catch (error) {
             message.error('Erreur lors du chargement des types logistiques');
@@ -42,7 +42,7 @@ const LogisticsTypesManager = () => {
 
     const handleDelete = async (id) => {
         try {
-            await axios.delete(`${API_URL}/${id}`);
+            await api.delete(`${API_URL}/${id}`);
             message.success('Type supprimé avec succès');
             fetchTypes();
         } catch (error) {
@@ -53,10 +53,10 @@ const LogisticsTypesManager = () => {
     const handleSubmit = async (values) => {
         try {
             if (editingType) {
-                await axios.put(`${API_URL}/${editingType.id}`, values);
+                await api.put(`${API_URL}/${editingType.id}`, values);
                 message.success('Type modifié avec succès');
             } else {
-                await axios.post(API_URL, values);
+                await api.post(API_URL, values);
                 message.success('Type créé avec succès');
             }
             setModalVisible(false);

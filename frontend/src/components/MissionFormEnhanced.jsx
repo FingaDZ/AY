@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Form, DatePicker, Select, Button, Card, InputNumber, Input, Space, Divider, message } from 'antd';
 import { PlusOutlined, MinusCircleOutlined } from '@ant-design/icons';
-import axios from 'axios';
+import api from '../services/api';
 import dayjs from 'dayjs';
 
 const { Option } = Select;
@@ -40,7 +40,7 @@ const MissionFormEnhanced = ({ visible, onCancel, onSuccess, editingMission, emp
 
     const fetchLogisticsTypes = async () => {
         try {
-            const response = await axios.get('/api/logistics-types');
+            const response = await api.get('/logistics-types');
             setLogisticsTypes(response.data);
         } catch (error) {
             message.error('Erreur lors du chargement des types logistiques');
@@ -63,7 +63,7 @@ const MissionFormEnhanced = ({ visible, onCancel, onSuccess, editingMission, emp
 
             const method = editingMission ? 'put' : 'post';
 
-            await axios[method](url, missionData);
+            await api[method](url, missionData);
 
             message.success(editingMission ? 'Mission modifiée avec succès' : 'Mission créée avec succès');
             form.resetFields();
