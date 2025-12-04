@@ -377,6 +377,15 @@ def generate_ordre_mission_pdf(
     if not chauffeur or not client:
         raise HTTPException(status_code=404, detail="Données manquantes")
     
+    # Récupérer la logistique
+    logistics = []
+    for detail in mission.client_details:
+        logistics.append({
+            'type_name': detail.logistics_type.name,
+            'quantity_out': detail.quantity_out,
+            'quantity_in': detail.quantity_in
+        })
+    
     mission_data = {
         'id': mission.id,
         'date_mission': str(mission.date_mission),
@@ -385,10 +394,14 @@ def generate_ordre_mission_pdf(
         'client_nom': client.nom,
         'client_prenom': client.prenom,
         'distance': float(mission.distance),
-        'prime_calculee': float(mission.prime_calculee)
+        'prime_calculee': float(mission.prime_calculee),
+        'montant_encaisse': float(mission.montant_encaisse or 0),
+        'observations': mission.observations or "",
+        'logistics': logistics
     }
     
-    pdf_buffer = pdf_generator.generate_ordre_mission(mission_data)
+    # Utiliser la méthode enhanced
+    pdf_buffer = pdf_generator.generate_ordre_mission_enhanced(mission_data)
     
     return StreamingResponse(
         pdf_buffer,
