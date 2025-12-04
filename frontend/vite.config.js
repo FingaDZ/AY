@@ -10,7 +10,7 @@ export default defineConfig({
     allowedHosts: ['hgd09pzcrcm.sn.mynetname.net', '192.168.20.53', 'localhost'],
     proxy: {
       '/api': {
-        target: 'http://localhost:8000',
+        target: 'http://192.168.20.53:8000',
         changeOrigin: true,
       },
     },
@@ -21,7 +21,7 @@ export default defineConfig({
     allowedHosts: ['hgd09pzcrcm.sn.mynetname.net', '192.168.20.53', 'localhost'],
     proxy: {
       '/api': {
-        target: 'http://localhost:8000',
+        target: 'http://192.168.20.53:8000',
         changeOrigin: true,
       },
     },
