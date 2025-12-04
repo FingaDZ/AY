@@ -353,15 +353,19 @@ class PDFGenerator:
             story.append(logistics_title)
             story.append(Spacer(1, 0.2*cm))
             
-            logistics_data = [['Type', 'Qté Livrée', 'Qté Récup.']]
+            logistics_data = [['Type', 'Prises', 'Retournées', 'Solde']]
             for log in mission_data['logistics']:
+                q_out = log.get('quantity_out', 0)
+                q_in = log.get('quantity_in', 0)
+                solde = q_out - q_in
                 logistics_data.append([
                     log['type_name'],
-                    str(log.get('quantity_out', 0)),
-                    str(log.get('quantity_in', 0))
+                    str(q_out),
+                    str(q_in),
+                    str(solde)
                 ])
             
-            logistics_table = Table(logistics_data, colWidths=[6.4*cm, 3.2*cm, 3.2*cm])
+            logistics_table = Table(logistics_data, colWidths=[5.3*cm, 2.5*cm, 2.5*cm, 2.5*cm])
             logistics_table.setStyle(TableStyle([
                 ('BACKGROUND', (0, 0), (-1, 0), colors.lightgrey),
                 ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
@@ -375,15 +379,34 @@ class PDFGenerator:
             story.append(logistics_table)
             story.append(Spacer(1, 0.4*cm))
         
-        # Observations (si présentes)
-        if mission_data.get('observations'):
-            obs_title = Paragraph("<b>OBSERVATIONS</b>", self.styles['CustomBody'])
-            story.append(obs_title)
-            story.append(Spacer(1, 0.2*cm))
+        # Observations (Toujours afficher)
+        obs_title = Paragraph("<b>OBSERVATIONS (Retours, Casse, Détérioration...)</b>", self.styles['CustomBody'])
+        story.append(obs_title)
+        story.append(Spacer(1, 0.2*cm))
+        
+        obs_content = mission_data.get('observations', '')
+        if not obs_content:
+            # Créer un cadre vide pour écrire manuellement
+            obs_data = [['']]
+            obs_table = Table(obs_data, colWidths=[12.8*cm], rowHeights=[1.5*cm])
+            obs_table.setStyle(TableStyle([
+                ('GRID', (0, 0), (-1, -1), 0.5, colors.black),
+                ('VALIGN', (0, 0), (-1, -1), 'TOP'),
+            ]))
+            story.append(obs_table)
+        else:
+            # Afficher le texte existant dans un cadre
+            obs_para = Paragraph(obs_content, self.styles['CustomBody'])
+            obs_data = [[obs_para]]
+            obs_table = Table(obs_data, colWidths=[12.8*cm])
+            obs_table.setStyle(TableStyle([
+                ('GRID', (0, 0), (-1, -1), 0.5, colors.black),
+                ('PADDING', (0, 0), (-1, -1), 5),
+                ('VALIGN', (0, 0), (-1, -1), 'TOP'),
+            ]))
+            story.append(obs_table)
             
-            obs_text = Paragraph(mission_data['observations'], self.styles['CustomBody'])
-            story.append(obs_text)
-            story.append(Spacer(1, 0.4*cm))
+        story.append(Spacer(1, 0.4*cm))
         
         # Signatures
         signatures = [
