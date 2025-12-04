@@ -30,8 +30,8 @@ def create_client(client: ClientCreate, db: Session = Depends(get_db)):
     # Log action
     log_action(
         db=db,
-        module="clients",
-        action=ActionType.CREATE,
+        module_name="clients",
+        action_type=ActionType.CREATE,
         description=f"Création client #{db_client.id} - {client.prenom} {client.nom}",
         new_data=clean_data_for_logging(db_client)
     )
@@ -94,8 +94,8 @@ def update_client(
     # Log action
     log_action(
         db=db,
-        module="clients",
-        action=ActionType.UPDATE,
+        module_name="clients",
+        action_type=ActionType.UPDATE,
         description=f"Modification client #{client_id}",
         new_data=clean_data_for_logging(client)
     )
@@ -117,8 +117,8 @@ def delete_client(client_id: int, db: Session = Depends(get_db)):
     # Log action before delete
     log_action(
         db=db,
-        module="clients",
-        action=ActionType.DELETE,
+        module_name="clients",
+        action_type=ActionType.DELETE,
         description=f"Suppression client #{client_id}",
         old_data=clean_data_for_logging(client)
     )
