@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Table, Card, Input, Button, Tag, Modal, Form, InputNumber, message, Select, Statistic, Row, Col } from 'antd';
 import { SearchOutlined, EditOutlined, CalendarOutlined } from '@ant-design/icons';
-import axios from 'axios';
+import api from '../../services/api';
 
 const { Option } = Select;
 
@@ -38,7 +38,7 @@ const CongesList = () => {
 
     const fetchEmployes = async () => {
         try {
-            const response = await axios.get('/api/employes');
+            const response = await api.get('/employes');
             setEmployes(response.data);
         } catch (error) {
             console.error("Erreur chargement employés", error);
@@ -52,7 +52,7 @@ const CongesList = () => {
             if (selectedEmploye) {
                 url += `&employe_id=${selectedEmploye}`;
             }
-            const response = await axios.get(url);
+            const response = await api.get(url);
             setConges(response.data);
         } catch (error) {
             message.error("Erreur lors du chargement des congés");
@@ -63,7 +63,7 @@ const CongesList = () => {
 
     const fetchSynthese = async (employeId) => {
         try {
-            const response = await axios.get(`/api/conges/synthese/${employeId}`);
+            const response = await api.get(`/conges/synthese/${employeId}`);
             setSynthese(response.data);
         } catch (error) {
             console.error("Erreur synthèse", error);
@@ -81,7 +81,7 @@ const CongesList = () => {
     const handleSave = async () => {
         try {
             const values = await form.validateFields();
-            await axios.put(`/api/conges/${currentConge.id}/consommation`, {
+            await api.put(`/conges/${currentConge.id}/consommation`, {
                 jours_pris: values.jours_pris
             });
             message.success("Consommation mise à jour");
