@@ -360,10 +360,6 @@ def update_tarif_km(
     
     return param
 
-from sqlalchemy.orm import Session, joinedload
-
-# ... (imports existants)
-
 @router.get("/{mission_id}/ordre-mission/pdf")
 def generate_ordre_mission_pdf(
     mission_id: int,
@@ -374,13 +370,16 @@ def generate_ordre_mission_pdf(
     try:
         print(f"DEBUG: Generating PDF for mission {mission_id}")
         
-        # Requête simple sans joinedload complexe pour éviter les erreurs
+        # 1. Récupérer la mission simple
         mission = db.query(Mission).filter(Mission.id == mission_id).first()
         
         if not mission:
             print("DEBUG: Mission not found")
             raise HTTPException(status_code=404, detail="Mission non trouvée")
         
+        print(f"DEBUG: Mission found: {mission.id}")
+        
+        # 2. Récupérer chauffeur et client
         chauffeur = db.query(Employe).filter(Employe.id == mission.chauffeur_id).first()
         client = db.query(Client).filter(Client.id == mission.client_id).first()
         
@@ -388,48 +387,60 @@ def generate_ordre_mission_pdf(
             print("DEBUG: Chauffeur or Client not found")
             raise HTTPException(status_code=404, detail="Données manquantes")
         
-        # Récupérer la logistique et les infos financières depuis les détails client
+        print(f"DEBUG: Chauffeur: {chauffeur.nom}, Client: {client.nom}")
+        
+        # 3. Récupérer les données logistiques via requêtes directes
+        from models.mission_client_detail import MissionClientDetail, MissionLogisticsMovement
+        from models.logistics_type import LogisticsType
+        
         logistics = []
-        montant_encaisse_total = 0
+        montant_encaisse_total = 0.0
         observations_list = []
         
-        print("DEBUG: Processing client details")
-        # Accès lazy loading - plus sûr
-        if hasattr(mission, 'client_details') and mission.client_details:
-            for detail in mission.client_details:
-                try:
-                    # Cumuler les montants encaissés
-                    if detail.montant_encaisse:
-                        montant_encaisse_total += float(detail.montant_encaisse)
-                    
-                    # Cumuler les observations
-                    if detail.observations:
-                        observations_list.append(detail.observations)
-                        
-                    # Récupérer les mouvements logistiques
-                    if hasattr(detail, 'logistics_movements') and detail.logistics_movements:
-                        for movement in detail.logistics_movements:
-                            if movement.logistics_type:
-                                logistics.append({
-                                    'type_name': movement.logistics_type.name,
-                                    'quantity_out': movement.quantity_out,
-                                    'quantity_in': movement.quantity_in
-                                })
-                except Exception as e:
-                    print(f"DEBUG: Error processing detail {detail.id}: {str(e)}")
-                    continue
+        print("DEBUG: Querying client details")
         
-        print(f"DEBUG: Logistics count: {len(logistics)}")
+        # Récupérer tous les détails clients pour cette mission
+        client_details = db.query(MissionClientDetail).filter(
+            MissionClientDetail.mission_id == mission_id
+        ).all()
         
-        # Si pas de détails client (ancienne structure ou mission simple), fallback sur les champs de la mission
-        if montant_encaisse_total == 0 and mission.montant_encaisse:
-            montant_encaisse_total = float(mission.montant_encaisse)
+        print(f"DEBUG: Found {len(client_details)} client details")
+        
+        for detail in client_details:
+            # Montant encaissé
+            if detail.montant_encaisse:
+                montant_encaisse_total += float(detail.montant_encaisse)
             
-        if not observations_list and mission.observations:
-            observations_list.append(mission.observations)
+            # Observations
+            if detail.observations:
+                observations_list.append(detail.observations)
             
+            # Récupérer les mouvements logistiques pour ce détail
+            movements = db.query(MissionLogisticsMovement).filter(
+                MissionLogisticsMovement.mission_client_detail_id == detail.id
+            ).all()
+            
+            print(f"DEBUG: Found {len(movements)} movements for detail {detail.id}")
+            
+            for movement in movements:
+                # Récupérer le type logistique
+                log_type = db.query(LogisticsType).filter(
+                    LogisticsType.id == movement.logistics_type_id
+                ).first()
+                
+                if log_type:
+                    logistics.append({
+                        'type_name': log_type.name,
+                        'quantity_out': movement.quantity_out,
+                        'quantity_in': movement.quantity_in
+                    })
+        
+        print(f"DEBUG: Total logistics: {len(logistics)}, Total amount: {montant_encaisse_total}")
+        
         observations_str = "\n".join(observations_list)
         
+        
+        # 5. Préparer les données pour le PDF
         mission_data = {
             'id': mission.id,
             'date_mission': str(mission.date_mission),
@@ -445,10 +456,12 @@ def generate_ordre_mission_pdf(
         }
         
         print("DEBUG: Calling PDF generator")
-        # Utiliser la méthode enhanced
+        
+        # 6. Générer le PDF
         pdf_buffer = pdf_generator.generate_ordre_mission_enhanced(mission_data)
         
         print("DEBUG: PDF generated successfully")
+        
         return StreamingResponse(
             pdf_buffer,
             media_type='application/pdf',
@@ -456,11 +469,19 @@ def generate_ordre_mission_pdf(
                 'Content-Disposition': f'attachment; filename="ordre_mission_{mission_id:05d}.pdf"'
             }
         )
+        
+    except HTTPException as e:
+        # Re-lever les exceptions HTTP
+        raise e
     except Exception as e:
         import traceback
-        print(f"ERROR generating PDF: {str(e)}")
+        error_msg = str(e)
+        print(f"ERROR generating PDF: {error_msg}")
         traceback.print_exc()
-        raise HTTPException(status_code=500, detail=f"Erreur lors de la génération du PDF: {str(e)}")
+        raise HTTPException(
+            status_code=500, 
+            detail=f"Erreur lors de la génération du PDF: {error_msg}"
+        )
 
 @router.post("/rapport/pdf")
 def generate_rapport_missions_pdf(
