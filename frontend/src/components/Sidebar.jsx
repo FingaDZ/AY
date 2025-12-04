@@ -20,9 +20,12 @@ import {
     Building2
 } from 'lucide-react';
 
+import { useAuth } from '../contexts/AuthContext';
+
 const Sidebar = ({ isOpen, onClose }) => {
     const location = useLocation();
     const navigate = useNavigate();
+    const { isAdmin } = useAuth();
 
     const handleLogout = () => {
         // Clear any stored authentication data
@@ -37,23 +40,25 @@ const Sidebar = ({ isOpen, onClose }) => {
         onClose();
     };
 
-    const links = [
-        { to: '/', label: 'Dashboard', icon: LayoutDashboard },
-        { to: '/employes', label: 'Employés', icon: Users },
-        { to: '/postes', label: 'Postes', icon: Briefcase },
-        { to: '/pointages', label: 'Pointages', icon: ClipboardList },
-        { to: '/pointages/import-preview', label: 'Import Pointages', icon: Eye },
-        { to: '/clients', label: 'Clients', icon: Building2 },
-        { to: '/missions', label: 'Missions', icon: Clock },
-        { to: '/avances', label: 'Avances', icon: DollarSign },
-        { to: '/credits', label: 'Crédits', icon: DollarSign },
-        { to: '/conges', label: 'Congés', icon: Calendar },
-        { to: '/salaires', label: 'Salaires', icon: DollarSign },
-        { to: '/logs', label: 'Logs', icon: ScrollText },
-        { to: '/parametres', label: 'Paramètres', icon: SettingsIcon },
-        { to: '/utilisateurs', label: 'Utilisateurs', icon: UserCog },
-        { to: '/database-config', label: 'Base de données', icon: Database },
+    const allLinks = [
+        { to: '/', label: 'Dashboard', icon: LayoutDashboard, public: true },
+        { to: '/employes', label: 'Employés', icon: Users, public: true },
+        { to: '/postes', label: 'Postes', icon: Briefcase, public: true },
+        { to: '/pointages', label: 'Pointages', icon: ClipboardList, public: true },
+        { to: '/pointages/import-preview', label: 'Import Pointages', icon: Eye, public: true },
+        { to: '/clients', label: 'Clients', icon: Building2, public: true },
+        { to: '/missions', label: 'Missions', icon: Clock, public: true },
+        { to: '/avances', label: 'Avances', icon: DollarSign, public: true },
+        { to: '/credits', label: 'Crédits', icon: DollarSign, public: true },
+        { to: '/conges', label: 'Congés', icon: Calendar, public: true },
+        { to: '/salaires', label: 'Salaires', icon: DollarSign, public: true },
+        { to: '/logs', label: 'Logs', icon: ScrollText, public: false },
+        { to: '/parametres', label: 'Paramètres', icon: SettingsIcon, public: false },
+        { to: '/utilisateurs', label: 'Utilisateurs', icon: UserCog, public: false },
+        { to: '/database-config', label: 'Base de données', icon: Database, public: false },
     ];
+
+    const links = allLinks.filter(link => link.public || isAdmin());
 
     return (
         <>

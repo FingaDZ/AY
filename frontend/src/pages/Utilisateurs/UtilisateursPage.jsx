@@ -23,6 +23,9 @@ import {
 } from '@ant-design/icons';
 import utilisateursService from '../../services/utilisateurs';
 
+import { useAuth } from '../../contexts/AuthContext';
+import { useNavigate } from 'react-router-dom';
+
 const { Title, Text } = Typography;
 const { Option } = Select;
 
@@ -32,6 +35,9 @@ function UtilisateursPage() {
   const [modalVisible, setModalVisible] = useState(false);
   const [editingUser, setEditingUser] = useState(null);
   const [form] = Form.useForm();
+
+  const { isAdmin } = useAuth();
+  const navigate = useNavigate();
 
   const fetchUsers = async () => {
     try {
@@ -47,6 +53,11 @@ function UtilisateursPage() {
   };
 
   useEffect(() => {
+    if (!isAdmin()) {
+      message.error("Accès refusé. Vous devez être administrateur.");
+      navigate('/');
+      return;
+    }
     fetchUsers();
   }, []);
 
