@@ -333,6 +333,9 @@ class PDFGenerator:
         if mission_data.get('montant_encaisse', 0) > 0:
             info_data.append(['Espèce', f"{mission_data['montant_encaisse']:.2f} DA"])
         
+        # Ajouter une ligne vide pour le montant à inscrire manuellement
+        info_data.append(['Montant versé', ''])
+        
         info_table = Table(info_data, colWidths=[3.5*cm, 9.3*cm])
         info_table.setStyle(TableStyle([
             ('FONTNAME', (0, 0), (0, -1), 'Helvetica-Bold'),
@@ -386,9 +389,9 @@ class PDFGenerator:
         
         obs_content = mission_data.get('observations', '')
         if not obs_content:
-            # Créer un cadre vide pour écrire manuellement
+            # Créer un cadre vide pour écrire manuellement (2.5x plus grand)
             obs_data = [['']]
-            obs_table = Table(obs_data, colWidths=[12.8*cm], rowHeights=[1.5*cm])
+            obs_table = Table(obs_data, colWidths=[12.8*cm], rowHeights=[3.75*cm])
             obs_table.setStyle(TableStyle([
                 ('GRID', (0, 0), (-1, -1), 0.5, colors.black),
                 ('VALIGN', (0, 0), (-1, -1), 'TOP'),
