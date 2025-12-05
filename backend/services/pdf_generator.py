@@ -333,9 +333,6 @@ class PDFGenerator:
         if mission_data.get('montant_encaisse', 0) > 0:
             info_data.append(['Espèce', f"{mission_data['montant_encaisse']:.2f} DA"])
         
-        # Ajouter une ligne vide pour le montant à inscrire manuellement
-        info_data.append(['Montant versé', ''])
-        
         info_table = Table(info_data, colWidths=[3.5*cm, 9.3*cm])
         info_table.setStyle(TableStyle([
             ('FONTNAME', (0, 0), (0, -1), 'Helvetica-Bold'),
@@ -348,6 +345,20 @@ class PDFGenerator:
             ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
         ]))
         story.append(info_table)
+        story.append(Spacer(1, 0.4*cm))
+        
+        # Montant versé (case agrandie x3 pour inscription manuelle)
+        montant_title = Paragraph("<b>MONTANT VERSÉ</b>", self.styles['CustomBody'])
+        story.append(montant_title)
+        story.append(Spacer(1, 0.2*cm))
+        
+        montant_data = [['']]
+        montant_table = Table(montant_data, colWidths=[12.8*cm], rowHeights=[1.8*cm])
+        montant_table.setStyle(TableStyle([
+            ('GRID', (0, 0), (-1, -1), 0.5, colors.black),
+            ('VALIGN', (0, 0), (-1, -1), 'TOP'),
+        ]))
+        story.append(montant_table)
         story.append(Spacer(1, 0.4*cm))
         
         # Logistique (si présente)
