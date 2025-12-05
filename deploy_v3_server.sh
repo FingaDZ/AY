@@ -6,8 +6,14 @@
 echo "🚀 Démarrage du déploiement V3.0 (Module Salaires)..."
 
 # 1. Aller dans le dossier du projet
-# Ajustez le chemin si nécessaire
-cd /home/user/AY-HR || { echo "❌ Dossier projet introuvable"; exit 1; }
+# Utiliser le répertoire actuel ou /opt/ay-hr
+PROJECT_DIR="/opt/ay-hr"
+if [ -d "$PROJECT_DIR" ]; then
+    cd "$PROJECT_DIR"
+else
+    # Fallback au répertoire courant si /opt/ay-hr n'existe pas
+    cd "$(dirname "$0")"
+fi
 
 # 2. Récupérer les derniers changements
 echo "⬇️ Récupération du code depuis GitHub..."
