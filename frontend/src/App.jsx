@@ -36,6 +36,27 @@ function ProtectedRoute({ children }) {
   return children;
 }
 
+// Composant pour protéger les routes administrateur uniquement
+function AdminRoute({ children }) {
+  const { user, loading, isAdmin } = useAuth();
+
+  if (loading) {
+    return <div className="flex justify-center items-center h-screen">
+      <div className="animate-spin rounded-full h-16 w-16 border-t-4 border-b-4 border-blue-500"></div>
+    </div>;
+  }
+
+  if (!user) {
+    return <Navigate to="/login" replace />;
+  }
+
+  if (!isAdmin()) {
+    return <Navigate to="/" replace />;
+  }
+
+  return children;
+}
+
 function AppRoutes() {
   return (
     <Routes>
@@ -76,17 +97,33 @@ function AppRoutes() {
               {/* Salaires */}
               <Route path="/salaires" element={<SalaireCalcul />} />
 
-              {/* Paramètres */}
-              <Route path="/parametres" element={<ParametresPage />} />
+              {/* Paramètres - ADMIN ONLY */}
+              <Route path="/parametres" element={
+                <AdminRoute>
+                  <ParametresPage />
+                </AdminRoute>
+              } />
 
-              {/* Configuration Base de Données */}
-              <Route path="/database-config" element={<DatabaseConfigPage />} />
+              {/* Configuration Base de Données - ADMIN ONLY */}
+              <Route path="/database-config" element={
+                <AdminRoute>
+                  <DatabaseConfigPage />
+                </AdminRoute>
+              } />
 
-              {/* Utilisateurs */}
-              <Route path="/utilisateurs" element={<UtilisateursPage />} />
+              {/* Utilisateurs - ADMIN ONLY */}
+              <Route path="/utilisateurs" element={
+                <AdminRoute>
+                  <UtilisateursPage />
+                </AdminRoute>
+              } />
 
-              {/* Logs */}
-              <Route path="/logs" element={<LogsPage />} />
+              {/* Logs - ADMIN ONLY */}
+              <Route path="/logs" element={
+                <AdminRoute>
+                  <LogsPage />
+                </AdminRoute>
+              } />
 
               {/* Redirect */}
               <Route path="*" element={<Navigate to="/" replace />} />
