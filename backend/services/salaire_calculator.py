@@ -7,16 +7,28 @@ import calendar
 
 from models import (
     Employe, Pointage, Mission, Avance, Credit, RetenueCredit, 
-    ProrogationCredit, StatutCredit
+    ProrogationCredit, StatutCredit, ParametresSalaire, IRGBareme
 )
 from .irg_calculator import get_irg_calculator
 
 
 class SalaireCalculator:
-    """Service de calcul des salaires"""
+    """Service de calcul des salaires V3.0"""
     
     def __init__(self, db: Session):
         self.db = db
+        self.params = self._get_parametres_salaire()
+
+    def _get_parametres_salaire(self) -> ParametresSalaire:
+        """Récupérer les paramètres globaux ou créer les défauts"""
+        params = self.db.query(ParametresSalaire).first()
+        if not params:
+            # Créer paramètres par défaut si inexistants
+            params = ParametresSalaire()
+            self.db.add(params)
+            self.db.commit()
+            self.db.refresh(params)
+        return params
     
     def calculer_salaire(
         self,
@@ -25,7 +37,8 @@ class SalaireCalculator:
         mois: int,
         jours_supplementaires: int = 0,
         prime_objectif: Decimal = Decimal(0),
-        prime_variable: Decimal = Decimal(0)
+        prime_variable: Decimal = Decimal(0),
+        jours_conges: int = 0
     ) -> Dict:
         """
         Calculer le salaire complet d'un employé pour un mois donné
@@ -50,8 +63,8 @@ class SalaireCalculator:
         totaux = pointage.calculer_totaux()
         jours_travailles = totaux["total_travailles"]  # Tr + Fe
         
-        # Nombre de jours ouvrables du mois (on suppose 26 jours ouvrables)
-        jours_ouvrables = 26
+        # Nombre de jours ouvrables du mois
+        jours_ouvrables = self.params.jours_ouvrables_base
         
         # Calculer les jours ouvrables réellement travaillés (exclure les vendredis/fériés)
         # On estime qu'il y a 4-5 vendredis par mois, donc environ 4 jours fériés
@@ -64,50 +77,51 @@ class SalaireCalculator:
         # Jours ouvrables travaillés = total travaillés - jours fériés
         jours_ouvrables_travailles = max(0, jours_travailles - jours_feries)
         
-        # 1. SALAIRE DE BASE PRORATISÉ (sur 30 jours)
-        if nb_jours_mois > 0:
-            salaire_base_proratis = employe.salaire_base * Decimal(jours_travailles) / Decimal(30)
-        else:
-            salaire_base_proratis = Decimal(0)
-        
-        # 2. HEURES SUPPLÉMENTAIRES
-        # Calcul: 34.67 heures pour 26 jours = 1.33346 heures par jour
-        # Formule: jours × 1.33346h × taux horaire × 1.5 (majoration)
-        # Taux horaire = salaire_base / 30 jours / 8 heures
-        taux_horaire = employe.salaire_base / Decimal(30) / Decimal(8)
-        heures_supp_par_jour = Decimal("1.33346")
-        heures_supplementaires = (
-            Decimal(jours_ouvrables_travailles) * 
-            heures_supp_par_jour * 
-            taux_horaire * 
-            Decimal("1.5")  # 50% de majoration
+        # 1. SALAIRE DE BASE AVEC CONGÉS
+        salaire_base_proratis = self._calculer_salaire_avec_conges(
+            employe, jours_travailles, jours_conges
         )
         
-        # 3. INDEMNITÉ DE NUISANCE (IN) = 5% du salaire de base
-        indemnite_nuisance = employe.salaire_base * Decimal("0.05")
+        # 2. HEURES SUPPLÉMENTAIRES
+        heures_supplementaires = Decimal(0)
+        if self.params.calculer_heures_supp:
+            # Calcul: 34.67 heures pour 26 jours = 1.33346 heures par jour
+            # Formule: jours × 1.33346h × taux horaire × 1.5 (majoration)
+            # Taux horaire = salaire_base / 30 jours / 8 heures
+            taux_horaire = employe.salaire_base / Decimal(30) / Decimal(8)
+            heures_supp_par_jour = Decimal("1.33346")
+            heures_supplementaires = (
+                Decimal(jours_ouvrables_travailles) * 
+                heures_supp_par_jour * 
+                taux_horaire * 
+                Decimal("1.5")  # 50% de majoration
+            )
         
-        # 4. IFSP - Indemnité Forfaitaire de Service Permanent = 5% du salaire de base
-        ifsp = employe.salaire_base * Decimal("0.05")
+        # 3. INDEMNITÉ DE NUISANCE (IN)
+        indemnite_nuisance = employe.salaire_base * (self.params.taux_in / Decimal(100))
+        
+        # 4. IFSP - Indemnité Forfaitaire de Service Permanent
+        ifsp = employe.salaire_base * (self.params.taux_ifsp / Decimal(100))
         
         # 5. IEP - Indemnité d'Expérience Professionnelle
         # Calculer l'ancienneté en années
         anciennete = self._calculer_anciennete(employe.date_recrutement, annee, mois)
-        iep = employe.salaire_base * Decimal(anciennete) * Decimal("0.01")
+        iep = employe.salaire_base * Decimal(anciennete) * (self.params.taux_iep_par_an / Decimal(100))
         
-        # 6. PRIME D'ENCOURAGEMENT (10% si > 1 an d'expérience)
+        # 6. PRIME D'ENCOURAGEMENT
         prime_encouragement = Decimal(0)
-        if anciennete > 1:
-            prime_encouragement = employe.salaire_base * Decimal("0.10")
+        if anciennete >= self.params.anciennete_min_encouragement:
+            prime_encouragement = employe.salaire_base * (self.params.taux_prime_encouragement / Decimal(100))
         
-        # 7. PRIME CHAUFFEUR (100 DA × jours travaillés si poste = Chauffeur)
+        # 7. PRIME CHAUFFEUR
         prime_chauffeur = Decimal(0)
-        if "chauffeur" in employe.poste_travail.lower():
-            prime_chauffeur = Decimal(100) * Decimal(jours_travailles)
+        if "chauffeur" in (employe.poste_travail or "").lower():
+            prime_chauffeur = self.params.prime_chauffeur_jour * Decimal(jours_travailles)
         
-        # 8. PRIME DE NUIT AGENT SÉCURITÉ (750 DA/mois si activée)
+        # 8. PRIME DE NUIT AGENT SÉCURITÉ
         prime_nuit_agent_securite = Decimal(0)
         if employe.prime_nuit_agent_securite:
-            prime_nuit_agent_securite = Decimal(750)
+            prime_nuit_agent_securite = self.params.prime_nuit_securite
         
         # 9. PRIME DE DÉPLACEMENT (missions du mois)
         prime_deplacement = self._calculer_prime_deplacement(employe_id, annee, mois)
@@ -127,20 +141,20 @@ class SalaireCalculator:
             prime_variable
         )
         
-        # 11. RETENUE SÉCURITÉ SOCIALE (9% du salaire cotisable)
-        retenue_securite_sociale = salaire_cotisable * Decimal("0.09")
+        # 11. RETENUE SÉCURITÉ SOCIALE
+        retenue_securite_sociale = salaire_cotisable * (self.params.taux_securite_sociale / Decimal(100))
         
-        # 12. PANIER (100 DA × jours travaillés) - IMPOSABLE mais NON COTISABLE
-        panier = Decimal(100) * Decimal(jours_travailles)
+        # 12. PANIER
+        panier = self.params.panier_jour * Decimal(jours_travailles)
         
-        # 13. PRIME TRANSPORT (100 DA × jours travaillés) - IMPOSABLE mais NON COTISABLE
-        prime_transport = Decimal(100) * Decimal(jours_travailles)
+        # 13. PRIME TRANSPORT
+        prime_transport = self.params.transport_jour * Decimal(jours_travailles)
         
-        # 14. SALAIRE IMPOSABLE (Cotisable - SS + Panier + Transport)
+        # 14. SALAIRE IMPOSABLE
         salaire_imposable = salaire_cotisable - retenue_securite_sociale + panier + prime_transport
         
-        # 15. CALCUL DE L'IRG sur le salaire imposable
-        irg = self._calculer_irg(salaire_imposable)
+        # 15. CALCUL DE L'IRG PRORATISÉ
+        irg = self._calculer_irg_proratise(salaire_imposable, jours_travailles)
         
         # 16. DÉDUCTIONS FINALES
         # Total des avances du mois
@@ -149,8 +163,8 @@ class SalaireCalculator:
         # Retenue crédit du mois
         retenue_credit = self._calculer_retenue_credit(employe_id, annee, mois)
         
-        # 17. PRIME FEMME AU FOYER (1000 DA si applicable)
-        prime_femme_foyer = Decimal(1000) if employe.femme_au_foyer else Decimal(0)
+        # 17. PRIME FEMME AU FOYER
+        prime_femme_foyer = self.params.prime_femme_foyer if employe.femme_au_foyer else Decimal(0)
         
         # 17. SALAIRE NET FINAL
         salaire_net = salaire_imposable - irg - total_avances - retenue_credit + prime_femme_foyer
@@ -290,3 +304,47 @@ class SalaireCalculator:
         """
         irg_calc = get_irg_calculator()
         return irg_calc.calculer_irg(salaire_brut)
+
+    def _calculer_irg_proratise(self, salaire_imposable: Decimal, jours_travailles: int) -> Decimal:
+        """Calcul d'IRG proratisé basé sur l'extrapolation à 30 jours"""
+        if not self.params.irg_proratise or jours_travailles == 0:
+            return self._calculer_irg(salaire_imposable)
+        
+        # Extrapoler à 30 jours
+        salaire_30j = (salaire_imposable / Decimal(jours_travailles)) * Decimal(30)
+        
+        # IRG sur salaire 30j
+        irg_30j = self._calculer_irg(salaire_30j)
+        
+        # Proratiser IRG : (IRG_30j / 30) * jours_travailles
+        irg_final = (irg_30j / Decimal(30)) * Decimal(jours_travailles)
+        
+        # Arrondir (JAMAIS de décimales)
+        return Decimal(int(irg_final))
+
+    def _calculer_salaire_avec_conges(self, employe, jours_travailles: int, jours_conges: int) -> Decimal:
+        """Calculer le salaire de base selon le mode de gestion des congés"""
+        mode = self.params.mode_calcul_conges or "complet"
+        salaire_base = employe.salaire_base
+        
+        if mode == "complet":
+            # Salaire complet basé sur 30 jours (jours_travailles from pointage + jours_conges)
+            jours_total = jours_travailles + jours_conges
+            # Si le total dépasse 30, on plafonne à 30 jours pour le paiement complet
+            jours_remunerables = min(30, jours_total) if jours_total > 30 else jours_total
+            return salaire_base * Decimal(jours_remunerables) / Decimal(30)
+            
+        elif mode == "proratise":
+            # Deux parts séparées
+            part_travail = salaire_base * Decimal(jours_travailles) / Decimal(30)
+            part_conges = salaire_base * Decimal(jours_conges) / Decimal(30)
+            return part_travail + part_conges
+            
+        elif mode == "hybride":
+            # Salaire sur jours ouvrables base (ex: 26)
+            jours_base = self.params.jours_ouvrables_base or 26
+            part_travail = salaire_base * Decimal(jours_travailles) / Decimal(jours_base)
+            part_conges = salaire_base * Decimal(jours_conges) / Decimal(jours_base)
+            return part_travail + part_conges
+        
+        return Decimal(0)

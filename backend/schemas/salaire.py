@@ -57,6 +57,7 @@ class SalaireCalculCreate(BaseModel):
     jours_supplementaires: int = Field(default=0, ge=0)
     prime_objectif: Decimal = Field(default=Decimal(0), ge=0)
     prime_variable: Decimal = Field(default=Decimal(0), ge=0)
+    jours_conges: int = Field(default=0, ge=0)
 
 class SalaireCalculTousCreate(BaseModel):
     """Paramètres pour calculer tous les salaires"""

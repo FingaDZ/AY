@@ -31,7 +31,8 @@ def calculer_salaire(
             mois=calcul.mois,
             jours_supplementaires=calcul.jours_supplementaires,
             prime_objectif=calcul.prime_objectif,
-            prime_variable=calcul.prime_variable
+            prime_variable=calcul.prime_variable,
+            jours_conges=calcul.jours_conges
         )
         return resultat
     except ValueError as e:
