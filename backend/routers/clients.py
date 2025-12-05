@@ -168,3 +168,54 @@ def generer_rapport_clients(db: Session = Depends(get_db)):
             "Content-Disposition": f"attachment; filename={filename}"
         }
     )
+
+
+@router.get("/{client_id}/logistics-balance")
+def get_client_logistics_balance(client_id: int, db: Session = Depends(get_db)):
+    """Récupérer le solde logistique pour un client"""
+    from models.mission_client_detail import MissionClientDetail, MissionLogisticsMovement
+    from models.logistics_type import LogisticsType
+    from sqlalchemy import func
+    
+    client = db.query(Client).filter(Client.id == client_id).first()
+    if not client:
+        raise HTTPException(status_code=404, detail="Client non trouvé")
+    
+    query = db.query(
+        LogisticsType.id.label('type_id'),
+        LogisticsType.name.label('type_name'),
+        func.sum(MissionLogisticsMovement.quantity_out).label('total_out'),
+        func.sum(MissionLogisticsMovement.quantity_in).label('total_in')
+    ).join(
+        MissionLogisticsMovement, 
+        MissionLogisticsMovement.logistics_type_id == LogisticsType.id
+    ).join(
+        MissionClientDetail,
+        MissionClientDetail.id == MissionLogisticsMovement.mission_client_detail_id
+    ).filter(
+        MissionClientDetail.client_id == client_id,
+        LogisticsType.is_active == True
+    ).group_by(
+        LogisticsType.id,
+        LogisticsType.name
+    ).all()
+    
+    balance = []
+    for row in query:
+        total_out = row.total_out or 0
+        total_in = row.total_in or 0
+        solde = total_out - total_in
+        
+        balance.append({
+            'type_id': row.type_id,
+            'type_name': row.type_name,
+            'total_prises': total_out,
+            'total_retournees': total_in,
+            'solde': solde
+        })
+    
+    return {
+        'client_id': client_id,
+        'client_nom': f"{client.prenom} {client.nom}",
+        'logistics_balance': balance
+    }

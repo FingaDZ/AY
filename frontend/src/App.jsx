@@ -67,35 +67,79 @@ function AppRoutes() {
             <Routes>
               <Route path="/" element={<Dashboard />} />
 
-              {/* Employés */}
-              <Route path="/employes" element={<EmployesList />} />
-              <Route path="/employes/nouveau" element={<EmployeForm />} />
-              <Route path="/employes/:id" element={<EmployeForm />} />
-
-              {/* Postes de Travail */}
-              <Route path="/postes" element={<PostesList />} />
-
-              {/* Pointages */}
-              <Route path="/pointages" element={<GrillePointage />} />
-              <Route path="/pointages/import-preview" element={<ImportPreview />} />
-
-              {/* Clients */}
-              <Route path="/clients" element={<ClientsList />} />
-
-              {/* Missions */}
+              {/* Missions - Accessible à tous */}
               <Route path="/missions" element={<MissionsList />} />
 
-              {/* Avances */}
-              <Route path="/avances" element={<AvancesList />} />
+              {/* Employés - ADMIN ONLY */}
+              <Route path="/employes" element={
+                <AdminRoute>
+                  <EmployesList />
+                </AdminRoute>
+              } />
+              <Route path="/employes/nouveau" element={
+                <AdminRoute>
+                  <EmployeForm />
+                </AdminRoute>
+              } />
+              <Route path="/employes/:id" element={
+                <AdminRoute>
+                  <EmployeForm />
+                </AdminRoute>
+              } />
 
-              {/* Crédits */}
-              <Route path="/credits" element={<CreditsList />} />
+              {/* Postes de Travail - ADMIN ONLY */}
+              <Route path="/postes" element={
+                <AdminRoute>
+                  <PostesList />
+                </AdminRoute>
+              } />
 
-              {/* Congés */}
-              <Route path="/conges" element={<CongesList />} />
+              {/* Pointages - ADMIN ONLY */}
+              <Route path="/pointages" element={
+                <AdminRoute>
+                  <GrillePointage />
+                </AdminRoute>
+              } />
+              <Route path="/pointages/import-preview" element={
+                <AdminRoute>
+                  <ImportPreview />
+                </AdminRoute>
+              } />
 
-              {/* Salaires */}
-              <Route path="/salaires" element={<SalaireCalcul />} />
+              {/* Clients - ADMIN ONLY */}
+              <Route path="/clients" element={
+                <AdminRoute>
+                  <ClientsList />
+                </AdminRoute>
+              } />
+
+              {/* Avances - ADMIN ONLY */}
+              <Route path="/avances" element={
+                <AdminRoute>
+                  <AvancesList />
+                </AdminRoute>
+              } />
+
+              {/* Crédits - ADMIN ONLY */}
+              <Route path="/credits" element={
+                <AdminRoute>
+                  <CreditsList />
+                </AdminRoute>
+              } />
+
+              {/* Congés - ADMIN ONLY */}
+              <Route path="/conges" element={
+                <AdminRoute>
+                  <CongesList />
+                </AdminRoute>
+              } />
+
+              {/* Salaires - ADMIN ONLY */}
+              <Route path="/salaires" element={
+                <AdminRoute>
+                  <SalaireCalcul />
+                </AdminRoute>
+              } />
 
               {/* Paramètres - ADMIN ONLY */}
               <Route path="/parametres" element={
