@@ -1,88 +1,90 @@
 import openpyxl
 import csv
 from decimal import Decimal
-from typing import Dict, List, Tuple
+from typing import Dict, List, Tuple, Optional
 from pathlib import Path
+from sqlalchemy.orm import Session
+from sqlalchemy import desc
 
+from models import IRGBareme
 
 class IRGCalculator:
-    """Service de calcul de l'IRG à partir du fichier Excel"""
+    """Service de calcul de l'IRG (Source: BDD prio, avec fallback Excel)"""
     
-    def __init__(self, fichier_irg: str = None):
+    def __init__(self, db: Session = None, fichier_irg: str = None):
         """
         Initialiser le calculateur IRG
-        
         Args:
-            fichier_irg: Chemin vers le fichier irg.xlsx
+            db: Session SQLAlchemy (optionnel)
+            fichier_irg: Chemin vers fichier Excel (fallback)
         """
+        self.db = db
         if fichier_irg is None:
-            # Utiliser le fichier irg.xlsx à la racine du projet
-            fichier_irg = Path(__file__).parent.parent.parent / "irg.xlsx"
-        
-        self.fichier_irg = Path(fichier_irg)
+            self.fichier_irg = Path(__file__).parent.parent.parent / "irg.xlsx"
+        else:
+            self.fichier_irg = Path(fichier_irg)
+            
         self.bareme = self._charger_bareme()
     
     def _charger_bareme(self) -> List[Tuple[Decimal, Decimal]]:
-        """
-        Charger le barème IRG directement depuis F:\Code\AY HR\irg.xlsx
-        Retourne une liste de tuples (salaire, irg)
-        """
+        """Charger le barème (BDD ou Excel)"""
+        # 1. Essayer depuis la BDD
+        if self.db:
+            try:
+                bareme_db = self._charger_bareme_db()
+                if bareme_db:
+                    # print(f"✅ Barème IRG chargé depuis BDD: {len(bareme_db)} tranches")
+                    return bareme_db
+            except Exception as e:
+                print(f"⚠️ Erreur chargement BDD, fallback Excel: {e}")
+        
+        # 2. Fallback Excel
+        return self._charger_bareme_excel()
+
+    def _charger_bareme_db(self) -> List[Tuple[Decimal, Decimal]]:
+        """Lire depuis la table irg_bareme"""
+        items = self.db.query(IRGBareme).filter(
+            IRGBareme.actif == True
+        ).order_by(IRGBareme.salaire_min).all()
+        
+        if not items:
+            return []
+            
+        return [(item.salaire_min, item.irg) for item in items]
+
+    def _charger_bareme_excel(self) -> List[Tuple[Decimal, Decimal]]:
+        """Lire depuis le fichier Excel"""
         if not self.fichier_irg.exists():
-            print(f"❌ ERREUR: Fichier IRG non trouvé: {self.fichier_irg}")
-            raise FileNotFoundError(f"Fichier IRG requis non trouvé: {self.fichier_irg}")
+            print(f"⚠️ Fichier IRG non trouvé: {self.fichier_irg} (IRG = 0)")
+            return []
         
         try:
             wb = openpyxl.load_workbook(self.fichier_irg, data_only=True)
             sheet = wb.active
             
             bareme = []
-            # Ignorer la première ligne (en-têtes: MONTANT, IRG)
             for row in sheet.iter_rows(min_row=2, values_only=True):
                 if row[0] is not None and row[1] is not None:
-                    salaire = Decimal(str(row[0]))
-                    irg = Decimal(str(row[1]))
-                    bareme.append((salaire, irg))
+                    try:
+                        salaire = Decimal(str(row[0]))
+                        irg = Decimal(str(row[1]))
+                        bareme.append((salaire, irg))
+                    except:
+                        continue
             
-            wb.close()
-            
-            print(f"✅ Barème IRG chargé depuis {self.fichier_irg.name}: {len(bareme)} lignes")
-            return bareme
-            
-        except Exception as e:
-            print(f"❌ Erreur lors du chargement du barème IRG: {e}")
-            raise
-        
-        try:
-            wb = openpyxl.load_workbook(self.fichier_irg, data_only=True)
-            ws = wb.active
-            
-            bareme = []
-            for row in ws.iter_rows(min_row=2, values_only=True):  # Skip header
-                if row[0] is not None and row[1] is not None:
-                    salaire = Decimal(str(row[0]))
-                    irg = Decimal(str(row[1]))
-                    bareme.append((salaire, irg))
-            
-            # Trier par salaire
+            # Trier par salaire croissant
             bareme.sort(key=lambda x: x[0])
             
-            print(f"✅ Barème IRG chargé: {len(bareme)} tranches")
+            # print(f"✅ Barème IRG chargé depuis Excel: {len(bareme)} tranches")
             return bareme
             
         except Exception as e:
-            print(f"❌ Erreur lors du chargement du barème IRG: {e}")
-            raise
+            print(f"❌ Erreur lors du chargement du barème Excel: {e}")
+            return []
     
     def calculer_irg(self, salaire_imposable: Decimal) -> Decimal:
         """
         Calculer l'IRG pour un salaire imposable donné
-        Lookup direct dans le fichier Excel sans calcul
-        
-        Args:
-            salaire_imposable: Salaire imposable en DA
-            
-        Returns:
-            Montant de l'IRG en DA (valeur exacte du fichier Excel)
         """
         if not self.bareme:
             return Decimal("0")
@@ -91,7 +93,7 @@ class IRGCalculator:
         if salaire_imposable < self.bareme[0][0]:
             return Decimal("0")
         
-        # Si le salaire est supérieur au dernier seuil
+        # Si le salaire est supérieur au dernier seuil, prendre le max
         if salaire_imposable >= self.bareme[-1][0]:
             return self.bareme[-1][1]
         
@@ -102,22 +104,28 @@ class IRGCalculator:
             if salaire_imposable >= salaire_bareme:
                 irg_retenu = irg_bareme
             else:
-                # On a dépassé, on retourne l'IRG précédent
                 break
         
         return irg_retenu
     
     def recharger_bareme(self):
-        """Recharger le barème depuis le fichier"""
+        """Forcer le rechargement du barème (après update BDD)"""
         self.bareme = self._charger_bareme()
 
 
-# Instance globale
+# Singleton pattern (optionnel, mais utile pour cache)
 _irg_calculator = None
 
-def get_irg_calculator() -> IRGCalculator:
-    """Obtenir l'instance du calculateur IRG"""
+def get_irg_calculator(db: Session = None) -> IRGCalculator:
+    """Obtenir l'instance du calculateur IRG (avec mise à jour DB si fournie)"""
     global _irg_calculator
+    
     if _irg_calculator is None:
-        _irg_calculator = IRGCalculator()
+        _irg_calculator = IRGCalculator(db)
+    elif db is not None and _irg_calculator.db != db:
+        # Mettre à jour la session DB si elle change
+        _irg_calculator.db = db
+        # Et recharger potentiellement si on passait d'un mode sans DB à avec DB
+        _irg_calculator.recharger_bareme()
+        
     return _irg_calculator

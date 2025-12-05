@@ -1,8 +1,11 @@
 """Routes API pour les paramètres de salaire"""
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, UploadFile, File
 from sqlalchemy.orm import Session
 from typing import List
+from datetime import date
+import openpyxl
+from decimal import Decimal
 
 from database import get_db
 from models import ParametresSalaire, IRGBareme, ReportAvanceCredit
@@ -101,11 +104,63 @@ def delete_irg_tranche(
     return {"message": "Tranche IRG supprimée avec succès"}
 
 
+@router.post("/irg-bareme/importer")
+async def importer_bareme_irg(
+    file: UploadFile = File(...),
+    db: Session = Depends(get_db)
+):
+    """Importer barème IRG depuis Excel"""
+    if not file.filename.endswith(('.xlsx', '.xls')):
+        raise HTTPException(400, "Format de fichier non supporté (Excel requis)")
+        
+    try:
+        # Lire fichier Excel
+        wb = openpyxl.load_workbook(file.file, data_only=True)
+        sheet = wb.active
+        
+        # Désactiver ancien barème
+        db.query(IRGBareme).update({"actif": False})
+        
+        count = 0
+        # Importer nouveau
+        for row in sheet.iter_rows(min_row=2, values_only=True):
+            if row[0] is not None and row[1] is not None:
+                try:
+                    bareme = IRGBareme(
+                        salaire_min=Decimal(str(row[0])),
+                        irg=Decimal(str(row[1])),
+                        actif=True,
+                        date_debut=date.today()
+                    )
+                    db.add(bareme)
+                    count += 1
+                except:
+                    continue
+        
+        db.commit()
+        
+        # Invalider cache IRG
+        from services.irg_calculator import get_irg_calculator
+        calc = get_irg_calculator(db)
+        calc.recharger_bareme()
+        
+        return {"message": f"Barème importé avec succès ({count} tranches)"}
+        
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(500, f"Erreur lors de l'import: {str(e)}")
+
+
 @router.post("/irg-bareme/desactiver-tout")
 def desactiver_bareme_actif(db: Session = Depends(get_db)):
     """Désactiver tout le barème actif (avant nouvel import)"""
     db.query(IRGBareme).update({"actif": False})
     db.commit()
+    
+    # Invalider cache aussi
+    from services.irg_calculator import get_irg_calculator
+    calc = get_irg_calculator(db)
+    calc.recharger_bareme()
     
     return {"message": "Barème désactivé"}
 
