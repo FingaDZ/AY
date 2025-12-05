@@ -52,6 +52,7 @@ const Sidebar = ({ isOpen, onClose }) => {
         { to: '/credits', label: 'Crédits', icon: FileText, public: false },
         { to: '/conges', label: 'Congés', icon: Calendar, public: false },
         { to: '/salaires', label: 'Salaires', icon: Download, public: false },
+        { to: '/parametres/salaires', label: 'Paramètres Salaires', icon: DollarSign, public: false },
         { to: '/logs', label: 'Logs', icon: ScrollText, public: false },
         { to: '/parametres', label: 'Paramètres', icon: SettingsIcon, public: false },
         { to: '/utilisateurs', label: 'Utilisateurs', icon: UserCog, public: false },

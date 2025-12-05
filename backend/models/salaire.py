@@ -1,6 +1,6 @@
 """Modèle pour les salaires mensuels"""
 
-from sqlalchemy import Column, Integer, String, Numeric, Date, ForeignKey, Index
+from sqlalchemy import Column, Integer, String, Numeric, Date, DateTime, Text, ForeignKey, Index
 from sqlalchemy.orm import relationship
 from datetime import datetime
 from database import Base
@@ -18,6 +18,8 @@ class Salaire(Base):
     # Données de base
     jours_travailles = Column(Integer, default=0)
     jours_ouvrables = Column(Integer, default=26)
+    jours_conges = Column(Integer, default=0, comment="Jours de congés payés dans ce mois")
+    mode_calcul_conges = Column(String(20), nullable=True, comment="Mode de calcul si congés présents")
     
     # Salaire et heures
     salaire_base_proratis = Column(Numeric(10, 2), default=0)
@@ -49,10 +51,14 @@ class Salaire(Base):
     
     # IRG
     irg = Column(Numeric(10, 2), default=0)
+    irg_base_30j = Column(Numeric(10, 2), nullable=True, comment="IRG calculé sur base 30j (avant proratisation)")
     
     # Autres déductions
     total_avances = Column(Numeric(10, 2), default=0)
     retenue_credit = Column(Numeric(10, 2), default=0)
+    avances_reportees = Column(Numeric(10, 2), default=0, comment="Avances reportées au mois suivant")
+    credits_reportes = Column(Numeric(10, 2), default=0, comment="Crédits reportés au mois suivant")
+    alerte_insuffisance = Column(String(50), nullable=True, comment="Type d'alerte si salaire insuffisant")
     
     # Prime femme foyer
     prime_femme_foyer = Column(Numeric(10, 2), default=0)
@@ -62,8 +68,16 @@ class Salaire(Base):
     
     # Métadonnées
     date_paiement = Column(Date)
-    statut = Column(String(20), default='brouillon')
+    statut = Column(String(20), default='brouillon', comment="brouillon|valide|paye")
     notes = Column(String(500))
+    commentaire = Column(Text, nullable=True)
+    
+    # Workflow tracking
+    valide_par = Column(Integer, ForeignKey('users.id'), nullable=True)
+    paye_par = Column(Integer, ForeignKey('users.id'), nullable=True)
+    date_validation = Column(DateTime, nullable=True)
+    date_paiement_effective = Column(DateTime, nullable=True)
+    
     created_at = Column(Date, default=datetime.now)
     updated_at = Column(Date, default=datetime.now, onupdate=datetime.now)
     

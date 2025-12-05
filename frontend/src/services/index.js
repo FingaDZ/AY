@@ -185,4 +185,5 @@ export const incompleteLogsService = {
 };
 
 export { default as attendanceService } from './attendanceService';
+export { default as parametresSalaireService } from './parametresSalaireService';
 

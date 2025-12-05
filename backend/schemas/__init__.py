@@ -84,6 +84,18 @@ from .import_preview import (
     ImportPreviewResponse,
     ImportConfirmRequest,
 )
+from .parametres_salaire import (
+    ParametresSalaireBase,
+    ParametresSalaireCreate,
+    ParametresSalaireUpdate,
+    ParametresSalaireResponse,
+    IRGBaremeBase,
+    IRGBaremeCreate,
+    IRGBaremeResponse,
+    ReportAvanceCreditBase,
+    ReportAvanceCreditCreate,
+    ReportAvanceCreditResponse,
+)
 
 __all__ = [
     "EmployeBase",
@@ -152,4 +164,14 @@ __all__ = [
     "ImportPreviewStats",
     "ImportPreviewResponse",
     "ImportConfirmRequest",
+    "ParametresSalaireBase",
+    "ParametresSalaireCreate",
+    "ParametresSalaireUpdate",
+    "ParametresSalaireResponse",
+    "IRGBaremeBase",
+    "IRGBaremeCreate",
+    "IRGBaremeResponse",
+    "ReportAvanceCreditBase",
+    "ReportAvanceCreditCreate",
+    "ReportAvanceCreditResponse",
 ]
