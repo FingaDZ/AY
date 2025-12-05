@@ -35,6 +35,15 @@ export const parametresSalaireService = {
         return api.post(`${BASE_URL}/irg-bareme/desactiver-tout`);
     },
 
+    // Importer barème IRG (Excel)
+    importerIRGBareme: (formData) => {
+        return api.post(`${BASE_URL}/irg-bareme/importer`, formData, {
+            headers: {
+                'Content-Type': 'multipart/form-data',
+            },
+        });
+    },
+
     // Reports en attente
     getReports: (params = {}) => {
         return api.get(`${BASE_URL}/reports`, { params });

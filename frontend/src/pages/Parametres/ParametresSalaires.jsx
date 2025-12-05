@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
-import { Card, Form, InputNumber, Switch, Select, Button, message, Spin, Divider, Alert, Row, Col, Typography } from 'antd';
-import { SaveOutlined, ReloadOutlined } from '@ant-design/icons';
+import { Card, Form, InputNumber, Switch, Select, Button, message, Spin, Divider, Alert, Row, Col, Typography, Upload } from 'antd';
+import { SaveOutlined, ReloadOutlined, UploadOutlined, FileExcelOutlined } from '@ant-design/icons';
 import { parametresSalaireService } from '../../services';
 
 const { Title, Text } = Typography;
@@ -10,6 +10,7 @@ function ParametresSalaires() {
     const [form] = Form.useForm();
     const [loading, setLoading] = useState(false);
     const [saving, setSaving] = useState(false);
+    const [uploading, setUploading] = useState(false);
     const [parametres, setParametres] = useState(null);
 
     useEffect(() => {
@@ -49,6 +50,22 @@ function ParametresSalaires() {
         } finally {
             setSaving(false);
         }
+    };
+
+    const handleUploadIRG = async (file) => {
+        const formData = new FormData();
+        formData.append('file', file);
+
+        try {
+            setUploading(true);
+            await parametresSalaireService.importerIRGBareme(formData);
+            message.success('Barème IRG importé avec succès');
+        } catch (error) {
+            message.error("Erreur lors de l'import : " + (error.response?.data?.detail || error.message));
+        } finally {
+            setUploading(false);
+        }
+        return false; // Empêcher l'upload automatique par antd
     };
 
     const handleReset = () => {
@@ -366,6 +383,36 @@ function ParametresSalaires() {
                             </Form.Item>
                         </Col>
                     </Row>
+                </Card>
+
+                {/* BARÈME IRG */}
+                <Card title="Barème IRG" style={{ marginBottom: 16 }}>
+                    <div style={{ textAlign: 'center', marginBottom: 16 }}>
+                        <Text type="secondary">
+                            Importez le fichier irg.xlsx (colonnes : MONTANT, IRG) pour mettre à jour le barème de calcul.
+                        </Text>
+                    </div>
+                    <Upload.Dragger
+                        name="file"
+                        multiple={false}
+                        beforeUpload={handleUploadIRG}
+                        showUploadList={false}
+                        accept=".xlsx,.xls"
+                    >
+                        <p className="ant-upload-drag-icon">
+                            <FileExcelOutlined style={{ color: '#52c41a' }} />
+                        </p>
+                        <p className="ant-upload-text">Cliquez ou glissez le fichier IRG ici</p>
+                        <p className="ant-upload-hint">
+                            Supporte uniquement les fichiers Excel (.xlsx)
+                        </p>
+                    </Upload.Dragger>
+
+                    {uploading && (
+                        <div style={{ marginTop: 16, textAlign: 'center' }}>
+                            <Spin /> Importation en cours...
+                        </div>
+                    )}
                 </Card>
 
                 {/* BOUTONS */}
