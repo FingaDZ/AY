@@ -86,12 +86,9 @@ function AppRoutes() {
                 </ProtectedAdminRoute>
               } />
 
-              {/* Clients - ADMIN ONLY */}
-              <Route path="/clients" element={
-                <ProtectedAdminRoute>
-                  <ClientsList />
-                </ProtectedAdminRoute>
-              } />
+              {/* Clients - Accessible à tous */}
+              <Route path="/clients" element={<ClientsList />} />
+
 
               {/* Avances - ADMIN ONLY */}
               <Route path="/avances" element={
