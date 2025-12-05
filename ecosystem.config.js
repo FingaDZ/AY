@@ -1,22 +1,5 @@
-module.exports = {
-    apps: [
-        {
-            name: "ay-hr-backend",
-            cwd: "./backend",
-            script: "venv/bin/python",
-            args: "-m uvicorn main:app --host 0.0.0.0 --port 8000",
-            interpreter: "none", // Important pour utiliser le python du venv directement
-            env: {
-                NODE_ENV: "production",
-            },
-        },
-        {
-            name: "ay-hr-frontend",
-            cwd: "./frontend",
-            script: "npm",
-            args: "run preview -- --host 0.0.0.0 --port 3000",
-            env: {
-                NODE_ENV: "production",
+env: {
+    NODE_ENV: "production",
             },
         },
     ],
