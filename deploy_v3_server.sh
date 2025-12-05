@@ -22,7 +22,20 @@ git pull origin main
 # 3. Mettre à jour le backend
 echo "🐍 Mise à jour du Backend..."
 cd backend
-source venv/bin/activate
+
+# Créer venv s'il n'existe pas
+if [ ! -d "venv" ] && [ ! -d ".venv" ]; then
+    echo "Creation du virtualenv python..."
+    python3 -m venv venv
+fi
+
+# Activer venv (supporte venv ou .venv)
+if [ -d "venv" ]; then
+    source venv/bin/activate
+elif [ -d ".venv" ]; then
+    source .venv/bin/activate
+fi
+
 pip install -r requirements.txt
 
 # 4. Exécuter les migrations BDD
