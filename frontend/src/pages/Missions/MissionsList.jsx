@@ -16,13 +16,16 @@ function MissionsList() {
   const [modalVisible, setModalVisible] = useState(false);
   const [editingMission, setEditingMission] = useState(null);
   const [tarifKm, setTarifKm] = useState(15.5);
-  const [filters, setFilters] = useState({});
+  const [filters, setFilters] = useState({
+    date_debut: dayjs().format('YYYY-MM-DD'),
+    date_fin: dayjs().format('YYYY-MM-DD')
+  });
   const [totaux, setTotaux] = useState([]);
   const [form] = Form.useForm();
 
   useEffect(() => {
     loadData();
-  }, []);
+  }, [filters]);
 
   const loadData = async () => {
     try {

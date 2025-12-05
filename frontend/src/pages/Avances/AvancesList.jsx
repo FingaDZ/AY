@@ -16,8 +16,8 @@ function AvancesList() {
   const [editingAvance, setEditingAvance] = useState(null);
   const [filters, setFilters] = useState({
     employe_id: null,
-    annee: null,
-    mois: null,
+    annee: new Date().getFullYear(),
+    mois: new Date().getMonth() + 1,
   });
   const [form] = Form.useForm();
 
@@ -111,9 +111,9 @@ function AvancesList() {
       setLoading(true);
       const annee = filters.annee || new Date().getFullYear();
       const mois = filters.mois || new Date().getMonth() + 1;
-      
+
       const response = await avanceService.getRapportMensuel(annee, mois);
-      
+
       // Télécharger le PDF
       const url = window.URL.createObjectURL(new Blob([response.data]));
       const link = document.createElement('a');
@@ -123,7 +123,7 @@ function AvancesList() {
       document.body.appendChild(link);
       link.click();
       link.remove();
-      
+
       message.success('Rapport généré avec succès');
     } catch (error) {
       message.error(error.response?.data?.detail || 'Erreur lors de la génération du rapport');
@@ -141,23 +141,23 @@ function AvancesList() {
 
   const columns = [
     { title: 'Date', dataIndex: 'date_avance', key: 'date_avance' },
-    { 
-      title: 'Employé', 
-      dataIndex: 'employe_id', 
+    {
+      title: 'Employé',
+      dataIndex: 'employe_id',
       key: 'employe_id',
       render: (id) => {
         const emp = employes.find(e => e.id === id);
         return emp ? `${emp.prenom} ${emp.nom}` : id;
       }
     },
-    { 
-      title: 'Montant', 
-      dataIndex: 'montant', 
+    {
+      title: 'Montant',
+      dataIndex: 'montant',
       key: 'montant',
       render: (val) => `${parseFloat(val).toLocaleString('fr-FR')} DA`
     },
-    { 
-      title: 'Déduction', 
+    {
+      title: 'Déduction',
       key: 'deduction',
       render: (_, record) => `${record.mois_deduction}/${record.annee_deduction}`
     },
@@ -195,17 +195,17 @@ function AvancesList() {
       <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 16 }}>
         <h2>Avances Salariales</h2>
         <Space>
-          <Button 
-            type="default" 
-            icon={<FilePdfOutlined />} 
+          <Button
+            type="default"
+            icon={<FilePdfOutlined />}
             onClick={handleGenererRapport}
             loading={loading}
           >
             Rapport PDF
           </Button>
-          <Button 
-            type="primary" 
-            icon={<PlusOutlined />} 
+          <Button
+            type="primary"
+            icon={<PlusOutlined />}
             onClick={() => { setEditingAvance(null); setModalVisible(true); }}
           >
             Nouvelle Avance
@@ -248,7 +248,7 @@ function AvancesList() {
               onChange={(value) => handleFilterChange('mois', value)}
             >
               {[...Array(12)].map((_, i) => (
-                <Option key={i+1} value={i+1}>
+                <Option key={i + 1} value={i + 1}>
                   {new Date(2000, i).toLocaleDateString('fr-FR', { month: 'long' })}
                 </Option>
               ))}
@@ -264,10 +264,10 @@ function AvancesList() {
 
       <Table loading={loading} columns={columns} dataSource={avances} rowKey="id" />
 
-      <Modal 
-        title={editingAvance ? "Modifier l'Avance" : "Nouvelle Avance"} 
-        open={modalVisible} 
-        onCancel={handleCancel} 
+      <Modal
+        title={editingAvance ? "Modifier l'Avance" : "Nouvelle Avance"}
+        open={modalVisible}
+        onCancel={handleCancel}
         footer={null}
       >
         <Form form={form} layout="vertical" onFinish={handleSubmit}>
@@ -286,7 +286,7 @@ function AvancesList() {
           </Form.Item>
           <Form.Item label="Mois déduction" name="mois_deduction" rules={[{ required: true }]}>
             <Select>
-              {[...Array(12)].map((_, i) => <Option key={i+1} value={i+1}>{i+1}</Option>)}
+              {[...Array(12)].map((_, i) => <Option key={i + 1} value={i + 1}>{i + 1}</Option>)}
             </Select>
           </Form.Item>
           <Form.Item label="Année déduction" name="annee_deduction" rules={[{ required: true }]}>

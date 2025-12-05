@@ -108,11 +108,23 @@ def update_client(
 @router.delete("/{client_id}", status_code=204)
 def delete_client(client_id: int, db: Session = Depends(get_db)):
     """Supprimer un client"""
+    from models.mission_client_detail import MissionClientDetail
     
     client = db.query(Client).filter(Client.id == client_id).first()
     
     if not client:
         raise HTTPException(status_code=404, detail="Client non trouvé")
+    
+    # Vérifier si le client a des mouvements logistiques
+    details_count = db.query(MissionClientDetail).filter(
+        MissionClientDetail.client_id == client_id
+    ).count()
+    
+    if details_count > 0:
+        raise HTTPException(
+            status_code=400, 
+            detail=f"Impossible de supprimer ce client : il a {details_count} mouvement(s) logistique(s) enregistré(s)."
+        )
     
     # Log action before delete
     log_action(
@@ -218,4 +230,148 @@ def get_client_logistics_balance(client_id: int, db: Session = Depends(get_db)):
         'client_id': client_id,
         'client_nom': f"{client.prenom} {client.nom}",
         'logistics_balance': balance
+    }
+
+
+@router.get("/{client_id}/logistics-balance/pdf")
+def get_client_logistics_pdf(client_id: int, db: Session = Depends(get_db)):
+    """Générer PDF du solde logistique pour un client"""
+    from models.mission_client_detail import MissionClientDetail, MissionLogisticsMovement
+    from models.logistics_type import LogisticsType
+    from sqlalchemy import func
+    
+    client = db.query(Client).filter(Client.id == client_id).first()
+    if not client:
+        raise HTTPException(status_code=404, detail="Client non trouvé")
+    
+    # Récupérer les soldes
+    query = db.query(
+        LogisticsType.id.label('type_id'),
+        LogisticsType.name.label('type_name'),
+        func.sum(MissionLogisticsMovement.quantity_out).label('total_out'),
+        func.sum(MissionLogisticsMovement.quantity_in).label('total_in')
+    ).join(
+        MissionLogisticsMovement, 
+        MissionLogisticsMovement.logistics_type_id == LogisticsType.id
+    ).join(
+        MissionClientDetail,
+        MissionClientDetail.id == MissionLogisticsMovement.mission_client_detail_id
+    ).filter(
+        MissionClientDetail.client_id == client_id,
+        LogisticsType.is_active == True
+    ).group_by(
+        LogisticsType.id,
+        LogisticsType.name
+    ).all()
+    
+    balance = []
+    for row in query:
+        total_out = row.total_out or 0
+        total_in = row.total_in or 0
+        solde = total_out - total_in
+        balance.append({
+            'type_name': row.type_name,
+            'total_prises': total_out,
+            'total_retournees': total_in,
+            'solde': solde
+        })
+    
+    # Générer PDF
+    pdf_generator = PDFGenerator()
+    client_data = {
+        'client_nom': f"{client.prenom} {client.nom}",
+        'balance': balance
+    }
+    pdf_buffer = pdf_generator.generate_client_logistics_balance(client_data)
+    
+    filename = f"logistique_{client.nom}_{date.today().strftime('%d%m%Y')}.pdf"
+    return StreamingResponse(
+        pdf_buffer,
+        media_type="application/pdf",
+        headers={"Content-Disposition": f"attachment; filename={filename}"}
+    )
+
+
+@router.get("/logistics-balance/all/pdf")
+def get_all_clients_logistics_pdf(db: Session = Depends(get_db)):
+    """Générer PDF global des soldes logistiques de tous les clients"""
+    from models.mission_client_detail import MissionClientDetail, MissionLogisticsMovement
+    from models.logistics_type import LogisticsType
+    from sqlalchemy import func
+    
+    # Récupérer tous les clients avec mouvements logistiques
+    clients_data = []
+    clients = db.query(Client).all()
+    
+    for client in clients:
+        query = db.query(
+            LogisticsType.id.label('type_id'),
+            LogisticsType.name.label('type_name'),
+            func.sum(MissionLogisticsMovement.quantity_out).label('total_out'),
+            func.sum(MissionLogisticsMovement.quantity_in).label('total_in')
+        ).join(
+            MissionLogisticsMovement, 
+            MissionLogisticsMovement.logistics_type_id == LogisticsType.id
+        ).join(
+            MissionClientDetail,
+            MissionClientDetail.id == MissionLogisticsMovement.mission_client_detail_id
+        ).filter(
+            MissionClientDetail.client_id == client.id,
+            LogisticsType.is_active == True
+        ).group_by(
+            LogisticsType.id,
+            LogisticsType.name
+        ).all()
+        
+        if query:  # Seulement les clients avec mouvements
+            balance = []
+            for row in query:
+                total_out = row.total_out or 0
+                total_in = row.total_in or 0
+                solde = total_out - total_in
+                balance.append({
+                    'type_name': row.type_name,
+                    'total_prises': total_out,
+                    'total_retournees': total_in,
+                    'solde': solde
+                })
+            
+            clients_data.append({
+                'client_nom': f"{client.prenom} {client.nom}",
+                'balance': balance
+            })
+    
+    # Générer PDF
+    pdf_generator = PDFGenerator()
+    pdf_buffer = pdf_generator.generate_all_clients_logistics_balance(clients_data)
+    
+    filename = f"logistique_tous_clients_{date.today().strftime('%d%m%Y')}.pdf"
+    return StreamingResponse(
+        pdf_buffer,
+        media_type="application/pdf",
+        headers={"Content-Disposition": f"attachment; filename={filename}"}
+    )
+
+
+@router.get("/{client_id}/can-delete")
+def check_can_delete_client(client_id: int, db: Session = Depends(get_db)):
+    """Vérifier si un client peut être supprimé"""
+    from models.mission_client_detail import MissionClientDetail
+    
+    client = db.query(Client).filter(Client.id == client_id).first()
+    if not client:
+        raise HTTPException(status_code=404, detail="Client non trouvé")
+    
+    # Compter les détails de mission pour ce client
+    details_count = db.query(MissionClientDetail).filter(
+        MissionClientDetail.client_id == client_id
+    ).count()
+    
+    can_delete = details_count == 0
+    reason = "" if can_delete else "Ce client a des mouvements logistiques enregistrés et ne peut pas être supprimé."
+    
+    return {
+        "can_delete": can_delete,
+        "reason": reason,
+        "movements_count": details_count
     }

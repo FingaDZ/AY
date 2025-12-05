@@ -55,11 +55,18 @@ function ClientsList() {
 
   const handleDelete = async (id) => {
     try {
+      // Vérifier si le client peut être supprimé
+      const checkResponse = await api.get(`/clients/${id}/can-delete`);
+      if (!checkResponse.data.can_delete) {
+        message.error(checkResponse.data.reason);
+        return;
+      }
+
       await clientService.delete(id);
       message.success('Client supprimé avec succès');
       loadClients();
     } catch (error) {
-      message.error('Erreur lors de la suppression');
+      message.error(error.response?.data?.detail || 'Erreur lors de la suppression');
     }
   };
 
@@ -97,6 +104,43 @@ function ClientsList() {
     setEditingClient(null);
     form.resetFields();
     setModalVisible(true);
+  };
+
+  const handlePrintLogistics = async (client) => {
+    try {
+      const response = await api.get(`/clients/${client.id}/logistics-balance/pdf`, { responseType: 'blob' });
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', `logistique_${client.nom}_${new Date().toISOString().slice(0, 10)}.pdf`);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      message.success('PDF généré avec succès');
+    } catch (error) {
+      message.error('Erreur lors de la génération du PDF');
+      console.error(error);
+    }
+  };
+
+  const handlePrintAllLogistics = async () => {
+    try {
+      setLoading(true);
+      const response = await api.get('/clients/logistics-balance/all/pdf', { responseType: 'blob' });
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', `logistique_tous_clients_${new Date().toISOString().slice(0, 10)}.pdf`);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      message.success('Rapport global généré avec succès');
+    } catch (error) {
+      message.error('Erreur lors de la génération du rapport');
+      console.error(error);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleViewLogistics = async (client) => {
@@ -190,10 +234,18 @@ function ClientsList() {
           <Button
             type="default"
             icon={<FilePdfOutlined />}
+            onClick={handlePrintAllLogistics}
+            loading={loading}
+          >
+            Rapport Logistique Global
+          </Button>
+          <Button
+            type="default"
+            icon={<FilePdfOutlined />}
             onClick={handleGenererRapport}
             loading={loading}
           >
-            Rapport PDF
+            Rapport Clients
           </Button>
           <Button
             type="primary"
@@ -298,6 +350,10 @@ function ClientsList() {
         open={logisticsModalVisible}
         onCancel={() => setLogisticsModalVisible(false)}
         footer={[
+          <Button key="print" type="primary" icon={<FilePdfOutlined />}
+            onClick={() => handlePrintLogistics({ id: logisticsData?.client_id, nom: logisticsData?.client_nom.split(' ')[1] })}>
+            Imprimer
+          </Button>,
           <Button key="close" onClick={() => setLogisticsModalVisible(false)}>
             Fermer
           </Button>

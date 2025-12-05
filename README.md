@@ -1,11 +1,11 @@
 # HR System
 
-[![Version](https://img.shields.io/badge/version-2.3.0-blue.svg)](https://github.com/FingaDZ/AY/releases/tag/v2.3.0)
+[![Version](https://img.shields.io/badge/version-2.4.2-blue.svg)](https://github.com/FingaDZ/AY/releases/tag/v2.4.2)
 [![Status](https://img.shields.io/badge/status-stable-green.svg)](https://github.com/FingaDZ/AY)
 [![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20Linux-lightgrey.svg)]()
 
-> **Version actuelle** : 2.3.0 (Major Refactoring)  
-> **Dernière mise à jour** : 29 novembre 2025  
+> **Version actuelle** : 2.4.2
+> **Dernière mise à jour** : 05 décembre 2025  
 > **Statut** : ✅ Production Ready
 
 ## 📋 Description
@@ -198,9 +198,9 @@ ATTENDANCE_API_TIMEOUT=30
 
 | Module | Version | Statut | Dernière Mise à Jour |
 |--------|---------|--------|----------------------|
-| **Frontend** | v2.3.0 | ✅ Stable | 29 Nov 2025 |
-| **Backend** | v2.3.0 | ✅ Stable | 29 Nov 2025 |
-| **Base de Données** | MariaDB | ✅ Connecté | 29 Nov 2025 |
+| **Frontend** | v2.4.2 | ✅ Stable | 05 Déc 2025 |
+| **Backend** | v2.4.2 | ✅ Stable | 05 Déc 2025 |
+| **Base de Données** | MariaDB | ✅ Connecté | 05 Déc 2025 |
 
 ## 🔐 Sécurité
 
@@ -213,7 +213,19 @@ ATTENDANCE_API_TIMEOUT=30
 
 ## 📝 Changelog
 
-### v2.3.0 - 29 novembre 2025 ✨ ACTUELLE
+### v2.4.2 - 05 décembre 2025 ✨ ACTUELLE
+- 🔒 **Rôles Utilisateur** : Réimplémentation complète du système de rôles (Admin vs Utilisateur)
+- 📊 **PDF Logistique** : Export PDF soldes logistiques (individuel + global)
+- 🛡️ **Protection Clients** : Impossible de supprimer clients avec mouvements logistiques
+- 🎯 **Filtrage Routes** : Utilisateurs limités à Dashboard + Missions uniquement
+
+### v2.4.1 - 05 décembre 2025
+- 📝 **PDF Ordre Mission** : Correction erreur 500 + améliorations mise en page
+- 📦 **Logistique** : Ajout cases Montant versé (x3) et Observations (x2.5)
+- 🔗 **API Logistique** : Route `/clients/{id}/logistics-balance` pour soldes
+- 🎨 **UI Clients** : Modal affichage soldes logistiques par client
+
+### v2.3.0 - 29 novembre 2025
 - 🗑️ **Nettoyage** : Suppression du module "Logs Incomplets"
 - 🔄 **Version** : Passage global à la version 2.3.0
 
@@ -307,5 +319,5 @@ Usage interne - Tous droits réservés
 ---
 
 **Développé par AIRBAND**  
-**Version** : 2.3.0  
-**Date** : 29 novembre 2025
+**Version** : 2.4.2  
+**Date** : 05 décembre 2025
