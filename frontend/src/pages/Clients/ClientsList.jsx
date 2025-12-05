@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
-import { Table, Button, Space, Input, message, Modal, Form, InputNumber, Popconfirm } from 'antd';
-import { PlusOutlined, EditOutlined, DeleteOutlined, FilePdfOutlined } from '@ant-design/icons';
+import { Table, Button, Space, Input, message, Modal, Form, InputNumber, Popconfirm, Tag } from 'antd';
+import { PlusOutlined, EditOutlined, DeleteOutlined, FilePdfOutlined, InfoCircleOutlined } from '@ant-design/icons';
 import { clientService } from '../../services';
+import api from '../../services/api';
 
 function ClientsList() {
   const [loading, setLoading] = useState(false);
@@ -9,6 +10,9 @@ function ClientsList() {
   const [modalVisible, setModalVisible] = useState(false);
   const [editingClient, setEditingClient] = useState(null);
   const [form] = Form.useForm();
+  const [logisticsModalVisible, setLogisticsModalVisible] = useState(false);
+  const [logisticsData, setLogisticsData] = useState(null);
+  const [loadingLogistics, setLoadingLogistics] = useState(false);
 
   useEffect(() => {
     loadClients();
@@ -63,7 +67,7 @@ function ClientsList() {
     try {
       setLoading(true);
       const response = await clientService.getRapportListe();
-      
+
       // Télécharger le PDF
       const url = window.URL.createObjectURL(new Blob([response.data]));
       const link = document.createElement('a');
@@ -73,7 +77,7 @@ function ClientsList() {
       document.body.appendChild(link);
       link.click();
       link.remove();
-      
+
       message.success('Rapport généré avec succès');
     } catch (error) {
       message.error(error.response?.data?.detail || 'Erreur lors de la génération du rapport');
@@ -93,6 +97,20 @@ function ClientsList() {
     setEditingClient(null);
     form.resetFields();
     setModalVisible(true);
+  };
+
+  const handleViewLogistics = async (client) => {
+    try {
+      setLoadingLogistics(true);
+      const response = await api.get(`/clients/${client.id}/logistics-balance`);
+      setLogisticsData(response.data);
+      setLogisticsModalVisible(true);
+    } catch (error) {
+      message.error('Erreur lors du chargement de la logistique');
+      console.error(error);
+    } finally {
+      setLoadingLogistics(false);
+    }
   };
 
   const columns = [
@@ -134,6 +152,14 @@ function ClientsList() {
       key: 'actions',
       render: (_, record) => (
         <Space>
+          <Button
+            type="link"
+            icon={<InfoCircleOutlined />}
+            onClick={() => handleViewLogistics(record)}
+            loading={loadingLogistics}
+          >
+            Logistique
+          </Button>
           <Button
             type="link"
             icon={<EditOutlined />}
@@ -265,6 +291,58 @@ function ClientsList() {
             </Button>
           </Form.Item>
         </Form>
+      </Modal>
+
+      <Modal
+        title={`Solde Logistique - ${logisticsData?.client_nom || ''}`}
+        open={logisticsModalVisible}
+        onCancel={() => setLogisticsModalVisible(false)}
+        footer={[
+          <Button key="close" onClick={() => setLogisticsModalVisible(false)}>
+            Fermer
+          </Button>
+        ]}
+        width={600}
+      >
+        {logisticsData && logisticsData.logistics_balance.length > 0 ? (
+          <Table
+            dataSource={logisticsData.logistics_balance}
+            rowKey="type_id"
+            pagination={false}
+            columns={[
+              {
+                title: 'Type',
+                dataIndex: 'type_name',
+                key: 'type_name',
+              },
+              {
+                title: 'Prises',
+                dataIndex: 'total_prises',
+                key: 'total_prises',
+                align: 'center',
+              },
+              {
+                title: 'Retournées',
+                dataIndex: 'total_retournees',
+                key: 'total_retournees',
+                align: 'center',
+              },
+              {
+                title: 'Solde',
+                dataIndex: 'solde',
+                key: 'solde',
+                align: 'center',
+                render: (solde) => (
+                  <Tag color={solde > 0 ? 'red' : 'green'}>
+                    {solde}
+                  </Tag>
+                ),
+              },
+            ]}
+          />
+        ) : (
+          <p>Aucune donnée logistique pour ce client.</p>
+        )}
       </Modal>
     </div>
   );
