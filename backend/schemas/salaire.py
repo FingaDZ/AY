@@ -65,6 +65,11 @@ class SalaireCalculTousCreate(BaseModel):
     mois: int = Field(..., ge=1, le=12)
     jours_supplementaires: int = Field(default=0, ge=0)
 
+class SalaireStatutUpdate(BaseModel):
+    """Mise à jour du statut d'un salaire"""
+    statut: str = Field(..., pattern="^(brouillon|valide|paye)$")
+    commentaire: Optional[str] = None
+
 class SalaireCalculResponse(SalaireCalculBase):
     id: int
     employe_nom: str

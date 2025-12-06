@@ -9,7 +9,12 @@ import zipfile
 
 from database import get_db
 from models import Employe, StatutContrat
-from schemas import SalaireCalculCreate, SalaireCalculTousCreate, SalaireDetailResponse
+from schemas import (
+    SalaireCalculCreate, 
+    SalaireCalculTousCreate, 
+    SalaireDetailResponse,
+    SalaireStatutUpdate
+)
 from services import SalaireCalculator
 from services.pdf_generator import PDFGenerator
 
@@ -565,4 +570,57 @@ async def sauvegarder_salaires_mois(
     except Exception as e:
         db.rollback()
         raise HTTPException(status_code=500, detail=f"Erreur batch: {str(e)}")
+
+
+@router.put("/{salaire_id}/statut")
+def update_statut_salaire(
+    salaire_id: int,
+    status_update: SalaireStatutUpdate,
+    db: Session = Depends(get_db)
+):
+    """
+    Mettre à jour le statut d'un salaire (workflow de validation)
+    Transitions: brouillon -> valide -> paye
+    """
+    from models.salaire import Salaire
+    from datetime import datetime
+    
+    salaire = db.query(Salaire).filter(Salaire.id == salaire_id).first()
+    
+    if not salaire:
+        raise HTTPException(status_code=404, detail="Salaire non trouvé")
+    
+    old_statut = salaire.statut
+    new_statut = status_update.statut
+    
+    # 1. Validation des transitions saines
+    if old_statut == "paye" and new_statut == "brouillon":
+         raise HTTPException(
+             status_code=400, 
+             detail="Impossible de repasser un salaire payé en brouillon. Passez par 'validé' d'abord."
+         )
+         
+    # 2. Logique de changement
+    salaire.statut = new_statut
+    if status_update.commentaire:
+        salaire.commentaire = status_update.commentaire
+        
+    # Validation
+    if new_statut == "valide" and old_statut != "valide":
+        salaire.date_validation = datetime.now()
+        
+    # Paiement
+    if new_statut == "paye" and old_statut != "paye":
+        salaire.date_paiement_effective = datetime.now()
+        
+    db.commit()
+    db.refresh(salaire)
+    
+    return {
+        "id": salaire.id,
+        "ancien_statut": old_statut,
+        "nouveau_statut": new_statut,
+        "date_validation": salaire.date_validation,
+        "date_paiement_effective": salaire.date_paiement_effective
+    }
 

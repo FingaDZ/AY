@@ -146,6 +146,7 @@ export const salaireService = {
   genererBulletins: (data) => api.post('/salaires/bulletins-paie/generer', data, { responseType: 'blob' }),
   genererRapport: (data) => api.post('/salaires/rapport-pdf', data, { responseType: 'blob' }),
   getRapport: (annee, mois) => api.get(`/salaires/rapport/${annee}/${mois}`),
+  updateStatut: (id, statut, commentaire) => api.put(`/salaires/${id}/statut`, { statut, commentaire }),
 };
 
 export const posteService = {
