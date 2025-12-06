@@ -1,11 +1,11 @@
 # HR System
 
-[![Version](https://img.shields.io/badge/version-2.4.2-blue.svg)](https://github.com/FingaDZ/AY/releases/tag/v2.4.2)
+[![Version](https://img.shields.io/badge/version-2.4.3-blue.svg)](https://github.com/FingaDZ/AY/releases/tag/v2.4.3)
 [![Status](https://img.shields.io/badge/status-stable-green.svg)](https://github.com/FingaDZ/AY)
 [![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20Linux-lightgrey.svg)]()
 
-> **Version actuelle** : 2.4.2
-> **Dernière mise à jour** : 05 décembre 2025  
+> **Version actuelle** : 2.4.3
+> **Dernière mise à jour** : 06 décembre 2025  
 > **Statut** : ✅ Production Ready
 
 ## 📋 Description
@@ -198,9 +198,9 @@ ATTENDANCE_API_TIMEOUT=30
 
 | Module | Version | Statut | Dernière Mise à Jour |
 |--------|---------|--------|----------------------|
-| **Frontend** | v2.4.2 | ✅ Stable | 05 Déc 2025 |
-| **Backend** | v2.4.2 | ✅ Stable | 05 Déc 2025 |
-| **Base de Données** | MariaDB | ✅ Connecté | 05 Déc 2025 |
+| **Frontend** | v2.4.3 | ✅ Stable | 06 Déc 2025 |
+| **Backend** | v2.4.3 | ✅ Stable | 06 Déc 2025 |
+| **Base de Données** | MariaDB | ✅ Connecté | 06 Déc 2025 |
 
 ## 🔐 Sécurité
 
@@ -213,7 +213,13 @@ ATTENDANCE_API_TIMEOUT=30
 
 ## 📝 Changelog
 
-### v2.4.2 - 05 décembre 2025 ✨ ACTUELLE
+### v2.4.3 - 06 décembre 2025 ✨ ACTUELLE
+- 🐛 **Correctif Critique** : Fix erreur 500 lors de l'import du barème IRG
+- 🔧 **Backend** : Ajout paramètre `db` manquant dans `get_irg_calculator()` (3 endroits)
+- 📊 **Amélioration** : Gestion d'erreurs améliorée avec traceback détaillé
+- 📝 **Rapport** : Affichage des erreurs d'import par ligne (max 5)
+
+### v2.4.2 - 05 décembre 2025
 - 🔒 **Rôles Utilisateur** : Réimplémentation complète du système de rôles (Admin vs Utilisateur)
 - 📊 **PDF Logistique** : Export PDF soldes logistiques (individuel + global)
 - 🛡️ **Protection Clients** : Impossible de supprimer clients avec mouvements logistiques
@@ -319,5 +325,5 @@ Usage interne - Tous droits réservés
 ---
 
 **Développé par AIRBAND**  
-**Version** : 2.4.2  
-**Date** : 05 décembre 2025
+**Version** : 2.4.3  
+**Date** : 06 décembre 2025

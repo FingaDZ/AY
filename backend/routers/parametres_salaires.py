@@ -122,8 +122,10 @@ async def importer_bareme_irg(
         db.query(IRGBareme).update({"actif": False})
         
         count = 0
+        errors = []
+        
         # Importer nouveau
-        for row in sheet.iter_rows(min_row=2, values_only=True):
+        for idx, row in enumerate(sheet.iter_rows(min_row=2, values_only=True), start=2):
             if row[0] is not None and row[1] is not None:
                 try:
                     bareme = IRGBareme(
@@ -134,35 +136,49 @@ async def importer_bareme_irg(
                     )
                     db.add(bareme)
                     count += 1
-                except:
+                except Exception as e:
+                    errors.append(f"Ligne {idx}: {str(e)}")
                     continue
         
         db.commit()
         
-        # Invalider cache IRG
+        # Invalider cache IRG - CORRECTION: passer le paramètre db
         from services.irg_calculator import get_irg_calculator
         calc = get_irg_calculator(db)
         calc.recharger_bareme()
         
-        return {"message": f"Barème importé avec succès ({count} tranches)"}
+        message = f"Barème importé avec succès ({count} tranches)"
+        if errors:
+            message += f" - {len(errors)} erreurs ignorées"
+        
+        return {"message": message, "count": count, "errors": errors[:5]}  # Max 5 erreurs affichées
         
     except Exception as e:
         db.rollback()
+        import traceback
+        error_detail = f"Erreur lors de l'import: {str(e)}\n{traceback.format_exc()}"
+        print(error_detail)  # Log serveur
         raise HTTPException(500, f"Erreur lors de l'import: {str(e)}")
+
 
 
 @router.post("/irg-bareme/desactiver-tout")
 def desactiver_bareme_actif(db: Session = Depends(get_db)):
     """Désactiver tout le barème actif (avant nouvel import)"""
-    db.query(IRGBareme).update({"actif": False})
-    db.commit()
-    
-    # Invalider cache aussi
-    from services.irg_calculator import get_irg_calculator
-    calc = get_irg_calculator(db)
-    calc.recharger_bareme()
-    
-    return {"message": "Barème désactivé"}
+    try:
+        db.query(IRGBareme).update({"actif": False})
+        db.commit()
+        
+        # Invalider cache aussi - CORRECTION: passer db
+        from services.irg_calculator import get_irg_calculator
+        calc = get_irg_calculator(db)
+        calc.recharger_bareme()
+        
+        return {"message": "Barème désactivé"}
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(500, f"Erreur lors de la désactivation: {str(e)}")
+
 
 
 @router.get("/reports", response_model=List[ReportAvanceCreditResponse])

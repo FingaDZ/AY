@@ -302,8 +302,9 @@ class SalaireCalculator:
         """
         Calculer l'IRG selon le barème fiscal depuis le fichier irg.xlsx
         """
-        irg_calc = get_irg_calculator()
+        irg_calc = get_irg_calculator(self.db)  # CORRECTION: passer self.db
         return irg_calc.calculer_irg(salaire_brut)
+
 
     def _calculer_irg_proratise(self, salaire_imposable: Decimal, jours_travailles: int) -> Decimal:
         """Calcul d'IRG proratisé basé sur l'extrapolation à 30 jours"""
