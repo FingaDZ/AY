@@ -50,10 +50,34 @@ def calculer_tous_salaires(
 ):
     """Calculer les salaires de tous les employés actifs pour un mois"""
     
+    
     # Récupérer tous les employés actifs
     employes = db.query(Employe).filter(
         Employe.statut_contrat == StatutContrat.ACTIF
     ).all()
+    
+    # VALIDATION: Vérifier que tous les pointages sont verrouillés
+    from models.pointage import Pointage
+    pointages_non_verrouilles = db.query(Pointage).filter(
+        Pointage.annee == params.annee,
+        Pointage.mois == params.mois,
+        Pointage.verrouille == False
+    ).all()
+    
+    if pointages_non_verrouilles:
+        employes_non_verrouilles = []
+        for p in pointages_non_verrouilles:
+            emp = db.query(Employe).filter(Employe.id == p.employe_id).first()
+            if emp:
+                employes_non_verrouilles.append(f"{emp.prenom} {emp.nom}")
+        
+        raise HTTPException(
+            status_code=400,
+            detail=f"{len(pointages_non_verrouilles)} pointage(s) non verrouillé(s) pour {params.mois}/{params.annee}. "
+                   f"Employés concernés: {', '.join(employes_non_verrouilles[:5])}"
+                   f"{' et ' + str(len(employes_non_verrouilles) - 5) + ' autres' if len(employes_non_verrouilles) > 5 else ''}. "
+                   f"Veuillez verrouiller tous les pointages avant de calculer les salaires."
+        )
     
     calculator = SalaireCalculator(db)
     resultats = []
@@ -127,6 +151,21 @@ def generer_bulletins_paie(
     
     if not employes:
         raise HTTPException(status_code=404, detail="Aucun employé actif trouvé")
+    
+    # VALIDATION: Vérifier que tous les pointages sont verrouillés
+    from models.pointage import Pointage
+    pointages_non_verrouilles = db.query(Pointage).filter(
+        Pointage.annee == params.annee,
+        Pointage.mois == params.mois,
+        Pointage.verrouille == False
+    ).all()
+    
+    if pointages_non_verrouilles:
+        raise HTTPException(
+            status_code=400,
+            detail=f"{len(pointages_non_verrouilles)} pointage(s) non verrouillé(s). "
+                   f"Veuillez verrouiller tous les pointages avant de générer les bulletins."
+        )
     
     calculator = SalaireCalculator(db)
     pdf_generator = PDFGenerator(db=db)
