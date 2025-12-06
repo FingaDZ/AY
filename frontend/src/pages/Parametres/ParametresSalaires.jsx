@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+﻿import { useState, useEffect } from 'react';
 import { Card, Form, InputNumber, Switch, Select, Button, message, Spin, Divider, Alert, Row, Col, Typography, Upload } from 'antd';
 import { SaveOutlined, ReloadOutlined, UploadOutlined, FileExcelOutlined } from '@ant-design/icons';
 import { parametresSalaireService } from '../../services';
@@ -39,7 +39,7 @@ function ParametresSalaires() {
             const response = await parametresSalaireService.updateParametres(values);
             setParametres(response.data);
 
-            message.success('Paramètres sauvegard\u00e9s avec succ\u00e8s');
+            message.success('Paramètres sauvegardés avec succès');
         } catch (error) {
             if (error.errorFields) {
                 message.error('Veuillez corriger les erreurs dans le formulaire');
@@ -71,7 +71,7 @@ function ParametresSalaires() {
     const handleReset = () => {
         if (parametres) {
             form.setFieldsValue(parametres);
-            message.info('Formulaire r\u00e9initialis\u00e9');
+            message.info('Formulaire réinitialisé');
         }
     };
 
@@ -79,18 +79,18 @@ function ParametresSalaires() {
         return (
             <div style={{ textAlign: 'center', padding: 50 }}>
                 <Spin size="large" />
-                <p>Chargement des param\u00e8tres...</p>
+                <p>Chargement des paramètres...</p>
             </div>
         );
     }
 
     return (
         <div>
-            <Title level={2}>Param\u00e8tres de Calcul des Salaires</Title>
+            <Title level={2}>Paramètres de Calcul des Salaires</Title>
 
             <Alert
                 message="Important"
-                description="Ces param\u00e8tres affectent TOUS les calculs de salaire futurs. Modifiez-les avec pr\u00e9caution."
+                description="Ces paramètres affectent TOUS les calculs de salaire futurs. Modifiez-les avec précaution."
                 type="warning"
                 showIcon
                 style={{ marginBottom: 24 }}
@@ -103,16 +103,16 @@ function ParametresSalaires() {
             >
                 {/* INDEMNITÉS */}
                 <Card
-                    title="Indemit\u00e9s (%)"
+                    title="Indemités (%)"
                     style={{ marginBottom: 16 }}
                     extra={
-                        <Text type="secondary">Appliqu\u00e9es sur le salaire de base</Text>
+                        <Text type="secondary">Appliquées sur le salaire de base</Text>
                     }
                 >
                     <Row gutter={16}>
                         <Col span={8}>
                             <Form.Item
-                                label="IN - Indemit\u00e9 de Nuisance (%)"
+                                label="IN - Indemité de Nuisance (%)"
                                 name="taux_in"
                                 rules={[
                                     { required: true, message: 'Requis' },
@@ -148,13 +148,13 @@ function ParametresSalaires() {
                         </Col>
                         <Col span={8}>
                             <Form.Item
-                                label="IEP - Exp\u00e9rience Prof. (% par an)"
+                                label="IEP - Expérience Prof. (% par an)"
                                 name="taux_iep_par_an"
                                 rules={[
                                     { required: true, message: 'Requis' },
                                     { type: 'number', min: 0, max: 100, message: '0-100%' }
                                 ]}
-                                tooltip="1% = 1% du salaire par ann\u00e9e d'anciennet\u00e9"
+                                tooltip="1% = 1% du salaire par année d'ancienneté"
                             >
                                 <InputNumber
                                     min={0}
@@ -188,11 +188,11 @@ function ParametresSalaires() {
                         </Col>
                         <Col span={12}>
                             <Form.Item
-                                label="Anciennet\u00e9 minimum pour Prime Encouragement (ann\u00e9es)"
+                                label="Ancienneté minimum pour Prime Encouragement (années)"
                                 name="anciennete_min_encouragement"
                                 rules={[
                                     { required: true, message: 'Requis' },
-                                    { type: 'number', min: 0, message: '\u2265 0' }
+                                    { type: 'number', min: 0, message: '≥ 0' }
                                 ]}
                             >
                                 <InputNumber
@@ -214,7 +214,7 @@ function ParametresSalaires() {
                                 name="prime_chauffeur_jour"
                                 rules={[
                                     { required: true, message: 'Requis' },
-                                    { type: 'number', min: 0, message: '\u2265 0' }
+                                    { type: 'number', min: 0, message: '≥ 0' }
                                 ]}
                             >
                                 <InputNumber
@@ -227,11 +227,11 @@ function ParametresSalaires() {
                         </Col>
                         <Col span={8}>
                             <Form.Item
-                                label="Prime Nuit S\u00e9curit\u00e9 (mensuelle)"
+                                label="Prime Nuit Sécurité (mensuelle)"
                                 name="prime_nuit_securite"
                                 rules={[
                                     { required: true, message: 'Requis' },
-                                    { type: 'number', min: 0, message: '\u2265 0' }
+                                    { type: 'number', min: 0, message: '≥ 0' }
                                 ]}
                             >
                                 <InputNumber
@@ -248,7 +248,7 @@ function ParametresSalaires() {
                                 name="prime_femme_foyer"
                                 rules={[
                                     { required: true, message: 'Requis' },
-                                    { type: 'number', min: 0, message: '\u2265 0' }
+                                    { type: 'number', min: 0, message: '≥ 0' }
                                 ]}
                             >
                                 <InputNumber
@@ -268,7 +268,7 @@ function ParametresSalaires() {
                                 name="panier_jour"
                                 rules={[
                                     { required: true, message: 'Requis' },
-                                    { type: 'number', min: 0, message: '\u2265 0' }
+                                    { type: 'number', min: 0, message: '≥ 0' }
                                 ]}
                             >
                                 <InputNumber
@@ -285,7 +285,7 @@ function ParametresSalaires() {
                                 name="transport_jour"
                                 rules={[
                                     { required: true, message: 'Requis' },
-                                    { type: 'number', min: 0, message: '\u2265 0' }
+                                    { type: 'number', min: 0, message: '≥ 0' }
                                 ]}
                             >
                                 <InputNumber
@@ -304,7 +304,7 @@ function ParametresSalaires() {
                     <Row gutter={16}>
                         <Col span={12}>
                             <Form.Item
-                                label="Taux S\u00e9curit\u00e9 Sociale (%)"
+                                label="Taux Sécurité Sociale (%)"
                                 name="taux_securite_sociale"
                                 rules={[
                                     { required: true, message: 'Requis' },
@@ -328,10 +328,10 @@ function ParametresSalaires() {
                     <Row gutter={16}>
                         <Col span={8}>
                             <Form.Item
-                                label="Mode de Calcul des Cong\u00e9s"
+                                label="Mode de Calcul des Congés"
                                 name="mode_calcul_conges"
                                 rules={[{ required: true, message: 'Requis' }]}
-                                tooltip="Complet = Salaire complet m\u00eame avec cong\u00e9s | Proratiser = 2 parts s\u00e9par\u00e9es | Hybride = Base 26j"
+                                tooltip="Complet = Salaire complet même avec congés | Proratiser = 2 parts séparées | Hybride = Base 26j"
                             >
                                 <Select>
                                     <Option value="complet">Complet (Salaire total)</Option>
@@ -364,20 +364,20 @@ function ParametresSalaires() {
                     <Row gutter={16}>
                         <Col span={12}>
                             <Form.Item
-                                label="Calculer Heures Suppl\u00e9mentaires"
+                                label="Calculer Heures Supplémentaires"
                                 name="calculer_heures_supp"
                                 valuePropName="checked"
-                                tooltip="Si d\u00e9sactiv\u00e9, les heures suppl\u00e9mentaires ne seront pas calcul\u00e9es"
+                                tooltip="Si désactivé, les heures supplémentaires ne seront pas calculées"
                             >
                                 <Switch />
                             </Form.Item>
                         </Col>
                         <Col span={12}>
                             <Form.Item
-                                label="IRG Proratiser selon Jours Travaill\u00e9s"
+                                label="IRG Proratiser selon Jours Travaillés"
                                 name="irg_proratise"
                                 valuePropName="checked"
-                                tooltip="Recommand\u00e9 : Adapter l'IRG au nombre de jours r\u00e9ellement travaill\u00e9s"
+                                tooltip="Recommandé : Adapter l'IRG au nombre de jours réellement travaillés"
                             >
                                 <Switch />
                             </Form.Item>
@@ -423,7 +423,7 @@ function ParametresSalaires() {
                             onClick={handleReset}
                             disabled={saving}
                         >
-                            R\u00e9initialiser
+                            Réinitialiser
                         </Button>
                         <Button
                             type="primary"
@@ -432,7 +432,7 @@ function ParametresSalaires() {
                             loading={saving}
                             size="large"
                         >
-                            Sauvegarder les Param\u00e8tres
+                            Sauvegarder les Paramètres
                         </Button>
                     </div>
                 </Card>
@@ -442,3 +442,4 @@ function ParametresSalaires() {
 }
 
 export default ParametresSalaires;
+
