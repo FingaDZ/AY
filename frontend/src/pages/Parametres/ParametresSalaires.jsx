@@ -58,7 +58,31 @@ function ParametresSalaires() {
 
         try {
             setUploading(true);
-            await parametresSalaireService.importerIRGBareme(formData);
+            const response = await parametresSalaireService.importerIRGBareme(formData);
+
+            // Afficher une modale de confirmation avec les détails
+            Modal.success({
+                title: '✅ Import réussi !',
+                content: (
+                    <div>
+                        <p><strong>Barème IRG importé avec succès</strong></p>
+                        <p>Nombre de tranches : <strong>{response.count || 'N/A'}</strong></p>
+                        {response.errors && response.errors.length > 0 && (
+                            <div style={{ marginTop: 10 }}>
+                                <p style={{ color: '#faad14' }}>⚠️ Quelques erreurs ignorées :</p>
+                                <ul style={{ fontSize: '12px', color: '#666' }}>
+                                    {response.errors.map((err, idx) => (
+                                        <li key={idx}>{err}</li>
+                                    ))}
+                                </ul>
+                            </div>
+                        )}
+                    </div>
+                ),
+                okText: 'OK',
+                width: 500
+            });
+
             message.success('Barème IRG importé avec succès');
         } catch (error) {
             message.error("Erreur lors de l'import : " + (error.response?.data?.detail || error.message));
