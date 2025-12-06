@@ -109,7 +109,7 @@ async def importer_bareme_irg(
     file: UploadFile = File(...),
     db: Session = Depends(get_db)
 ):
-    """Importer barème IRG depuis Excel"""
+    """Importer barème IRG depuis Excel (2 colonnes: MONTANT, IRG)"""
     if not file.filename.endswith(('.xlsx', '.xls')):
         raise HTTPException(400, "Format de fichier non supporté (Excel requis)")
         
@@ -124,15 +124,14 @@ async def importer_bareme_irg(
         count = 0
         errors = []
         
-        # Importer nouveau
+        # Importer nouveau (colonnes: MONTANT, IRG)
         for idx, row in enumerate(sheet.iter_rows(min_row=2, values_only=True), start=2):
             if row[0] is not None and row[1] is not None:
                 try:
                     bareme = IRGBareme(
-                        salaire_min=Decimal(str(row[0])),
-                        irg=Decimal(str(row[1])),
-                        actif=True,
-                        date_debut=date.today()
+                        salaire=Decimal(str(row[0])),      # Colonne MONTANT
+                        montant_irg=Decimal(str(row[1])),  # Colonne IRG
+                        actif=True
                     )
                     db.add(bareme)
                     count += 1
@@ -142,7 +141,7 @@ async def importer_bareme_irg(
         
         db.commit()
         
-        # Invalider cache IRG - CORRECTION: passer le paramètre db
+        # Invalider cache IRG
         from services.irg_calculator import get_irg_calculator
         calc = get_irg_calculator(db)
         calc.recharger_bareme()
@@ -151,13 +150,13 @@ async def importer_bareme_irg(
         if errors:
             message += f" - {len(errors)} erreurs ignorées"
         
-        return {"message": message, "count": count, "errors": errors[:5]}  # Max 5 erreurs affichées
+        return {"message": message, "count": count, "errors": errors[:5]}
         
     except Exception as e:
         db.rollback()
         import traceback
         error_detail = f"Erreur lors de l'import: {str(e)}\n{traceback.format_exc()}"
-        print(error_detail)  # Log serveur
+        print(error_detail)
         raise HTTPException(500, f"Erreur lors de l'import: {str(e)}")
 
 

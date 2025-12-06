@@ -5,9 +5,9 @@ from database import Base
 class IRGBareme(Base):
     """Modèle pour le barème IRG (Impôt sur le Revenu Global)
     
-    Structure simple : 2 colonnes seulement
-    - tranche_min : Salaire (colonne MONTANT du fichier Excel)
-    - taux : Montant IRG (colonne IRG du fichier Excel)
+    Structure alignée avec le fichier Excel (2 colonnes):
+    - salaire : Montant du salaire (colonne MONTANT)
+    - montant_irg : Montant IRG à retenir (colonne IRG)
     """
     __tablename__ = 'irg_bareme'
     __table_args__ = {'extend_existing': True}
@@ -15,43 +15,52 @@ class IRGBareme(Base):
     id = Column(Integer, primary_key=True, autoincrement=True)
     
     # Colonne 1 : Salaire (MONTANT dans Excel)
-    tranche_min = Column('tranche_min', Numeric(15, 2), nullable=False, comment="Salaire (MONTANT)")
+    salaire = Column('salaire', Numeric(15, 2), nullable=False, index=True, comment="Salaire (MONTANT)")
     
     # Colonne 2 : Montant IRG (IRG dans Excel)
-    taux = Column('taux', Numeric(5, 2), nullable=False, comment="Montant IRG")
+    montant_irg = Column('montant_irg', Numeric(15, 2), nullable=False, comment="Montant IRG")
     
-    # Colonnes supplémentaires de la DB (non utilisées pour l'import)
-    tranche_max = Column('tranche_max', Numeric(15, 2), nullable=True)
-    montant_deduit = Column('montant_deduit', Numeric(15, 2), nullable=True, default=0)
-    actif = Column(Boolean, default=True, nullable=True)
+    # Métadonnées
+    actif = Column(Boolean, default=True, nullable=True, index=True, comment="Barème actif")
     date_creation = Column('date_creation', DateTime, default=datetime.now, nullable=True)
     
     # Propriétés pour compatibilité avec le code existant
     @property
     def salaire_min(self):
-        """Alias : salaire = tranche_min"""
-        return self.tranche_min
+        """Alias pour compatibilité : salaire_min = salaire"""
+        return self.salaire
     
     @salaire_min.setter
     def salaire_min(self, value):
-        self.tranche_min = value
+        self.salaire = value
     
     @property
     def irg(self):
-        """Alias : montant IRG = taux"""
-        return self.taux
+        """Alias pour compatibilité : irg = montant_irg"""
+        return self.montant_irg
     
     @irg.setter
     def irg(self, value):
-        self.taux = value
+        self.montant_irg = value
+    
+    # Alias pour ancienne structure (si utilisé ailleurs)
+    @property
+    def tranche_min(self):
+        return self.salaire
+    
+    @property
+    def taux(self):
+        return self.montant_irg
     
     def __repr__(self):
-        return f"<IRGBareme(salaire={self.tranche_min}, irg={self.taux})>"
+        return f"<IRGBareme(salaire={self.salaire}, montant_irg={self.montant_irg})>"
     
     def to_dict(self):
         return {
             "id": self.id,
-            "salaire_min": float(self.tranche_min) if self.tranche_min else None,
-            "irg": float(self.taux) if self.taux else None,
+            "salaire": float(self.salaire) if self.salaire else None,
+            "montant_irg": float(self.montant_irg) if self.montant_irg else None,
+            "salaire_min": float(self.salaire) if self.salaire else None,  # Compatibilité
+            "irg": float(self.montant_irg) if self.montant_irg else None,  # Compatibilité
             "actif": self.actif
         }
