@@ -38,10 +38,38 @@ fi
 
 pip install -r requirements.txt
 
-# 4. Exécuter les migrations BDD
+# 4. Exécuter les migrations BDD (SQL direct - idempotent)
 echo "🗄️ Migration de la base de données..."
-# On force 'o' pour valider automatiquement
-echo "o" | python scripts/migrate_v3_salaires.py
+
+# Demander les credentials MySQL
+read -p "Utilisateur MySQL (défaut: root): " DB_USER
+DB_USER=${DB_USER:-root}
+
+read -sp "Mot de passe MySQL: " DB_PASS
+echo ""
+
+read -p "Nom de la base de données (défaut: ay_hr): " DB_NAME
+DB_NAME=${DB_NAME:-ay_hr}
+
+read -p "Hôte MySQL (défaut: localhost): " DB_HOST
+DB_HOST=${DB_HOST:-localhost}
+
+# Exécuter le script SQL de migration
+if [ -f "migrations/fix_v3_migration.sql" ]; then
+    echo "📝 Exécution du script de migration SQL..."
+    mysql -u "$DB_USER" -p"$DB_PASS" -h "$DB_HOST" "$DB_NAME" < migrations/fix_v3_migration.sql
+    
+    if [ $? -eq 0 ]; then
+        echo "✅ Migration SQL réussie!"
+    else
+        echo "❌ Erreur lors de la migration SQL"
+        exit 1
+    fi
+else
+    echo "⚠️ Fichier migrations/fix_v3_migration.sql non trouvé!"
+    echo "Tentative avec l'ancien script Python..."
+    echo "o" | python scripts/migrate_v3_salaires.py
+fi
 
 # 5. Importer les IRG (si fichier présent)
 if [ -f "data/irg.xlsx" ] || [ -f "../irg.xlsx" ]; then
