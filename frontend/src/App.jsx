@@ -12,6 +12,7 @@ import AvancesList from './pages/Avances/AvancesList';
 import CreditsList from './pages/Credits/CreditsList';
 import CongesList from './pages/Conges/CongesList';
 import SalaireCalcul from './pages/Salaires/SalaireCalcul';
+import SalaireHistorique from './pages/Salaires/SalaireHistorique';
 import ParametresPage from './pages/Parametres/ParametresPage';
 import DatabaseConfigPage from './pages/DatabaseConfig/DatabaseConfigPage';
 import UtilisateursPage from './pages/Utilisateurs/UtilisateursPage';
@@ -115,6 +116,11 @@ function AppRoutes() {
               <Route path="/salaires" element={
                 <ProtectedAdminRoute>
                   <SalaireCalcul />
+                </ProtectedAdminRoute>
+              } />
+              <Route path="/salaires/historique" element={
+                <ProtectedAdminRoute>
+                  <SalaireHistorique />
                 </ProtectedAdminRoute>
               } />
 

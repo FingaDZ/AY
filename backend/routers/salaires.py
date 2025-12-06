@@ -700,3 +700,65 @@ def update_statut_salaire(
         "date_paiement_effective": salaire.date_paiement_effective
     }
 
+
+
+@router.get("/historique")
+def get_historique_salaires(
+    annee: Optional[int] = None,
+    mois: Optional[int] = None,
+    page: int = Query(1, ge=1),
+    per_page: int = Query(25, ge=1, le=100),
+    db: Session = Depends(get_db)
+):
+    """
+    Récupérer l'historique des salaires avec agrégation par mois
+    Retourne un résumé mensuel : nb employés, totaux cotisable/IRG/net
+    """
+    from models.salaire import Salaire
+    from sqlalchemy import func, desc
+    
+    # Base query avec agrégation
+    query = db.query(
+        Salaire.annee,
+        Salaire.mois,
+        func.count(Salaire.id).label('nb_employes'),
+        func.sum(Salaire.salaire_cotisable).label('total_cotisable'),
+        func.sum(Salaire.irg).label('total_irg'),
+        func.sum(Salaire.salaire_net).label('total_net')
+    ).group_by(Salaire.annee, Salaire.mois)
+    
+    # Filtres optionnels
+    if annee:
+        query = query.filter(Salaire.annee == annee)
+    if mois:
+        query = query.filter(Salaire.mois == mois)
+    
+    # Tri par date décroissante (plus récent en premier)
+    query = query.order_by(desc(Salaire.annee), desc(Salaire.mois))
+    
+    # Pagination
+    total = query.count()
+    offset = (page - 1) * per_page
+    results = query.offset(offset).limit(per_page).all()
+    
+    # Formater les résultats
+    historique = []
+    for row in results:
+        historique.append({
+            'annee': row.annee,
+            'mois': row.mois,
+            'nb_employes': row.nb_employes,
+            'total_cotisable': float(row.total_cotisable or 0),
+            'total_irg': float(row.total_irg or 0),
+            'total_net': float(row.total_net or 0)
+        })
+    
+    return {
+        'historique': historique,
+        'pagination': {
+            'page': page,
+            'per_page': per_page,
+            'total': total,
+            'pages': (total + per_page - 1) // per_page
+        }
+    }
