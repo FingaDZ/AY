@@ -123,6 +123,39 @@ function SalaireCalcul() {
     }
   };
 
+  const handleGenererBulletinsCombines = async () => {
+    if (!filters.annee || !filters.mois) {
+      message.warning('Veuillez sélectionner une année et un mois');
+      return;
+    }
+
+    if (salaires.length === 0) {
+      message.warning('Veuillez d\'abord calculer les salaires');
+      return;
+    }
+
+    try {
+      setLoading(true);
+      const response = await salaireService.genererBulletinsCombines(filters);
+
+      // Créer un lien de téléchargement
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', `bulletins_combines_${filters.mois.toString().padStart(2, '0')}_${filters.annee}.pdf`);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+
+      message.success('Bulletins combinés générés avec succès');
+    } catch (error) {
+      message.error('Erreur lors de la génération des bulletins combinés');
+      console.error(error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleUpdateStatut = async (salaireId, newStatut) => {
     try {
       await salaireService.updateStatut(salaireId, newStatut);
@@ -508,6 +541,17 @@ function SalaireCalcul() {
                 style={{ backgroundColor: '#52c41a', color: 'white', borderColor: '#52c41a' }}
               >
                 Générer Bulletins de Paie (ZIP)
+              </Button>
+
+              <Button
+                type="default"
+                size="large"
+                icon={<FilePdfOutlined />}
+                onClick={handleGenererBulletinsCombines}
+                loading={loading}
+                style={{ backgroundColor: '#722ed1', color: 'white', borderColor: '#722ed1' }}
+              >
+                Bulletins Combinés (PDF)
               </Button>
 
               <Button

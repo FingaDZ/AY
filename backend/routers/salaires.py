@@ -190,6 +190,82 @@ def generer_bulletins_paie(
         }
     )
 
+@router.post("/bulletins-paie/generer-combines")
+def generer_bulletins_combines(
+    params: SalaireCalculTousCreate,
+    db: Session = Depends(get_db)
+):
+    """Générer un PDF unique contenant tous les bulletins de paie"""
+    
+    # Récupérer tous les employés actifs
+    employes = db.query(Employe).filter(
+        Employe.statut_contrat == StatutContrat.ACTIF
+    ).all()
+    
+    if not employes:
+        raise HTTPException(status_code=404, detail="Aucun employé actif trouvé")
+    
+    calculator = SalaireCalculator(db)
+    pdf_generator = PDFGenerator(db=db)
+    
+    employes_data = []
+    
+    for employe in employes:
+        try:
+            # Calculer le salaire
+            salaire_data = calculator.calculer_salaire(
+                employe_id=employe.id,
+                annee=params.annee,
+                mois=params.mois,
+                jours_supplementaires=params.jours_supplementaires,
+                prime_objectif=Decimal(0),
+                prime_variable=Decimal(0)
+            )
+            
+            # Préparer les données de l'employé
+            employe_data = {
+                'id': employe.id,
+                'nom': employe.nom,
+                'prenom': employe.prenom,
+                'poste_travail': employe.poste_travail,
+                'numero_secu_sociale': employe.numero_secu_sociale or 'N/A',
+                'date_recrutement': employe.date_recrutement.strftime('%d/%m/%Y') if employe.date_recrutement else 'N/A',
+                'salaire_base': float(employe.salaire_base),
+                'situation_familiale': employe.situation_familiale,
+                'nombre_enfants': employe.nombre_enfants
+            }
+            
+            # Convertir les Decimal en float pour le PDF
+            salaire_data_float = {k: float(v) if isinstance(v, Decimal) else v 
+                                    for k, v in salaire_data.items()}
+            
+            employes_data.append({
+                'employe_data': employe_data,
+                'salaire_data': salaire_data_float
+            })
+            
+        except ValueError:
+            # Ignorer les employés sans pointage
+            continue
+            
+    if not employes_data:
+        raise HTTPException(status_code=404, detail="Aucune donnée de salaire disponible pour cette période")
+
+    # Générer le PDF combiné
+    pdf_buffer = pdf_generator.generate_tous_bulletins_combines(
+        employes_data=employes_data,
+        periode={'mois': params.mois, 'annee': params.annee}
+    )
+    
+    # Retourner le PDF
+    return StreamingResponse(
+        pdf_buffer,
+        media_type="application/pdf",
+        headers={
+            "Content-Disposition": f"attachment; filename=bulletins_combines_{params.mois:02d}_{params.annee}.pdf"
+        }
+    )
+
 @router.get("/employe/{employe_id}")
 def get_historique_salaires(
     employe_id: int,

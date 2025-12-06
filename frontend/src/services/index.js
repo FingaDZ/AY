@@ -144,6 +144,7 @@ export const salaireService = {
   calculerTous: (data) => api.post('/salaires/calculer-tous', data),
   sauvegarderBatch: (annee, mois) => api.post(`/salaires/sauvegarder-batch/${annee}/${mois}`),
   genererBulletins: (data) => api.post('/salaires/bulletins-paie/generer', data, { responseType: 'blob' }),
+  genererBulletinsCombines: (data) => api.post('/salaires/bulletins-paie/generer-combines', data, { responseType: 'blob' }),
   genererRapport: (data) => api.post('/salaires/rapport-pdf', data, { responseType: 'blob' }),
   getRapport: (annee, mois) => api.get(`/salaires/rapport/${annee}/${mois}`),
   updateStatut: (id, statut, commentaire) => api.put(`/salaires/${id}/statut`, { statut, commentaire }),

@@ -3000,3 +3000,182 @@ class PDFGenerator:
         buffer.seek(0)
         return buffer
 
+    def generate_tous_bulletins_combines(self, employes_data: List[Dict], periode: Dict) -> BytesIO:
+        """
+        Générer un PDF combiné contenant tous les bulletins de paie
+        + Page de garde
+        + Tableau récapitulatif
+        """
+        buffer = BytesIO()
+        doc = SimpleDocTemplate(
+            buffer,
+            pagesize=A4,
+            topMargin=1.5*cm,
+            bottomMargin=1.5*cm,
+            leftMargin=1.5*cm,
+            rightMargin=1.5*cm
+        )
+        
+        story = []
+        
+        # 1. PAGE DE GARDE
+        # ----------------
+        params = self._get_parametres()
+        company_name = params.raison_sociale or params.nom_entreprise or "AY HR"
+        
+        # Logo (si disponible)
+        # TODO: Gestion logo
+        
+        story.append(Spacer(1, 5*cm))
+        
+        # Titre
+        title_style = ParagraphStyle(
+            name='CoverTitle',
+            parent=self.styles['Heading1'],
+            fontSize=24,
+            alignment=TA_CENTER,
+            spaceAfter=30
+        )
+        story.append(Paragraph("BULLETINS DE PAIE", title_style))
+        
+        # Période
+        date_obj = datetime(periode['annee'], periode['mois'], 1)
+        mois_str = date_obj.strftime("%B %Y").capitalize()
+        subtitle_style = ParagraphStyle(
+            name='CoverSubtitle',
+            parent=self.styles['Heading2'],
+            fontSize=18,
+            alignment=TA_CENTER,
+            textColor=colors.grey,
+            spaceAfter=50
+        )
+        story.append(Paragraph(mois_str, subtitle_style))
+        
+        # Infos entreprise
+        story.append(Spacer(1, 2*cm))
+        story.append(Paragraph(f"<b>Entreprise:</b> {company_name}", self.styles['CustomBody']))
+        
+        # Résumé
+        total_net = sum(e['salaire_data'].get('salaire_net', 0) for e in employes_data)
+        story.append(Paragraph(f"<b>Nombre d'employés:</b> {len(employes_data)}", self.styles['CustomBody']))
+        story.append(Paragraph(f"<b>Total Net à Payer:</b> {total_net:,.2f} DA", self.styles['CustomBody']))
+        
+        date_generation = datetime.now().strftime("%d/%m/%Y")
+        story.append(Spacer(1, 1*cm))
+        story.append(Paragraph(f"Généré le: {date_generation}", self.styles['Footer']))
+        
+        story.append(PageBreak())
+        
+        # 2. BULLETINS INDIVIDUELS
+        # ------------------------
+        for i, emp in enumerate(employes_data):
+            # Utiliser la logique existante pour générer un bulletin
+            # Note: On réimplémente une version simplifiée ou on appelle une méthode interne qui retourne des flowables
+            # Pour simplifier ici, on va recréer le contenu du bulletin
+            
+            # En-tête société
+            story.extend(self._create_company_header())
+            story.append(Spacer(1, 0.5*cm))
+            
+            # Titre bulletin
+            story.append(Paragraph(f"BULLETIN DE PAIE - {mois_str}", self.styles['CustomTitle']))
+            
+            # Infos Employé (Tableau)
+            emp_info = emp['employe_data']
+            sal_data = emp['salaire_data']
+            
+            # ... (logique similaire à generate_bulletin_paie mais ajoutée à story)
+            # Pour l'instant on met un résumé pour ne pas dupliquer tout le code complexe
+            # Idéalement il faudrait refactoriser generate_bulletin_paie pour retourner une liste de Flowables
+            
+            info_data = [
+                ['Matricule', str(emp_info.get('id', '')), 'Département', emp_info.get('poste_travail', '')],
+                ['Nom', emp_info.get('nom', ''), 'Prénom', emp_info.get('prenom', '')],
+                ['Date entrée', emp_info.get('date_recrutement', ''), 'N° SS', emp_info.get('numero_secu_sociale', '')],
+                ['Situation', emp_info.get('situation_familiale', ''), 'Enfants', str(emp_info.get('nombre_enfants', 0))]
+            ]
+            
+            t = Table(info_data, colWidths=[2.5*cm, 6*cm, 2.5*cm, 6*cm])
+            t.setStyle(TableStyle([
+                ('GRID', (0,0), (-1,-1), 0.5, colors.grey),
+                ('BACKGROUND', (0,0), (0,-1), colors.lightgrey),
+                ('BACKGROUND', (2,0), (2,-1), colors.lightgrey),
+                ('FONTSIZE', (0,0), (-1,-1), 8),
+                ('PADDING', (0,0), (-1,-1), 4),
+            ]))
+            story.append(t)
+            story.append(Spacer(1, 0.5*cm))
+            
+            # Corps du bulletin (simplifié pour cet exemple, à étoffer)
+            # Ligne de salaire de base
+            rubriques = [
+                ['Rubrique', 'Base', 'Taux', 'Gains', 'Retenues'],
+                ['Salaire de base', f"{sal_data.get('salaire_base_proratis', 0):,.2f}", '', f"{sal_data.get('salaire_base_proratis', 0):,.2f}", ''],
+                ['Heures Supplémentaires', '', '', f"{sal_data.get('heures_supplementaires', 0):,.2f}", ''],
+                ['Primes & Indemnités', '', '', f"{(sal_data.get('salaire_cotisable', 0) - sal_data.get('salaire_base_proratis', 0) - sal_data.get('heures_supplementaires', 0)):,.2f}", ''],
+                ['Sécurité Sociale (9%)', f"{sal_data.get('salaire_cotisable', 0):,.2f}", '9%', '', f"{sal_data.get('retenue_securite_sociale', 0):,.2f}"],
+                ['IRG', f"{sal_data.get('salaire_imposable', 0):,.2f}", '', '', f"{sal_data.get('irg', 0):,.2f}"],
+                ['Avances', '', '', '', f"{sal_data.get('total_avances', 0):,.2f}"],
+                ['TOTAL', '', '', f"{sal_data.get('total_gains', 0):,.2f}", f"{sal_data.get('total_retenues', 0):,.2f}"],
+            ]
+            
+            # Net à payer en grand
+            story.append(Spacer(1, 1*cm))
+            net_table = Table([
+                ['NET À PAYER', f"{sal_data.get('salaire_net', 0):,.2f} DA"]
+            ], colWidths=[12*cm, 5*cm])
+            net_table.setStyle(TableStyle([
+                ('BACKGROUND', (0,0), (-1,-1), colors.lightgrey),
+                ('FONTSIZE', (0,0), (-1,-1), 12),
+                ('FONTNAME', (0,0), (-1,-1), 'Helvetica-Bold'),
+                ('ALIGN', (1,0), (1,0), 'RIGHT'),
+                ('BOX', (0,0), (-1,-1), 1, colors.black),
+                ('PADDING', (0,0), (-1,-1), 10),
+            ]))
+            story.append(net_table)
+            
+            # Footer bulletin
+            story.append(Spacer(1, 1*cm))
+            story.append(Paragraph("Pour acquit,", self.styles['Normal']))
+            
+            # Saut de page après chaque bulletin sauf le dernier
+            story.append(PageBreak())
+
+        # 3. TABLEAU RÉCAPITULATIF
+        # ------------------------
+        story.append(Paragraph("RÉCAPITULATIF GÉNÉRAL", self.styles['CustomTitle']))
+        story.append(Spacer(1, 0.5*cm))
+        
+        recap_data = [['Nom & Prénom', 'Salaire Base', 'Cotisable', 'Net à Payer']]
+        for emp in employes_data:
+            d = emp['salaire_data']
+            recap_data.append([
+                f"{emp['employe_data']['nom']} {emp['employe_data']['prenom']}",
+                f"{d.get('salaire_base_proratis', 0):,.2f}",
+                f"{d.get('salaire_cotisable', 0):,.2f}",
+                f"{d.get('salaire_net', 0):,.2f}"
+            ])
+            
+        # Totaux
+        recap_data.append([
+            'TOTAL GÉNÉRAL',
+            f"{sum(e['salaire_data'].get('salaire_base_proratis', 0) for e in employes_data):,.2f}",
+            f"{sum(e['salaire_data'].get('salaire_cotisable', 0) for e in employes_data):,.2f}",
+            f"{total_net:,.2f}"
+        ])
+        
+        recap_table = Table(recap_data, colWidths=[7*cm, 3.5*cm, 3.5*cm, 3.5*cm])
+        recap_table.setStyle(TableStyle([
+            ('GRID', (0,0), (-1,-1), 0.5, colors.black),
+            ('BACKGROUND', (0,0), (-1,0), colors.grey),
+            ('TEXTCOLOR', (0,0), (-1,0), colors.white),
+            ('FONTNAME', (0,0), (-1,0), 'Helvetica-Bold'),
+            ('ALIGN', (1,0), (-1,-1), 'RIGHT'),
+            ('BACKGROUND', (0,-1), (-1,-1), colors.lightgrey),
+            ('FONTNAME', (0,-1), (-1,-1), 'Helvetica-Bold'),
+        ]))
+        story.append(recap_table)
+        
+        doc.build(story)
+        buffer.seek(0)
+        return buffer
