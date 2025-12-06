@@ -14,6 +14,7 @@ import CongesList from './pages/Conges/CongesList';
 import SalaireCalcul from './pages/Salaires/SalaireCalcul';
 import SalaireHistorique from './pages/Salaires/SalaireHistorique';
 import ParametresPage from './pages/Parametres/ParametresPage';
+import ParametresSalaires from './pages/Parametres/ParametresSalaires';
 import DatabaseConfigPage from './pages/DatabaseConfig/DatabaseConfigPage';
 import UtilisateursPage from './pages/Utilisateurs/UtilisateursPage';
 import LogsPage from './pages/Logs/LogsPage';
@@ -128,6 +129,11 @@ function AppRoutes() {
               <Route path="/parametres" element={
                 <ProtectedAdminRoute>
                   <ParametresPage />
+                </ProtectedAdminRoute>
+              } />
+              <Route path="/parametres/salaires" element={
+                <ProtectedAdminRoute>
+                  <ParametresSalaires />
                 </ProtectedAdminRoute>
               } />
 
