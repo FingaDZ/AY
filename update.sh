@@ -171,10 +171,12 @@ info "[5/8] Mise à jour du Backend..."
 cd "$BACKEND_DIR" || error_exit "Impossible d'accéder à $BACKEND_DIR"
 
 # Activate virtual environment
-if [ -f ".venv/bin/activate" ]; then
+if [ -f "venv/bin/activate" ]; then
+    source venv/bin/activate
+elif [ -f ".venv/bin/activate" ]; then
     source .venv/bin/activate
 else
-    error_exit "Environnement virtuel Python introuvable"
+    error_exit "Environnement virtuel Python introuvable (cherché: venv/ et .venv/)"
 fi
 
 # Update dependencies
