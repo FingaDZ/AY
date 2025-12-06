@@ -11,34 +11,30 @@ class ParametresSalaire(Base):
     
     id = Column(Integer, primary_key=True, autoincrement=True)
     
-    # Indemnités (%)
-    taux_in = Column(Numeric(5, 2), default=5.00, nullable=False, comment="Indemnité Nuisance (%)")
-    taux_ifsp = Column(Numeric(5, 2), default=5.00, nullable=False, comment="IFSP (%)")
-    taux_iep_par_an = Column(Numeric(5, 2), default=1.00, nullable=False, comment="IEP par année d'ancienneté (%)")
-    taux_prime_encouragement = Column(Numeric(5, 2), default=10.00, nullable=False, comment="Prime Encouragement (%)")
-    anciennete_min_encouragement = Column(Integer, default=1, nullable=False, comment="Ancienneté min pour prime encouragement (années)")
+    # Indemnités (montants fixes en DA)
+    indemnite_nuisance = Column(Numeric(10, 2), default=1000.00, nullable=False, comment="Indemnité Nuisance (DA)")
+    ifsp = Column(Numeric(10, 2), default=500.00, nullable=False, comment="IFSP (DA)")
+    iep = Column(Numeric(10, 2), default=300.00, nullable=False, comment="IEP (DA)")
+    prime_encouragement = Column(Numeric(10, 2), default=500.00, nullable=False, comment="Prime Encouragement (DA)")
     
     # Primes fixes (DA)
-    prime_chauffeur_jour = Column(Numeric(10, 2), default=100.00, nullable=False, comment="Prime chauffeur par jour (DA)")
-    prime_nuit_securite = Column(Numeric(10, 2), default=750.00, nullable=False, comment="Prime nuit sécurité mensuelle (DA)")
-    panier_jour = Column(Numeric(10, 2), default=100.00, nullable=False, comment="Panier par jour (DA)")
-    transport_jour = Column(Numeric(10, 2), default=100.00, nullable=False, comment="Transport par jour (DA)")
+    prime_chauffeur = Column(Numeric(10, 2), default=800.00, nullable=False, comment="Prime chauffeur (DA)")
+    prime_nuit_agent_securite = Column(Numeric(10, 2), default=600.00, nullable=False, comment="Prime nuit sécurité (DA)")
+    prime_deplacement = Column(Numeric(10, 2), default=400.00, nullable=False, comment="Prime déplacement (DA)")
     prime_femme_foyer = Column(Numeric(10, 2), default=1000.00, nullable=False, comment="Prime femme au foyer (DA)")
+    panier = Column(Numeric(10, 2), default=300.00, nullable=False, comment="Panier (DA)")
+    prime_transport = Column(Numeric(10, 2), default=500.00, nullable=False, comment="Transport (DA)")
     
     # Retenues (%)
     taux_securite_sociale = Column(Numeric(5, 2), default=9.00, nullable=False, comment="Retenue Sécurité Sociale (%)")
     
     # Options de calcul
-    calculer_heures_supp = Column(Boolean, default=True, nullable=False, comment="Activer calcul heures supplémentaires")
-    mode_calcul_conges = Column(String(20), default='complet', nullable=False, comment="Mode calcul congés: complet|proratise|hybride")
-    jours_ouvrables_base = Column(Integer, default=26, nullable=False, comment="Nombre de jours ouvrables par mois")
-    
-    # IRG
-    irg_proratise = Column(Boolean, default=True, nullable=False, comment="Proratiser IRG selon jours travaillés")
+    activer_heures_supp = Column(Boolean, default=True, nullable=False, comment="Activer calcul heures supplémentaires")
+    activer_irg_proratise = Column(Boolean, default=True, nullable=False, comment="Proratiser IRG selon jours travaillés")
+    mode_calcul_conges = Column(String(20), default='proratise', nullable=False, comment="Mode calcul congés: complet|proratise|hybride")
     
     # Métadonnées
-    created_at = Column(DateTime, default=datetime.now, nullable=False)
-    updated_at = Column(DateTime, default=datetime.now, onupdate=datetime.now, nullable=False)
+    date_modification = Column(DateTime, default=datetime.now, onupdate=datetime.now, nullable=False)
     
     def to_dict(self):
         return {
