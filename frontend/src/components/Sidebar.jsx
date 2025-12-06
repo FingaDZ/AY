@@ -54,7 +54,7 @@ const Sidebar = ({ isOpen, onClose }) => {
         { to: '/salaires', label: 'Salaires', icon: Download, public: false },
         { to: '/parametres/salaires', label: 'Paramètres Salaires', icon: DollarSign, public: false },
         { to: '/logs', label: 'Logs', icon: ScrollText, public: false },
-        { to: '/parametres', label: 'Paramètres', icon: SettingsIcon, public: false },
+        { to: '/parametres', label: 'Paramètres Généraux', icon: SettingsIcon, public: false },
         { to: '/utilisateurs', label: 'Utilisateurs', icon: UserCog, public: false },
         { to: '/database-config', label: 'Base de données', icon: Database, public: false },
     ];
