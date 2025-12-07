@@ -4,8 +4,8 @@ sys.path.append('/opt/ay-hr/backend')
 from sqlalchemy import create_engine, text
 # from config import settings (removed to avoid validation error)
 
-# Database URL (Try localhost default if env not set)
-DATABASE_URL = os.getenv("DATABASE_URL", "mysql+pymysql://ayhr_user:!Yara@2014@localhost/ay_hr")
+# Database URL (URL Encoded password for special chars: ! -> %21, @ -> %40)
+DATABASE_URL = os.getenv("DATABASE_URL", "mysql+pymysql://ayhr_user:%21Yara%402014@localhost/ay_hr")
 
 def fix_salaire_schema():
     print("🔧 Checking 'salaires' table schema...")
