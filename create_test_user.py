@@ -1,6 +1,12 @@
 import sys
 import os
 sys.path.append('/opt/ay-hr/backend')
+
+# 0. Hack: Définir les variables d'env AVANT d'importer les modèles
+# Cela évite que pydantic ne crie si le .env n'est pas chargé
+os.environ["DATABASE_URL"] = "mysql+pymysql://ayhr_user:%21Yara%402014@localhost/ay_hr"
+os.environ["SECRET_KEY"] = "temp_secret_key_for_script_execution"
+
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from passlib.context import CryptContext
