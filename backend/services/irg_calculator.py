@@ -43,14 +43,16 @@ class IRGCalculator:
 
     def _charger_bareme_db(self) -> List[Tuple[Decimal, Decimal]]:
         """Lire depuis la table irg_bareme"""
+        # Utiliser les vrais noms de colonnes pour le tri SQL
         items = self.db.query(IRGBareme).filter(
             IRGBareme.actif == True
-        ).order_by(IRGBareme.salaire_min).all()
+        ).order_by(IRGBareme.salaire).all()
         
         if not items:
             return []
             
-        return [(item.salaire_min, item.irg) for item in items]
+        # Utiliser les attributs directs (pas les alias)
+        return [(item.salaire, item.montant_irg) for item in items]
 
     def _charger_bareme_excel(self) -> List[Tuple[Decimal, Decimal]]:
         """Lire depuis le fichier Excel"""
