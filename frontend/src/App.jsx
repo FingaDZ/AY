@@ -1,3 +1,4 @@
+import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import Layout from './components/Layout';
@@ -12,6 +13,7 @@ import AvancesList from './pages/Avances/AvancesList';
 import CreditsList from './pages/Credits/CreditsList';
 import CongesList from './pages/Conges/CongesList';
 import SalaireCalcul from './pages/Salaires/SalaireCalcul';
+import EditionSalaires from './pages/Salaires/EditionSalaires';
 import SalaireHistorique from './pages/Salaires/SalaireHistorique';
 import ParametresPage from './pages/Parametres/ParametresPage';
 import ParametresSalaires from './pages/Parametres/ParametresSalaires';
@@ -21,12 +23,62 @@ import LogsPage from './pages/Logs/LogsPage';
 import LoginPage from './pages/Login/LoginPage';
 import ImportPreview from './pages/Pointages/ImportPreview';
 import ProtectedAdminRoute from './components/ProtectedAdminRoute';
-<ProtectedAdminRoute>
-  <PostesList />
-</ProtectedAdminRoute>
+
+// Composant pour protéger les routes
+function ProtectedRoute({ children }) {
+  const { user, loading } = useAuth();
+
+  if (loading) {
+    return <div className="flex justify-center items-center h-screen">
+      <div className="animate-spin rounded-full h-16 w-16 border-t-4 border-b-4 border-blue-500"></div>
+    </div>;
+  }
+
+  if (!user) {
+    return <Navigate to="/login" replace />;
+  }
+
+  return children;
+}
+
+function AppRoutes() {
+  return (
+    <Routes>
+      <Route path="/login" element={<LoginPage />} />
+      <Route path="/*" element={
+        <ProtectedRoute>
+          <Layout>
+            <Routes>
+              <Route path="/" element={<Dashboard />} />
+
+              {/* Missions - Accessible à tous */}
+              <Route path="/missions" element={<MissionsList />} />
+
+              {/* Employés - ADMIN ONLY */}
+              <Route path="/employes" element={
+                <ProtectedAdminRoute>
+                  <EmployesList />
+                </ProtectedAdminRoute>
+              } />
+              <Route path="/employes/nouveau" element={
+                <ProtectedAdminRoute>
+                  <EmployeForm />
+                </ProtectedAdminRoute>
+              } />
+              <Route path="/employes/:id" element={
+                <ProtectedAdminRoute>
+                  <EmployeForm />
+                </ProtectedAdminRoute>
               } />
 
-{/* Pointages - ADMIN ONLY */ }
+              {/* Postes de Travail - ADMIN ONLY */}
+              <Route path="/postes" element={
+                <ProtectedAdminRoute>
+                  <PostesList />
+                </ProtectedAdminRoute>
+              } />
+
+              {/* Pointages - ADMIN ONLY */}
               <Route path="/pointages" element={
                 <ProtectedAdminRoute>
                   <GrillePointage />
@@ -38,32 +90,36 @@ import ProtectedAdminRoute from './components/ProtectedAdminRoute';
                 </ProtectedAdminRoute>
               } />
 
-{/* Clients - Accessible à tous */ }
-<Route path="/clients" element={<ClientsList />} />
+              {/* Clients - Accessible à tous */}
+              <Route path="/clients" element={<ClientsList />} />
 
+              {/* Avances - ADMIN ONLY */}
+              <Route path="/avances" element={
+                <ProtectedAdminRoute>
+                  <AvancesList />
+                </ProtectedAdminRoute>
+              } />
 
-{/* Avances - ADMIN ONLY */ }
-<Route path="/avances" element={
-  <ProtectedAdminRoute>
-    <AvancesList />
-  </ProtectedAdminRoute>
-} />
+              {/* Crédits - ADMIN ONLY */}
+              <Route path="/credits" element={
+                <ProtectedAdminRoute>
+                  <CreditsList />
+                </ProtectedAdminRoute>
+              } />
 
-{/* Crédits - ADMIN ONLY */ }
-<Route path="/credits" element={
-  <ProtectedAdminRoute>
-    <CreditsList />
-  </ProtectedAdminRoute>
-} />
+              {/* Congés - ADMIN ONLY */}
+              <Route path="/conges" element={
+                <ProtectedAdminRoute>
+                  <CongesList />
+                </ProtectedAdminRoute>
+              } />
 
-{/* Congés - ADMIN ONLY */ }
-<Route path="/conges" element={
-  <ProtectedAdminRoute>
-    <CongesList />
-  </ProtectedAdminRoute>
-} />
-
-{/* Salaires - ADMIN ONLY */ }
+              {/* Salaires - ADMIN ONLY */}
+              <Route path="/salaires/edition" element={
+                <ProtectedAdminRoute>
+                  <EditionSalaires />
+                </ProtectedAdminRoute>
+              } />
               <Route path="/salaires" element={
                 <ProtectedAdminRoute>
                   <SalaireCalcul />
@@ -74,8 +130,13 @@ import ProtectedAdminRoute from './components/ProtectedAdminRoute';
                   <SalaireHistorique />
                 </ProtectedAdminRoute>
               } />
+              <Route path="/salaires/calcul" element={
+                <ProtectedAdminRoute>
+                  <SalaireCalcul />
+                </ProtectedAdminRoute>
+              } />
 
-{/* Paramètres - ADMIN ONLY */ }
+              {/* Paramètres - ADMIN ONLY */}
               <Route path="/parametres" element={
                 <ProtectedAdminRoute>
                   <ParametresPage />
@@ -87,34 +148,34 @@ import ProtectedAdminRoute from './components/ProtectedAdminRoute';
                 </ProtectedAdminRoute>
               } />
 
-{/* Configuration Base de Données - ADMIN ONLY */ }
-<Route path="/database-config" element={
-  <ProtectedAdminRoute>
-    <DatabaseConfigPage />
-  </ProtectedAdminRoute>
-} />
+              {/* Configuration Base de Données - ADMIN ONLY */}
+              <Route path="/database-config" element={
+                <ProtectedAdminRoute>
+                  <DatabaseConfigPage />
+                </ProtectedAdminRoute>
+              } />
 
-{/* Utilisateurs - ADMIN ONLY */ }
-<Route path="/utilisateurs" element={
-  <ProtectedAdminRoute>
-    <UtilisateursPage />
-  </ProtectedAdminRoute>
-} />
+              {/* Utilisateurs - ADMIN ONLY */}
+              <Route path="/utilisateurs" element={
+                <ProtectedAdminRoute>
+                  <UtilisateursPage />
+                </ProtectedAdminRoute>
+              } />
 
-{/* Logs - ADMIN ONLY */ }
-<Route path="/logs" element={
-  <ProtectedAdminRoute>
-    <LogsPage />
-  </ProtectedAdminRoute>
-} />
+              {/* Logs - ADMIN ONLY */}
+              <Route path="/logs" element={
+                <ProtectedAdminRoute>
+                  <LogsPage />
+                </ProtectedAdminRoute>
+              } />
 
-{/* Redirect */ }
-<Route path="*" element={<Navigate to="/" replace />} />
-            </Routes >
-          </Layout >
-        </ProtectedRoute >
+              {/* Redirect */}
+              <Route path="*" element={<Navigate to="/" replace />} />
+            </Routes>
+          </Layout>
+        </ProtectedRoute>
       } />
-    </Routes >
+    </Routes>
   );
 }
 
