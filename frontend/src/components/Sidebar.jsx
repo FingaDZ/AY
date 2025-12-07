@@ -17,7 +17,8 @@ import {
     AlertCircle,
     LogOut,
     Eye,
-    Building2
+    Building2,
+    Calculator // Added Calculator icon
 } from 'lucide-react';
 
 import { useAuth } from '../contexts/AuthContext';
@@ -43,6 +44,24 @@ const Sidebar = ({ isOpen, onClose }) => {
     const allLinks = [
         { to: '/', label: 'Dashboard', icon: LayoutDashboard, public: true },
         { to: '/missions', label: 'Missions', icon: Clock, public: true },
+        { to: '/clients', label: 'Clients', icon: Building2, public: true },
+        { to: '/employes', label: 'Employés', icon: Users, public: false },
+        { to: '/postes', label: 'Postes', icon: Briefcase, public: false },
+        { to: '/pointages', label: 'Pointages', icon: ClipboardList, public: false },
+        { to: '/pointages/import-preview', label: 'Import Pointages', icon: Eye, public: false },
+        { to: '/avances', label: 'Avances', icon: DollarSign, public: false },
+        { to: '/credits', label: 'Crédits', icon: FileText, public: false },
+        { to: '/conges', label: 'Congés', icon: Calendar, public: false },
+        { to: '/salaires/edition', label: 'Edition Salaires', icon: Calculator, public: false }, // NEW
+        { to: '/salaires', label: 'Salaires (Ancien)', icon: Download, public: false },
+        { to: '/parametres/salaires', label: 'Paramètres Salaires', icon: DollarSign, public: false },
+        { to: '/logs', label: 'Logs', icon: ScrollText, public: false },
+        { to: '/parametres', label: 'Paramètres Généraux', icon: SettingsIcon, public: false },
+        { to: '/utilisateurs', label: 'Utilisateurs', icon: UserCog, public: false },
+        { to: '/database-config', label: 'Base de données', icon: Database, public: false },
+    ];
+
+    const links = allLinks.filter(link => link.public || isAdmin());
 
     return (
         <>
