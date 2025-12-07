@@ -32,6 +32,28 @@ def fix_schema():
         # ==============================================================================
         print("\nChecking 'users' table...")
         if _table_exists(conn, 'users'):
+            # 1. Gestion des renommages (Migration V2 -> V3)
+            columns = _get_columns(conn, 'users')
+            
+            # password -> password_hash
+            if 'password' in columns and 'password_hash' not in columns:
+                print("   ⚠️  Renaming column 'password' to 'password_hash'...")
+                try:
+                    conn.execute(text("ALTER TABLE users CHANGE COLUMN password password_hash VARCHAR(255) NOT NULL"))
+                    print("   ✅ Renamed password -> password_hash")
+                except Exception as e:
+                    print(f"   ❌ Failed to rename password: {e}")
+            
+            # name -> nom
+            if 'name' in columns and 'nom' not in columns:
+                 print("   ⚠️  Renaming column 'name' to 'nom'...")
+                 try:
+                    conn.execute(text("ALTER TABLE users CHANGE COLUMN name nom VARCHAR(100) NOT NULL"))
+                    print("   ✅ Renamed name -> nom")
+                 except Exception as e:
+                    print(f"   ❌ Failed to rename name: {e}")
+
+            # 2. Ajout des colonnes manquantes
             _check_and_add_columns(conn, 'users', [
                 ("nom", "VARCHAR(100) NOT NULL DEFAULT ''"),
                 ("prenom", "VARCHAR(100) NOT NULL DEFAULT ''"),
@@ -40,14 +62,6 @@ def fix_schema():
                 ("date_creation", "DATETIME DEFAULT CURRENT_TIMESTAMP"),
                 ("derniere_connexion", "DATETIME NULL")
             ])
-            
-            # Migration spécifique: name -> nom si "nom" est vide ou manquant
-            columns = _get_columns(conn, 'users')
-            if 'name' in columns and 'nom' in columns:
-                 # Si on a old 'name' et new 'nom', on migre peut-être?
-                 # Mais simple ajout de colonne suffit pour l'instant.
-                 pass
-
         else:
             print("❌ Table 'users' does not exist!")
 
