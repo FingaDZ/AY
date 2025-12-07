@@ -71,12 +71,16 @@ def calculer_tous_salaires(
             if emp:
                 employes_non_verrouilles.append(f"{emp.prenom} {emp.nom}")
         
+        error_msg = f"{len(pointages_non_verrouilles)} pointage(s) non verrouillé(s) pour {params.mois}/{params.annee}. " \
+                    f"Employés concernés: {', '.join(employes_non_verrouilles[:5])}" \
+                    f"{' et ' + str(len(employes_non_verrouilles) - 5) + ' autres' if len(employes_non_verrouilles) > 5 else ''}. " \
+                    f"Veuillez verrouiller tous les pointages avant de calculer les salaires."
+        
+        print(f"❌ ERREUR CALCUL SALAIRE: {error_msg}")  # Log serveur
+        
         raise HTTPException(
             status_code=400,
-            detail=f"{len(pointages_non_verrouilles)} pointage(s) non verrouillé(s) pour {params.mois}/{params.annee}. "
-                   f"Employés concernés: {', '.join(employes_non_verrouilles[:5])}"
-                   f"{' et ' + str(len(employes_non_verrouilles) - 5) + ' autres' if len(employes_non_verrouilles) > 5 else ''}. "
-                   f"Veuillez verrouiller tous les pointages avant de calculer les salaires."
+            detail=error_msg
         )
     
     calculator = SalaireCalculator(db)
