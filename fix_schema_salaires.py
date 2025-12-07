@@ -2,7 +2,7 @@ import sys
 import os
 sys.path.append('/opt/ay-hr/backend')
 from sqlalchemy import create_engine, text
-from config import settings
+# from config import settings (removed to avoid validation error)
 
 # Database URL (Try localhost default if env not set)
 DATABASE_URL = os.getenv("DATABASE_URL", "mysql+pymysql://ayhr_user:!Yara@2014@localhost/ay_hr")
