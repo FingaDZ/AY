@@ -52,6 +52,15 @@ class IRGCalculator:
                         montant = Decimal(str(row[1]))
                         nouveau_bareme.append((salaire, montant))
                     except Exception:
+                        continue
+
+            self._bareme_cache = sorted(nouveau_bareme, key=lambda x: x[0])
+            logger.info(f"Barème IRG chargé: {len(self._bareme_cache)} entrées")
+        except Exception as e:
+            logger.error(f"Erreur chargement IRG: {e}")
+            self._bareme_cache = []
+
+    def calculer_irg(self, salaire_imposable):
         if not self._bareme_cache:
             return Decimal(0)
 
