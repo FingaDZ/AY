@@ -31,46 +31,6 @@ from routers import (
 async def lifespan(app: FastAPI):
     # Startup
     init_db()
-    print("Base de donnees initialisee")
-    yield
-    # Shutdown (rien à faire pour l'instant)
-
-app = FastAPI(
-    title=settings.APP_NAME,
-    version=settings.APP_VERSION,
-    description="API de gestion des ressources humaines",
-    lifespan=lifespan,
-)
-
-# Configuration CORS - Accepter toutes les origines (réseau LAN)
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],  # Accepter toutes les origines pour déploiement LAN
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
-
-# Inclure les routers
-app.include_router(employes.router, prefix="/api")
-app.include_router(pointages.router, prefix="/api")
-app.include_router(clients.router, prefix="/api")
-app.include_router(missions.router, prefix="/api")
-app.include_router(avances.router, prefix="/api")
-app.include_router(credits.router, prefix="/api")
-app.include_router(salaires.router, prefix="/api")
-app.include_router(rapports.router, prefix="/api")
-app.include_router(parametres.router, prefix="/api")
-app.include_router(utilisateurs.router, prefix="/api")
-app.include_router(database_config.router, prefix="/api")
-app.include_router(logs.router, prefix="/api")
-app.include_router(postes_travail.router, prefix="/api")
-app.include_router(conges.router, prefix="/api")
-app.include_router(attendance_integration.router, prefix="/api")
-app.include_router(incomplete_logs.router, prefix="/api")
-app.include_router(logistics_types.router, prefix="/api")
-app.include_router(parametres_salaires.router, prefix="/api")
-
 @app.get("/")
 def root():
     return {
