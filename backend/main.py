@@ -55,8 +55,14 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+import os
+
 # Servir les fichiers statiques (images, justificatifs)
-app.mount("/static", StaticFiles(directory="static"), name="static")
+static_dir = "static"
+if not os.path.exists(static_dir):
+    os.makedirs(static_dir)
+
+app.mount("/static", StaticFiles(directory=static_dir), name="static")
 
 # Inclure les routers
 app.include_router(employes.router, prefix="/api")
