@@ -193,6 +193,17 @@ find . -type f -name "*.pyc" -delete 2>/dev/null
 
 deactivate
 
+# Run DB schema fix (migration)
+if [ -f "fix_db_schema.py" ]; then
+    info "Vérification et correction du schéma de base de données..."
+    if [ -f "$BACKEND_DIR/venv/bin/python" ]; then
+        "$BACKEND_DIR/venv/bin/python" fix_db_schema.py >> "$LOG_FILE" 2>&1
+    elif [ -f "$BACKEND_DIR/.venv/bin/python" ]; then
+        "$BACKEND_DIR/.venv/bin/python" fix_db_schema.py >> "$LOG_FILE" 2>&1
+    else
+        warning "Impossible de trouver l'interpréteur Python pour fix_db_schema.py"
+    fi
+fi
 
 # Create static directory if not exists
 mkdir -p static
