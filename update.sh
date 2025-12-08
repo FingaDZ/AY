@@ -193,6 +193,10 @@ find . -type f -name "*.pyc" -delete 2>/dev/null
 
 deactivate
 
+
+# Create static directory if not exists
+mkdir -p static
+
 success "Backend mis à jour"
 
 #==============================================================================

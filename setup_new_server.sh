@@ -161,6 +161,9 @@ RestartSec=3
 WantedBy=multi-user.target
 EOF
 
+# Create static directory
+mkdir -p backend/static
+
 # Frontend Service (Serve avec 'serve' pour la prod ou 'preview')
 npm install -g serve
 cat > /etc/systemd/system/ayhr-frontend.service << EOF
