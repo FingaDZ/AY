@@ -51,11 +51,27 @@ const TraitementSalaires = () => {
 
             setSalaires(response.data.resultats || []);
             
-            // Charger statistiques
-            const statsResponse = await axios.get(`/api/traitement-salaires/statistiques`, {
-                params: { annee, mois }
-            });
-            setStatistiques(statsResponse.data);
+            // Calculer statistiques depuis les résultats
+            const resultatsOK = (response.data.resultats || []).filter(r => r.status === 'OK');
+            
+            if (resultatsOK.length > 0) {
+                const stats = {
+                    nombre_employes: resultatsOK.length,
+                    masse_salariale_nette: resultatsOK.reduce((sum, r) => sum + parseFloat(r.salaire_net || 0), 0),
+                    masse_cotisable: resultatsOK.reduce((sum, r) => sum + parseFloat(r.salaire_cotisable || 0), 0),
+                    masse_imposable: resultatsOK.reduce((sum, r) => sum + parseFloat(r.salaire_imposable || 0), 0),
+                    total_irg: resultatsOK.reduce((sum, r) => sum + parseFloat(r.irg || 0), 0)
+                };
+                setStatistiques(stats);
+            } else {
+                setStatistiques({
+                    nombre_employes: 0,
+                    masse_salariale_nette: 0,
+                    masse_cotisable: 0,
+                    masse_imposable: 0,
+                    total_irg: 0
+                });
+            }
 
             if (response.data.error_count > 0) {
                 toast.error(`${response.data.error_count} employé(s) avec erreur`);
@@ -376,6 +392,12 @@ const TraitementSalaires = () => {
                                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                                     Employé
                                 </th>
+                                <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                    J. Travaillés
+                                </th>
+                                <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                    Absences
+                                </th>
                                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                                     Salaire Base
                                 </th>
@@ -402,14 +424,14 @@ const TraitementSalaires = () => {
                         <tbody className="bg-white divide-y divide-gray-200">
                             {loading ? (
                                 <tr>
-                                    <td colSpan="8" className="px-6 py-12 text-center">
+                                    <td colSpan="10" className="px-6 py-12 text-center">
                                         <RefreshCw className="w-8 h-8 animate-spin mx-auto text-blue-600 mb-2" />
                                         <p className="text-gray-500">Calcul des salaires en cours...</p>
                                     </td>
                                 </tr>
                             ) : salairesFiltres.length === 0 ? (
                                 <tr>
-                                    <td colSpan="8" className="px-6 py-12 text-center text-gray-500">
+                                    <td colSpan="10" className="px-6 py-12 text-center text-gray-500">
                                         {salaires.length === 0 ? 'Aucun salaire calculé' : 'Aucun résultat trouvé'}
                                     </td>
                                 </tr>
@@ -420,6 +442,16 @@ const TraitementSalaires = () => {
                                             <div className="text-sm font-medium text-gray-900">
                                                 {salaire.employe_nom} {salaire.employe_prenom}
                                             </div>
+                                        </td>
+                                        <td className="px-4 py-3 whitespace-nowrap text-center">
+                                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                                {salaire.status === 'OK' ? salaire.jours_travailles : '-'}
+                                            </span>
+                                        </td>
+                                        <td className="px-4 py-3 whitespace-nowrap text-center">
+                                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                                                {salaire.status === 'OK' ? (salaire.jours_ouvrables - salaire.jours_travailles) : '-'}
+                                            </span>
                                         </td>
                                         <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-500">
                                             {salaire.status === 'OK' ? formaterMontant(salaire.salaire_base) : '-'}
