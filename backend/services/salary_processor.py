@@ -412,6 +412,9 @@ class SalaireProcessor:
         Calculer salaires de tous les employés actifs
         Retourne liste avec résultats ou erreurs
         """
+        # Vider le cache SQLAlchemy pour forcer le rechargement des données
+        self.db.expire_all()
+        
         employes = self.db.query(Employe).filter(Employe.actif == True).all()
         resultats = []
         

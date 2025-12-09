@@ -445,13 +445,17 @@ const TraitementSalaires = () => {
                                         </td>
                                         <td className="px-4 py-3 whitespace-nowrap text-center">
                                             <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                                                {salaire.status === 'OK' ? salaire.jours_travailles : '-'}
+                                                {salaire.status === 'OK' && salaire.jours_travailles ? salaire.jours_travailles : '-'}
                                             </span>
                                         </td>
                                         <td className="px-4 py-3 whitespace-nowrap text-center">
-                                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
-                                                {salaire.status === 'OK' ? (salaire.jours_ouvrables - salaire.jours_travailles) : '-'}
-                                            </span>
+                                            {salaire.status === 'OK' && salaire.jours_ouvrables && salaire.jours_travailles ? (
+                                                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                                                    {salaire.jours_ouvrables - salaire.jours_travailles}
+                                                </span>
+                                            ) : (
+                                                <span className="text-gray-400">-</span>
+                                            )}
                                         </td>
                                         <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-500">
                                             {salaire.status === 'OK' ? formaterMontant(salaire.salaire_base) : '-'}
