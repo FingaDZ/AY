@@ -1,6 +1,12 @@
 import axios from 'axios';
 
-const API_BASE_URL = '/api';
+// Logique dynamique pour l'URL de l'API:
+// 1. Si on est sur le port 3000 (Accès direct IP locale), on tape sur le port 8000
+// 2. Sinon (Accès via Domaine/Proxy), on utilise le chemin relatif /api (le proxy doit gérer)
+const isLocalPort3000 = window.location.port === '3000';
+const API_BASE_URL = isLocalPort3000
+  ? `${window.location.protocol}//${window.location.hostname}:8000/api`
+  : '/api';
 
 const api = axios.create({
   baseURL: API_BASE_URL,

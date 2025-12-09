@@ -30,21 +30,14 @@ SELECT
     date_creation
 FROM irg_bareme;
 
--- Étape 3: Vérifier que les données sont correctes
-SELECT 'Vérification des données:' AS info;
-SELECT COUNT(*) AS total_ancien FROM irg_bareme;
-SELECT COUNT(*) AS total_nouveau FROM irg_bareme_new;
-SELECT * FROM irg_bareme_new ORDER BY salaire LIMIT 10;
-
--- Étape 4: Renommer les tables (ATTENTION: Point de non-retour !)
--- DÉCOMMENTER CES LIGNES APRÈS VÉRIFICATION
--- DROP TABLE irg_bareme;
--- RENAME TABLE irg_bareme_new TO irg_bareme;
+-- Étape 4: Renommer les tables (ACTIVÉE)
+DROP TABLE irg_bareme;
+RENAME TABLE irg_bareme_new TO irg_bareme;
 
 -- Étape 5: Vérification finale
--- SELECT 'Migration terminée!' AS info;
--- SELECT COUNT(*) AS total FROM irg_bareme;
--- DESCRIBE irg_bareme;
+SELECT 'Migration terminée!' AS info;
+SELECT COUNT(*) AS total FROM irg_bareme;
+DESCRIBE irg_bareme;
 
 -- ============================================================================
 -- Instructions d'utilisation sur le serveur:
