@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import Layout from '../../components/Layout';
 import Card from '../../components/Card';
 import Button from '../../components/Button';
 import editionSalaireService from '../../services/editionSalaireService';
@@ -35,15 +34,15 @@ const EditionSalaires = () => {
             setData(result);
             toast.success(`${result.length} employés calculés`);
         } catch (error) {
-            toast.error("Impossible de charger l'édition des salaires");
+            console.error('Erreur lors du chargement de l\'édition des salaires:', error);
+            toast.error(error.response?.data?.detail || "Impossible de charger l'édition des salaires");
         } finally {
             setLoading(false);
         }
     };
 
     return (
-        <Layout title="Edition des Salaires">
-            <div className="space-y-6">
+        <div className="space-y-6">
 
                 {/* Filtres de Période */}
                 <Card>
@@ -107,9 +106,8 @@ const EditionSalaires = () => {
                                                 {new Intl.NumberFormat('fr-DZ', { style: 'currency', currency: 'DZD' }).format(row.salaire_base_proratis)}
                                             </td>
                                             <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                                {/* Somme des primes pour affichage simplifié */}
                                                 {new Intl.NumberFormat('fr-DZ', { style: 'currency', currency: 'DZD' }).format(
-                                                    (row.salaire_cotisable - row.salaire_base_proratis - row.heures_supplementaires) // Approximation primes
+                                                    (row.salaire_cotisable - row.salaire_base_proratis - row.heures_supplementaires)
                                                 )}
                                             </td>
                                             <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
@@ -132,15 +130,17 @@ const EditionSalaires = () => {
                                 </tbody>
                             </table>
                         </div>
-                        {data.length === 0 && !loading && (
-                            <div className="text-center py-10 text-gray-500">
-                                Aucune donnée à afficher. Lancez le calcul.
-                            </div>
-                        )}
                     </Card>
                 )}
-            </div>
-        </Layout>
+
+                {data.length === 0 && !loading && (
+                    <Card>
+                        <div className="text-center py-10 text-gray-500">
+                            Aucune donnée à afficher. Cliquez sur "Charger / Recalculer" pour lancer le calcul.
+                        </div>
+                    </Card>
+                )}
+        </div>
     );
 };
 
