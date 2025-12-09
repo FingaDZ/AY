@@ -221,9 +221,22 @@ success "Backend mis à jour"
 
 info "[6/8] Mise à jour du Frontend..."
 
+# Fix: Move package-lock.json if it's in root
+if [ -f "$APP_DIR/package-lock.json" ]; then
+    info "Déplacement de package-lock.json vers frontend/"
+    mv "$APP_DIR/package-lock.json" "$FRONTEND_DIR/" >> "$LOG_FILE" 2>&1
+fi
+
 cd "$FRONTEND_DIR" || error_exit "Impossible d'accéder à $FRONTEND_DIR"
 
+# Clean node_modules if build issues
+if [ -d "node_modules" ]; then
+    info "Nettoyage de node_modules existants..."
+    rm -rf node_modules >> "$LOG_FILE" 2>&1
+fi
+
 # Install dependencies
+info "Installation des dépendances npm..."
 npm install >> "$LOG_FILE" 2>&1
 
 if [ $? -ne 0 ]; then
@@ -231,6 +244,7 @@ if [ $? -ne 0 ]; then
 fi
 
 # Build production
+info "Build du frontend..."
 npm run build >> "$LOG_FILE" 2>&1
 
 if [ $? -ne 0 ]; then
