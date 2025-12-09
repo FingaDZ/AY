@@ -351,63 +351,95 @@ def get_statistiques(
     Returns:
         Total masse salariale, moyennes, min/max, etc.
     """
-    # Chercher salaires validés
-    salaires = db.query(Salaire).filter(
-        Salaire.annee == annee,
-        Salaire.mois == mois
-    ).all()
-    
-    # Si aucun salaire validé, calculer depuis preview
-    if not salaires:
-        processor = SalaireProcessor(db)
-        resultats = processor.calculer_tous_salaires(annee, mois)
+    try:
+        # Chercher salaires validés
+        salaires = db.query(Salaire).filter(
+            Salaire.annee == annee,
+            Salaire.mois == mois
+        ).all()
         
-        # Filtrer uniquement les succès
-        resultats_ok = [r for r in resultats if r.get("status") == "OK"]
+        # Si aucun salaire validé, calculer depuis preview
+        if not salaires:
+            try:
+                processor = SalaireProcessor(db)
+                resultats = processor.calculer_tous_salaires(annee, mois)
+                
+                # Filtrer uniquement les succès
+                resultats_ok = [r for r in resultats if r.get("status") == "OK"]
+                
+                if not resultats_ok:
+                    return {
+                        "annee": annee,
+                        "mois": mois,
+                        "nombre_employes": 0,
+                        "masse_salariale_brute": "0",
+                        "masse_salariale_nette": "0",
+                        "moyenne_salaire_net": "0",
+                        "min_salaire": "0",
+                        "max_salaire": "0",
+                        "total_irg": "0",
+                        "total_securite_sociale": "0"
+                    }
+                
+                salaires_nets = [Decimal(str(r["salaire_net"])) for r in resultats_ok]
+                salaires_bruts = [Decimal(str(r["salaire_cotisable"])) for r in resultats_ok]
+                
+                return {
+                    "annee": annee,
+                    "mois": mois,
+                    "nombre_employes": len(resultats_ok),
+                    "masse_salariale_brute": str(sum(salaires_bruts)),
+                    "masse_salariale_nette": str(sum(salaires_nets)),
+                    "moyenne_salaire_net": str(sum(salaires_nets) / len(salaires_nets)),
+                    "min_salaire": str(min(salaires_nets)),
+                    "max_salaire": str(max(salaires_nets)),
+                    "total_irg": str(sum(Decimal(str(r["irg"])) for r in resultats_ok)),
+                    "total_securite_sociale": str(sum(Decimal(str(r["retenue_securite_sociale"])) for r in resultats_ok))
+                }
+            except Exception as e:
+                # Si erreur, retourner stats vides plutôt que crasher
+                print(f"Erreur calcul statistiques preview: {e}")
+                return {
+                    "annee": annee,
+                    "mois": mois,
+                    "nombre_employes": 0,
+                    "masse_salariale_brute": "0",
+                    "masse_salariale_nette": "0",
+                    "moyenne_salaire_net": "0",
+                    "min_salaire": "0",
+                    "max_salaire": "0",
+                    "total_irg": "0",
+                    "total_securite_sociale": "0"
+                }
         
-        if not resultats_ok:
-            return {
-                "annee": annee,
-                "mois": mois,
-                "nombre_employes": 0,
-                "masse_salariale_brute": "0",
-                "masse_salariale_nette": "0",
-                "moyenne_salaire_net": "0",
-                "min_salaire": "0",
-                "max_salaire": "0",
-                "total_irg": "0",
-                "total_securite_sociale": "0"
-            }
-        
-        salaires_nets = [Decimal(str(r["salaire_net"])) for r in resultats_ok]
-        salaires_bruts = [Decimal(str(r["salaire_cotisable"])) for r in resultats_ok]
+        # Si salaires validés existent, utiliser ceux-ci
+        salaires_nets = [Decimal(str(s.salaire_net)) for s in salaires]
+        salaires_bruts = [Decimal(str(s.salaire_cotisable)) for s in salaires]
         
         return {
             "annee": annee,
             "mois": mois,
-            "nombre_employes": len(resultats_ok),
+            "nombre_employes": len(salaires),
             "masse_salariale_brute": str(sum(salaires_bruts)),
             "masse_salariale_nette": str(sum(salaires_nets)),
             "moyenne_salaire_net": str(sum(salaires_nets) / len(salaires_nets)),
             "min_salaire": str(min(salaires_nets)),
             "max_salaire": str(max(salaires_nets)),
-            "total_irg": str(sum(Decimal(str(r["irg"])) for r in resultats_ok)),
-            "total_securite_sociale": str(sum(Decimal(str(r["retenue_securite_sociale"])) for r in resultats_ok))
+            "total_irg": str(sum(Decimal(str(s.irg)) for s in salaires)),
+            "total_securite_sociale": str(sum(Decimal(str(s.retenue_securite_sociale)) for s in salaires))
         }
-    
-    # Si salaires validés existent, utiliser ceux-ci
-    salaires_nets = [Decimal(str(s.salaire_net)) for s in salaires]
-    salaires_bruts = [Decimal(str(s.salaire_cotisable)) for s in salaires]
-    
-    return {
-        "annee": annee,
-        "mois": mois,
-        "nombre_employes": len(salaires),
-        "masse_salariale_brute": str(sum(salaires_bruts)),
-        "masse_salariale_nette": str(sum(salaires_nets)),
-        "moyenne_salaire_net": str(sum(salaires_nets) / len(salaires_nets)),
-        "min_salaire": str(min(salaires_nets)),
-        "max_salaire": str(max(salaires_nets)),
-        "total_irg": str(sum(Decimal(str(s.irg)) for s in salaires)),
-        "total_securite_sociale": str(sum(Decimal(str(s.retenue_securite_sociale)) for s in salaires))
-    }
+    except Exception as e:
+        # Fallback complet en cas d'erreur
+        print(f"Erreur statistiques: {e}")
+        return {
+            "annee": annee,
+            "mois": mois,
+            "nombre_employes": 0,
+            "masse_salariale_brute": "0",
+            "masse_salariale_nette": "0",
+            "moyenne_salaire_net": "0",
+            "min_salaire": "0",
+            "max_salaire": "0",
+            "total_irg": "0",
+            "total_securite_sociale": "0"
+        }
