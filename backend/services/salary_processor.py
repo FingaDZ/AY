@@ -141,7 +141,7 @@ class SalaireProcessor:
             )
             
             # 8. Retenue Sécurité Sociale (9%)
-            taux_ss = Decimal(str(self.params.taux_secu_sociale)) / 100
+            taux_ss = Decimal(str(self.params.taux_securite_sociale)) / 100
             retenue_ss = (salaire_cotisable * taux_ss).quantize(Decimal('0.01'), ROUND_HALF_UP)
             
             # 9. Primes NON COTISABLES
