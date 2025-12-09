@@ -42,7 +42,6 @@ def get_salary_preview(
                 "employe_id": employee.id,
                 "employe_nom": employee.nom,
                 "employe_prenom": employee.prenom,
-                "employe_matricule": employee.matricule,
                 "status": "ERROR",
                 "error": str(e),
                 "salaire_net": 0
@@ -53,7 +52,6 @@ def get_salary_preview(
                 "employe_id": employee.id,
                 "employe_nom": employee.nom,
                 "employe_prenom": employee.prenom,
-                "employe_matricule": employee.matricule,
                 "status": "CRITICAL_ERROR",
                 "error": "Erreur technique",
                 "salaire_net": 0

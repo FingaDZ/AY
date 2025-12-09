@@ -79,7 +79,7 @@ class BaseSalaryProvider:
         """
         Calcule le montant des heures supplémentaires.
         """
-        if not self.params.calculer_heures_supp:
+        if not self.params.activer_heures_supp:
             return Decimal(0)
             
         # Taux horaire = salaire_base / 30 jours / 8 heures
