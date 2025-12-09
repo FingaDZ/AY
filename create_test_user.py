@@ -56,5 +56,21 @@ def create_test_user():
         print(f"❌ Erreur: {e}")
         print("🔍 Vérifiez que vous avez bien lancé le script de correction de schéma avant !")
 
+    try:
+        import bcrypt
+        print(f"DEBUG: bcrypt version: {bcrypt.__version__}")
+        
+        # Vérification immédiate
+        print("🔐 Vérification immédiate du mot de passe...")
+        db = SessionLocal()
+        u = db.query(User).filter(User.email == email).first()
+        if u and pwd_context.verify(password, u.password_hash):
+            print("✅ Vérification locale RÉUSSIE. Le hash est valide.")
+            print("👉 Vous pouvez maintenant vous connecter sur le site.")
+        else:
+            print("❌ Vérification locale ÉCHOUÉE. Le mot de passe ne correspond pas au hash.")
+    except Exception as e:
+        print(f"❌ Erreur de vérification: {e}")
+
 if __name__ == "__main__":
     create_test_user()
