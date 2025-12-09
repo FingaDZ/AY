@@ -10,7 +10,8 @@ import {
     FileText,
     TrendingUp,
     Search,
-    X
+    X,
+    Printer
 } from 'lucide-react';
 import axios from 'axios';
 import { toast } from 'react-hot-toast';
@@ -194,6 +195,75 @@ const TraitementSalaires = () => {
         setFiltreSalaireMax('');
     };
 
+    const genererRapport = async (format) => {
+        try {
+            const response = await axios.get(`/api/traitement-salaires/rapport-${format}`, {
+                params: { annee, mois },
+                responseType: 'blob'
+            });
+            
+            const url = window.URL.createObjectURL(new Blob([response.data]));
+            const link = document.createElement('a');
+            link.href = url;
+            link.setAttribute('download', `rapport_salaires_${mois}_${annee}.${format === 'pdf' ? 'pdf' : 'xlsx'}`);
+            document.body.appendChild(link);
+            link.click();
+            link.remove();
+            
+            toast.success(`Rapport ${format.toUpperCase()} généré`);
+        } catch (error) {
+            console.error('Erreur génération rapport:', error);
+            toast.error('Erreur lors de la génération du rapport');
+        }
+    };
+
+    const genererBulletins = async () => {
+        try {
+            const response = await axios.post(`/api/traitement-salaires/bulletins`, {
+                annee,
+                mois,
+                employe_ids: salairesFiltres.filter(s => s.status === 'OK').map(s => s.employe_id)
+            }, {
+                responseType: 'blob'
+            });
+            
+            const url = window.URL.createObjectURL(new Blob([response.data]));
+            const link = document.createElement('a');
+            link.href = url;
+            link.setAttribute('download', `bulletins_paie_${mois}_${annee}.pdf`);
+            document.body.appendChild(link);
+            link.click();
+            link.remove();
+            
+            toast.success('Bulletins de paie générés');
+        } catch (error) {
+            console.error('Erreur génération bulletins:', error);
+            toast.error('Erreur lors de la génération des bulletins');
+        }
+    };
+
+    const genererG29 = async () => {
+        try {
+            const response = await axios.get(`/api/traitement-salaires/g29`, {
+                params: { annee, mois },
+                responseType: 'blob'
+            });
+            
+            const url = window.URL.createObjectURL(new Blob([response.data]));
+            const link = document.createElement('a');
+            link.href = url;
+            link.setAttribute('download', `G29_${mois}_${annee}.xlsx`);
+            document.body.appendChild(link);
+            link.click();
+            link.remove();
+            
+            toast.success('Fichier G29 généré');
+        } catch (error) {
+            console.error('Erreur génération G29:', error);
+            toast.error('Erreur lors de la génération du G29');
+        }
+    };
+
     return (
         <div className="p-6 max-w-7xl mx-auto">
             {/* En-tête */}
@@ -271,43 +341,81 @@ const TraitementSalaires = () => {
                 {/* Statistiques - 4 cartes compactes */}
                 {statistiques && (
                     <>
-                        <div className="bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg shadow p-4 text-white">
+                        <div className="bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg shadow p-3 text-white">
                             <div className="flex items-center justify-between mb-1">
                                 <h3 className="text-xs font-medium opacity-90">Masse Nette</h3>
-                                <TrendingUp className="w-4 h-4 opacity-75" />
+                                <TrendingUp className="w-3 h-3 opacity-75" />
                             </div>
-                            <p className="text-xl font-bold">{formaterMontant(statistiques.masse_salariale_nette)}</p>
-                            <p className="text-xs opacity-75 mt-1">{statistiques.nombre_employes} employés</p>
+                            <p className="text-lg font-bold">{formaterMontant(statistiques.masse_salariale_nette)}</p>
+                            <p className="text-xs opacity-75 mt-0.5">{statistiques.nombre_employes} employés</p>
                         </div>
 
-                        <div className="bg-gradient-to-br from-green-500 to-green-600 rounded-lg shadow p-4 text-white">
+                        <div className="bg-gradient-to-br from-green-500 to-green-600 rounded-lg shadow p-3 text-white">
                             <div className="flex items-center justify-between mb-1">
                                 <h3 className="text-xs font-medium opacity-90">Masse Cotisable</h3>
-                                <Calculator className="w-4 h-4 opacity-75" />
+                                <Calculator className="w-3 h-3 opacity-75" />
                             </div>
-                            <p className="text-xl font-bold">{formaterMontant(statistiques.masse_cotisable)}</p>
-                            <p className="text-xs opacity-75 mt-1">Base Sécu Sociale</p>
+                            <p className="text-lg font-bold">{formaterMontant(statistiques.masse_cotisable)}</p>
+                            <p className="text-xs opacity-75 mt-0.5">Base Sécu Sociale</p>
                         </div>
 
-                        <div className="bg-gradient-to-br from-purple-500 to-purple-600 rounded-lg shadow p-4 text-white">
+                        <div className="bg-gradient-to-br from-purple-500 to-purple-600 rounded-lg shadow p-3 text-white">
                             <div className="flex items-center justify-between mb-1">
                                 <h3 className="text-xs font-medium opacity-90">Masse Imposable</h3>
-                                <Calculator className="w-4 h-4 opacity-75" />
+                                <Calculator className="w-3 h-3 opacity-75" />
                             </div>
-                            <p className="text-xl font-bold">{formaterMontant(statistiques.masse_imposable)}</p>
-                            <p className="text-xs opacity-75 mt-1">Base IRG</p>
+                            <p className="text-lg font-bold">{formaterMontant(statistiques.masse_imposable)}</p>
+                            <p className="text-xs opacity-75 mt-0.5">Base IRG</p>
                         </div>
 
-                        <div className="bg-gradient-to-br from-red-500 to-red-600 rounded-lg shadow p-4 text-white">
+                        <div className="bg-gradient-to-br from-red-500 to-red-600 rounded-lg shadow p-3 text-white">
                             <div className="flex items-center justify-between mb-1">
                                 <h3 className="text-xs font-medium opacity-90">Total IRG</h3>
-                                <TrendingUp className="w-4 h-4 opacity-75" />
+                                <TrendingUp className="w-3 h-3 opacity-75" />
                             </div>
-                            <p className="text-xl font-bold">{formaterMontant(statistiques.total_irg)}</p>
-                            <p className="text-xs opacity-75 mt-1">Impôt global</p>
+                            <p className="text-lg font-bold">{formaterMontant(statistiques.total_irg)}</p>
+                            <p className="text-xs opacity-75 mt-0.5">Impôt global</p>
                         </div>
                     </>
                 )}
+            </div>
+
+            {/* Boutons d'action */}
+            <div className="bg-white rounded-lg shadow p-4 mb-4">
+                <div className="flex items-center gap-3 flex-wrap">
+                    <button
+                        onClick={() => genererRapport('pdf')}
+                        disabled={loading || salaires.length === 0}
+                        className="flex items-center gap-2 px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 disabled:opacity-50 text-sm"
+                    >
+                        <FileText className="w-4 h-4" />
+                        Rapport PDF
+                    </button>
+                    <button
+                        onClick={() => genererRapport('excel')}
+                        disabled={loading || salaires.length === 0}
+                        className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 disabled:opacity-50 text-sm"
+                    >
+                        <Download className="w-4 h-4" />
+                        Export Excel
+                    </button>
+                    <button
+                        onClick={genererBulletins}
+                        disabled={loading || salaires.length === 0}
+                        className="flex items-center gap-2 px-4 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700 disabled:opacity-50 text-sm"
+                    >
+                        <Printer className="w-4 h-4" />
+                        Bulletins de Paie
+                    </button>
+                    <button
+                        onClick={genererG29}
+                        disabled={loading || salaires.length === 0}
+                        className="flex items-center gap-2 px-4 py-2 bg-orange-600 text-white rounded-md hover:bg-orange-700 disabled:opacity-50 text-sm"
+                    >
+                        <FileText className="w-4 h-4" />
+                        G29 (CNAS)
+                    </button>
+                </div>
             </div>
 
             {/* Filtres de recherche */}

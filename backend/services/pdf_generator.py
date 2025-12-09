@@ -3179,3 +3179,102 @@ class PDFGenerator:
         doc.build(story)
         buffer.seek(0)
         return buffer
+
+    def generate_rapport_salaires(self, resultats: List[Dict], periode: Dict) -> BytesIO:
+        """
+        Générer rapport récapitulatif des salaires du mois (nouveau module v3.0)
+        """
+        buffer = BytesIO()
+        doc = SimpleDocTemplate(buffer, pagesize=A4, rightMargin=2*cm, leftMargin=2*cm, 
+                               topMargin=2*cm, bottomMargin=2*cm)
+        story = []
+        
+        # Titre
+        mois_nom = datetime(periode['annee'], periode['mois'], 1).strftime('%B %Y').capitalize()
+        story.append(Paragraph(f"<b>RAPPORT DES SALAIRES - {mois_nom}</b>", self.styles['CustomTitle']))
+        story.append(Spacer(1, 0.5*cm))
+        
+        # Statistiques globales
+        total_employes = len(resultats)
+        total_brut = sum(float(r['salaire_cotisable']) for r in resultats)
+        total_net = sum(float(r['salaire_net']) for r in resultats)
+        total_irg = sum(float(r['irg']) for r in resultats)
+        total_ss = sum(float(r['retenue_securite_sociale']) for r in resultats)
+        
+        stats_data = [
+            ['STATISTIQUES GÉNÉRALES', ''],
+            ['Nombre d\'employés:', str(total_employes)],
+            ['Masse salariale brute (cotisable):', f"{total_brut:,.2f} DA"],
+            ['Total retenues Séc. Sociale:', f"{total_ss:,.2f} DA"],
+            ['Total IRG:', f"{total_irg:,.2f} DA"],
+            ['Masse salariale nette:', f"{total_net:,.2f} DA"],
+        ]
+        
+        stats_table = Table(stats_data, colWidths=[10*cm, 7*cm])
+        stats_table.setStyle(TableStyle([
+            ('BACKGROUND', (0,0), (-1,0), colors.HexColor('#366092')),
+            ('TEXTCOLOR', (0,0), (-1,0), colors.white),
+            ('FONTNAME', (0,0), (-1,0), 'Helvetica-Bold'),
+            ('GRID', (0,0), (-1,-1), 0.5, colors.black),
+            ('FONTNAME', (0,1), (0,-1), 'Helvetica-Bold'),
+            ('ALIGN', (1,1), (1,-1), 'RIGHT'),
+            ('BACKGROUND', (0,-1), (-1,-1), colors.lightgrey),
+            ('FONTNAME', (0,-1), (-1,-1), 'Helvetica-Bold'),
+        ]))
+        story.append(stats_table)
+        story.append(Spacer(1, 0.7*cm))
+        
+        # Détail par employé
+        story.append(Paragraph("<b>DÉTAIL PAR EMPLOYÉ</b>", self.styles['CustomSubtitle']))
+        story.append(Spacer(1, 0.3*cm))
+        
+        detail_data = [
+            ['Employé', 'J.Trav', 'Base', 'Cotisable', 'IRG', 'Net']
+        ]
+        
+        for r in resultats:
+            detail_data.append([
+                f"{r['employe_nom']} {r['employe_prenom']}",
+                str(r['jours_travailles']),
+                f"{float(r['salaire_base']):,.0f}",
+                f"{float(r['salaire_cotisable']):,.0f}",
+                f"{float(r['irg']):,.0f}",
+                f"{float(r['salaire_net']):,.0f}"
+            ])
+        
+        # Ligne de totaux
+        detail_data.append([
+            'TOTAUX',
+            '',
+            f"{sum(float(r['salaire_base']) for r in resultats):,.0f}",
+            f"{total_brut:,.0f}",
+            f"{total_irg:,.0f}",
+            f"{total_net:,.0f}"
+        ])
+        
+        detail_table = Table(detail_data, colWidths=[6*cm, 1.5*cm, 2.5*cm, 2.5*cm, 2.5*cm, 2.5*cm])
+        detail_table.setStyle(TableStyle([
+            ('BACKGROUND', (0,0), (-1,0), colors.HexColor('#366092')),
+            ('TEXTCOLOR', (0,0), (-1,0), colors.white),
+            ('FONTNAME', (0,0), (-1,0), 'Helvetica-Bold'),
+            ('FONTSIZE', (0,0), (-1,0), 9),
+            ('GRID', (0,0), (-1,-1), 0.5, colors.black),
+            ('FONTSIZE', (0,1), (-1,-1), 8),
+            ('ALIGN', (1,0), (-1,-1), 'CENTER'),
+            ('ALIGN', (2,0), (-1,-1), 'RIGHT'),
+            ('BACKGROUND', (0,-1), (-1,-1), colors.lightgrey),
+            ('FONTNAME', (0,-1), (-1,-1), 'Helvetica-Bold'),
+        ]))
+        story.append(detail_table)
+        
+        # Footer
+        story.append(Spacer(1, 1*cm))
+        story.append(Paragraph(
+            f"<i>Rapport généré le {datetime.now().strftime('%d/%m/%Y à %H:%M')}</i>",
+            self.styles['CustomBody']
+        ))
+        
+        doc.build(story)
+        buffer.seek(0)
+        return buffer
+

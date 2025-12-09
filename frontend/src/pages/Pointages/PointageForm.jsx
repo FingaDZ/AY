@@ -86,7 +86,28 @@ function PointageForm() {
   };
 
   const handleJourChange = (jour, value) => {
-    setJours({ ...jours, [jour]: value });
+    const newJours = { ...jours, [jour]: value };
+    setJours(newJours);
+    
+    // Auto-save en mode édition
+    if (isEdit) {
+      autoSave(newJours);
+    }
+  };
+
+  const autoSave = async (joursData) => {
+    try {
+      const values = form.getFieldsValue();
+      const data = {
+        ...values,
+        ...joursData,
+      };
+      await pointageService.update(id, data);
+      message.success('Modification sauvegardée', 1);
+    } catch (error) {
+      message.error('Erreur lors de la sauvegarde automatique');
+      console.error(error);
+    }
   };
 
   const remplirTous = (type) => {
