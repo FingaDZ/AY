@@ -52,8 +52,9 @@ const Sidebar = ({ isOpen, onClose }) => {
         { to: '/avances', label: 'Avances', icon: DollarSign, public: false },
         { to: '/credits', label: 'Crédits', icon: FileText, public: false },
         { to: '/conges', label: 'Congés', icon: Calendar, public: false },
-        { to: '/salaires/edition', label: 'Edition Salaires', icon: Calculator, public: false }, // NEW
-        { to: '/salaires', label: 'Salaires (Ancien)', icon: Download, public: false },
+        { to: '/salaires/traitement', label: 'Traitement Salaires', icon: Calculator, public: false }, // NOUVEAU v3.0
+        // { to: '/salaires/edition', label: 'Edition Salaires', icon: Calculator, public: false }, // DÉSACTIVÉ
+        // { to: '/salaires', label: 'Salaires (Ancien)', icon: Download, public: false }, // DÉSACTIVÉ
         { to: '/parametres/salaires', label: 'Paramètres Salaires', icon: DollarSign, public: false },
         { to: '/logs', label: 'Logs', icon: ScrollText, public: false },
         { to: '/parametres', label: 'Paramètres Généraux', icon: SettingsIcon, public: false },

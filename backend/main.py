@@ -27,7 +27,8 @@ from routers import (
     incomplete_logs,
     logistics_types,
     parametres_salaires,
-    edition_salaires  # Nouveau router
+    edition_salaires,  # Ancien système (deprecated)
+    traitement_salaires  # Nouveau système v3.0
 )
 
 # Lifespan event handler moderne
@@ -72,7 +73,8 @@ app.include_router(missions.router, prefix="/api")
 app.include_router(avances.router, prefix="/api")
 app.include_router(credits.router, prefix="/api")
 app.include_router(salaires.router, prefix="/api")
-app.include_router(edition_salaires.router, prefix="/api") # Nouveau router
+app.include_router(edition_salaires.router, prefix="/api") # Ancien système (deprecated)
+app.include_router(traitement_salaires.router, prefix="/api") # Nouveau système v3.0
 app.include_router(rapports.router, prefix="/api")
 app.include_router(parametres.router, prefix="/api")
 app.include_router(utilisateurs.router, prefix="/api")

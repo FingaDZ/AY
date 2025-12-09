@@ -1,0 +1,384 @@
+"""
+API Router pour le nouveau module Traitement Salaires v3.0
+Remplace edition_salaires.py (ancien système)
+"""
+
+from fastapi import APIRouter, Depends, HTTPException, Query
+from sqlalchemy.orm import Session
+from typing import List, Optional
+from datetime import date
+from decimal import Decimal
+
+from database import get_db
+from services.salary_processor import SalaireProcessor
+from models import Salaire, Employe, Avance, Credit, StatutCredit
+
+router = APIRouter(prefix="/traitement-salaires", tags=["Traitement Salaires v3.0"])
+
+
+@router.get("/preview")
+def preview_salaires(
+    annee: int = Query(..., ge=2000, le=2100),
+    mois: int = Query(..., ge=1, le=12),
+    db: Session = Depends(get_db)
+):
+    """
+    Calculer salaires de tous les employés actifs (mode brouillon)
+    Ne sauvegarde PAS en base de données
+    
+    Utilisé pour :
+    - Prévisualisation avant validation
+    - Vérification des calculs
+    - Identification des erreurs
+    
+    Returns:
+        Liste de dict avec détails calcul ou erreurs
+    """
+    processor = SalaireProcessor(db)
+    resultats = processor.calculer_tous_salaires(annee, mois)
+    
+    return {
+        "annee": annee,
+        "mois": mois,
+        "total_employes": len(resultats),
+        "success_count": sum(1 for r in resultats if r.get("status") == "OK"),
+        "error_count": sum(1 for r in resultats if r.get("status") == "ERROR"),
+        "resultats": resultats
+    }
+
+
+@router.get("/preview/{employe_id}")
+def preview_salaire_employe(
+    employe_id: int,
+    annee: int = Query(..., ge=2000, le=2100),
+    mois: int = Query(..., ge=1, le=12),
+    prime_objectif: float = Query(0, ge=0),
+    prime_variable: float = Query(0, ge=0),
+    db: Session = Depends(get_db)
+):
+    """
+    Calculer salaire d'UN employé (mode brouillon)
+    Permet de spécifier primes variables
+    
+    Returns:
+        Dict avec détails complets du calcul
+    """
+    processor = SalaireProcessor(db)
+    resultat = processor.calculer_salaire_employe(
+        employe_id=employe_id,
+        annee=annee,
+        mois=mois,
+        prime_objectif=Decimal(str(prime_objectif)),
+        prime_variable=Decimal(str(prime_variable))
+    )
+    
+    return resultat
+
+
+@router.post("/valider/{employe_id}")
+def valider_salaire_employe(
+    employe_id: int,
+    annee: int = Query(..., ge=2000, le=2100),
+    mois: int = Query(..., ge=1, le=12),
+    prime_objectif: float = Query(0, ge=0),
+    prime_variable: float = Query(0, ge=0),
+    db: Session = Depends(get_db)
+):
+    """
+    Valider et enregistrer le salaire d'un employé en base de données
+    
+    Actions effectuées :
+    1. Calcul complet du salaire
+    2. Vérification existence (pas de doublon)
+    3. Enregistrement en table salaires
+    4. Marquage avances comme déduites
+    5. Mise à jour crédits (mois_restants)
+    
+    Returns:
+        Salaire enregistré avec ID
+    """
+    processor = SalaireProcessor(db)
+    
+    # 1. Calculer salaire
+    resultat = processor.calculer_salaire_employe(
+        employe_id=employe_id,
+        annee=annee,
+        mois=mois,
+        prime_objectif=Decimal(str(prime_objectif)),
+        prime_variable=Decimal(str(prime_variable))
+    )
+    
+    if resultat.get("status") == "ERROR":
+        raise HTTPException(status_code=400, detail=resultat.get("error"))
+    
+    # 2. Vérifier si salaire existe déjà
+    salaire_existant = db.query(Salaire).filter(
+        Salaire.employe_id == employe_id,
+        Salaire.annee == annee,
+        Salaire.mois == mois
+    ).first()
+    
+    if salaire_existant:
+        # Mettre à jour
+        for key, value in resultat.items():
+            if key not in ["status", "error", "details_calcul", "employe_nom", "employe_prenom"]:
+                if hasattr(salaire_existant, key):
+                    setattr(salaire_existant, key, value)
+        
+        salaire_existant.statut = "valide"
+        salaire_existant.date_paiement = date.today()
+        
+    else:
+        # Créer nouveau salaire
+        salaire_data = {k: v for k, v in resultat.items() 
+                       if k not in ["status", "error", "details_calcul", "employe_nom", "employe_prenom"]}
+        
+        salaire_existant = Salaire(**salaire_data)
+        salaire_existant.statut = "valide"
+        salaire_existant.date_paiement = date.today()
+        db.add(salaire_existant)
+    
+    # 3. Marquer avances comme déduites
+    avances = db.query(Avance).filter(
+        Avance.employe_id == employe_id,
+        Avance.annee_deduction == annee,
+        Avance.mois_deduction == mois,
+        Avance.deduit == False
+    ).all()
+    
+    for avance in avances:
+        avance.deduit = True
+        avance.date_deduction = date.today()
+    
+    # 4. Mettre à jour crédits
+    credits = db.query(Credit).filter(
+        Credit.employe_id == employe_id,
+        Credit.statut == StatutCredit.EN_COURS
+    ).all()
+    
+    for credit in credits:
+        if credit.mois_restants > 0:
+            credit.mois_restants -= 1
+            
+            if credit.mois_restants == 0:
+                credit.statut = StatutCredit.TERMINE
+                credit.date_fin_effective = date.today()
+    
+    # 5. Commit
+    db.commit()
+    db.refresh(salaire_existant)
+    
+    return {
+        "message": "Salaire validé et enregistré avec succès",
+        "salaire_id": salaire_existant.id,
+        "employe_id": employe_id,
+        "salaire_net": str(salaire_existant.salaire_net)
+    }
+
+
+@router.post("/valider-tous")
+def valider_tous_salaires(
+    annee: int = Query(..., ge=2000, le=2100),
+    mois: int = Query(..., ge=1, le=12),
+    db: Session = Depends(get_db)
+):
+    """
+    Valider et enregistrer TOUS les salaires du mois
+    
+    Utilise le même processus que valider_salaire_employe
+    mais pour tous les employés actifs
+    
+    Returns:
+        Rapport avec succès/erreurs
+    """
+    processor = SalaireProcessor(db)
+    resultats = processor.calculer_tous_salaires(annee, mois)
+    
+    success_count = 0
+    error_count = 0
+    errors = []
+    
+    for resultat in resultats:
+        if resultat.get("status") == "ERROR":
+            error_count += 1
+            errors.append({
+                "employe_id": resultat.get("employe_id"),
+                "nom": resultat.get("employe_nom"),
+                "error": resultat.get("error")
+            })
+            continue
+        
+        try:
+            employe_id = resultat["employe_id"]
+            
+            # Vérifier existence
+            salaire_existant = db.query(Salaire).filter(
+                Salaire.employe_id == employe_id,
+                Salaire.annee == annee,
+                Salaire.mois == mois
+            ).first()
+            
+            if salaire_existant:
+                # Mettre à jour
+                for key, value in resultat.items():
+                    if key not in ["status", "error", "details_calcul", "employe_nom", "employe_prenom"]:
+                        if hasattr(salaire_existant, key):
+                            setattr(salaire_existant, key, value)
+                salaire_existant.statut = "valide"
+                salaire_existant.date_paiement = date.today()
+            else:
+                # Créer
+                salaire_data = {k: v for k, v in resultat.items() 
+                               if k not in ["status", "error", "details_calcul", "employe_nom", "employe_prenom"]}
+                salaire_existant = Salaire(**salaire_data)
+                salaire_existant.statut = "valide"
+                salaire_existant.date_paiement = date.today()
+                db.add(salaire_existant)
+            
+            # Marquer avances
+            avances = db.query(Avance).filter(
+                Avance.employe_id == employe_id,
+                Avance.annee_deduction == annee,
+                Avance.mois_deduction == mois,
+                Avance.deduit == False
+            ).all()
+            
+            for avance in avances:
+                avance.deduit = True
+                avance.date_deduction = date.today()
+            
+            # Mettre à jour crédits
+            credits = db.query(Credit).filter(
+                Credit.employe_id == employe_id,
+                Credit.statut == StatutCredit.EN_COURS
+            ).all()
+            
+            for credit in credits:
+                if credit.mois_restants > 0:
+                    credit.mois_restants -= 1
+                    if credit.mois_restants == 0:
+                        credit.statut = StatutCredit.TERMINE
+                        credit.date_fin_effective = date.today()
+            
+            success_count += 1
+            
+        except Exception as e:
+            error_count += 1
+            errors.append({
+                "employe_id": resultat.get("employe_id"),
+                "nom": resultat.get("employe_nom"),
+                "error": str(e)
+            })
+    
+    # Commit final
+    db.commit()
+    
+    return {
+        "message": f"Validation terminée : {success_count} réussis, {error_count} erreurs",
+        "annee": annee,
+        "mois": mois,
+        "success_count": success_count,
+        "error_count": error_count,
+        "errors": errors
+    }
+
+
+@router.get("/historique/{employe_id}")
+def get_historique_salaires(
+    employe_id: int,
+    annee: Optional[int] = None,
+    db: Session = Depends(get_db)
+):
+    """
+    Récupérer l'historique des salaires d'un employé
+    
+    Args:
+        employe_id: ID employé
+        annee: Filtrer par année (optionnel)
+    
+    Returns:
+        Liste des salaires enregistrés
+    """
+    query = db.query(Salaire).filter(Salaire.employe_id == employe_id)
+    
+    if annee:
+        query = query.filter(Salaire.annee == annee)
+    
+    salaires = query.order_by(Salaire.annee.desc(), Salaire.mois.desc()).all()
+    
+    return {
+        "employe_id": employe_id,
+        "total": len(salaires),
+        "salaires": salaires
+    }
+
+
+@router.delete("/supprimer/{salaire_id}")
+def supprimer_salaire(
+    salaire_id: int,
+    db: Session = Depends(get_db)
+):
+    """
+    Supprimer un salaire (si non payé)
+    
+    Permet d'annuler un salaire validé par erreur
+    ATTENTION : Ne restaure PAS les avances/crédits marqués comme déduits
+    """
+    salaire = db.query(Salaire).filter(Salaire.id == salaire_id).first()
+    
+    if not salaire:
+        raise HTTPException(status_code=404, detail="Salaire non trouvé")
+    
+    if salaire.statut == "paye":
+        raise HTTPException(status_code=400, detail="Impossible de supprimer un salaire déjà payé")
+    
+    db.delete(salaire)
+    db.commit()
+    
+    return {"message": "Salaire supprimé avec succès", "salaire_id": salaire_id}
+
+
+@router.get("/statistiques")
+def get_statistiques(
+    annee: int = Query(..., ge=2000, le=2100),
+    mois: int = Query(..., ge=1, le=12),
+    db: Session = Depends(get_db)
+):
+    """
+    Statistiques globales des salaires du mois
+    
+    Returns:
+        Total masse salariale, moyennes, min/max, etc.
+    """
+    salaires = db.query(Salaire).filter(
+        Salaire.annee == annee,
+        Salaire.mois == mois
+    ).all()
+    
+    if not salaires:
+        return {
+            "annee": annee,
+            "mois": mois,
+            "nombre_employes": 0,
+            "masse_salariale_brute": "0",
+            "masse_salariale_nette": "0",
+            "moyenne_salaire_net": "0",
+            "min_salaire": "0",
+            "max_salaire": "0"
+        }
+    
+    salaires_nets = [Decimal(str(s.salaire_net)) for s in salaires]
+    salaires_bruts = [Decimal(str(s.salaire_cotisable)) for s in salaires]
+    
+    return {
+        "annee": annee,
+        "mois": mois,
+        "nombre_employes": len(salaires),
+        "masse_salariale_brute": str(sum(salaires_bruts)),
+        "masse_salariale_nette": str(sum(salaires_nets)),
+        "moyenne_salaire_net": str(sum(salaires_nets) / len(salaires_nets)),
+        "min_salaire": str(min(salaires_nets)),
+        "max_salaire": str(max(salaires_nets)),
+        "total_irg": str(sum(Decimal(str(s.irg)) for s in salaires)),
+        "total_securite_sociale": str(sum(Decimal(str(s.retenue_securite_sociale)) for s in salaires))
+    }

@@ -15,6 +15,7 @@ import CongesList from './pages/Conges/CongesList';
 import SalaireCalcul from './pages/Salaires/SalaireCalcul';
 import EditionSalaires from './pages/Salaires/EditionSalaires';
 import SalaireHistorique from './pages/Salaires/SalaireHistorique';
+import TraitementSalaires from './pages/Salaires/TraitementSalaires'; // Nouveau v3.0
 import ParametresPage from './pages/Parametres/ParametresPage';
 import ParametresSalaires from './pages/Parametres/ParametresSalaires';
 import DatabaseConfigPage from './pages/DatabaseConfig/DatabaseConfigPage';
@@ -115,6 +116,13 @@ function AppRoutes() {
               } />
 
               {/* Salaires - ADMIN ONLY */}
+              {/* Nouveau système v3.0 - Traitement Salaires */}
+              <Route path="/salaires/traitement" element={
+                <ProtectedAdminRoute>
+                  <TraitementSalaires />
+                </ProtectedAdminRoute>
+              } />
+              {/* Ancien système (deprecated) */}
               <Route path="/salaires/edition" element={
                 <ProtectedAdminRoute>
                   <EditionSalaires />
