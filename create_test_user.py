@@ -4,7 +4,7 @@ sys.path.append('/opt/ay-hr/backend')
 
 # 0. Hack: Définir les variables d'env AVANT d'importer les modèles
 # Cela évite que pydantic ne crie si le .env n'est pas chargé
-os.environ["DATABASE_URL"] = "mysql+pymysql://ayhr_user:%21Yara%402014@localhost/ay_hr"
+os.environ["DATABASE_URL"] = "mysql+pymysql://root:%21Yara%402014@localhost/ay_hr"
 os.environ["SECRET_KEY"] = "temp_secret_key_for_script_execution"
 
 from sqlalchemy import create_engine
@@ -13,7 +13,7 @@ from passlib.context import CryptContext
 from models.user import User  # Assure-toi que ce chemin est correct via sys.path
 
 # 1. Config DB (Mot de passe encodé pour éviter les erreurs)
-DATABASE_URL = "mysql+pymysql://ayhr_user:%21Yara%402014@localhost/ay_hr"
+DATABASE_URL = "mysql+pymysql://root:%21Yara%402014@localhost/ay_hr"
 
 # 2. Config Hashing
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
