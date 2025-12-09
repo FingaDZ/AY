@@ -691,3 +691,150 @@ def generer_g29(
         media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
         headers={"Content-Disposition": f"attachment; filename=G29_{mois}_{annee}.xlsx"}
     )
+
+
+@router.get("/bulletin-paie/{employe_id}")
+def generer_bulletin_paie(
+    employe_id: int,
+    annee: int = Query(..., ge=2000, le=2100),
+    mois: int = Query(..., ge=1, le=12),
+    db: Session = Depends(get_db)
+):
+    """
+    Générer bulletin de paie PDF pour un employé
+    """
+    try:
+        # Calculer salaire
+        processor = SalaireProcessor(db)
+        resultat = processor.calculer_salaire_employe(employe_id, annee, mois)
+        
+        if resultat.get("status") != "OK":
+            raise HTTPException(status_code=400, detail=resultat.get("error"))
+        
+        # Récupérer employé
+        employe = db.query(Employe).get(employe_id)
+        if not employe:
+            raise HTTPException(status_code=404, detail="Employé non trouvé")
+        
+        # Générer PDF
+        from services.pdf_generator import PDFGenerator
+        pdf_gen = PDFGenerator()
+        pdf_buffer = pdf_gen.generate_bulletin_salaire(employe, resultat, annee, mois)
+        
+        filename = f"Bulletin_{employe.nom}_{employe.prenom}_{mois}_{annee}.pdf"
+        
+        return StreamingResponse(
+            pdf_buffer,
+            media_type="application/pdf",
+            headers={"Content-Disposition": f"attachment; filename={filename}"}
+        )
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"Erreur génération bulletin: {e}")
+        raise HTTPException(status_code=500, detail=f"Erreur: {str(e)}")
+
+
+@router.get("/rapport-global")
+def generer_rapport_global(
+    annee: int = Query(..., ge=2000, le=2100),
+    mois: int = Query(..., ge=1, le=12),
+    db: Session = Depends(get_db)
+):
+    """
+    Générer rapport PDF global des salaires du mois
+    """
+    try:
+        # Calculer tous les salaires
+        processor = SalaireProcessor(db)
+        resultats = processor.calculer_tous_salaires(annee, mois)
+        
+        # Filtrer uniquement les succès
+        resultats_ok = [r for r in resultats if r.get("status") == "OK"]
+        
+        if not resultats_ok:
+            raise HTTPException(status_code=400, detail="Aucun salaire calculé avec succès")
+        
+        # Générer PDF
+        from services.pdf_generator import PDFGenerator
+        pdf_gen = PDFGenerator()
+        pdf_buffer = pdf_gen.generate_rapport_salaires(resultats_ok, annee, mois, db)
+        
+        filename = f"Rapport_Salaires_{mois}_{annee}.pdf"
+        
+        return StreamingResponse(
+            pdf_buffer,
+            media_type="application/pdf",
+            headers={"Content-Disposition": f"attachment; filename={filename}"}
+        )
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"Erreur génération rapport: {e}")
+        raise HTTPException(status_code=500, detail=f"Erreur: {str(e)}")
+
+
+@router.post("/valider-tous")
+def valider_tous_salaires(
+    annee: int = Query(..., ge=2000, le=2100),
+    mois: int = Query(..., ge=1, le=12),
+    db: Session = Depends(get_db)
+):
+    """
+    Valider et enregistrer tous les salaires calculés du mois
+    """
+    try:
+        processor = SalaireProcessor(db)
+        resultats = processor.calculer_tous_salaires(annee, mois)
+        
+        success_count = 0
+        error_count = 0
+        
+        for resultat in resultats:
+            if resultat.get("status") == "OK":
+                try:
+                    # Créer ou mettre à jour salaire
+                    salaire_existant = db.query(Salaire).filter(
+                        Salaire.employe_id == resultat["employe_id"],
+                        Salaire.annee == annee,
+                        Salaire.mois == mois
+                    ).first()
+                    
+                    if salaire_existant:
+                        # Mise à jour
+                        for key, value in resultat.items():
+                            if hasattr(salaire_existant, key) and key not in ["status", "error", "alerte", "details_calcul"]:
+                                setattr(salaire_existant, key, value)
+                    else:
+                        # Création
+                        nouveau_salaire = Salaire(
+                            employe_id=resultat["employe_id"],
+                            annee=annee,
+                            mois=mois,
+                            **{k: v for k, v in resultat.items() if k not in ["status", "error", "alerte", "details_calcul", "employe_id"]}
+                        )
+                        db.add(nouveau_salaire)
+                    
+                    success_count += 1
+                    
+                except Exception as e:
+                    print(f"Erreur validation employé {resultat['employe_id']}: {e}")
+                    error_count += 1
+            else:
+                error_count += 1
+        
+        db.commit()
+        
+        return {
+            "success": True,
+            "message": f"{success_count} salaires validés, {error_count} erreurs",
+            "success_count": success_count,
+            "error_count": error_count
+        }
+        
+    except Exception as e:
+        db.rollback()
+        print(f"Erreur validation globale: {e}")
+        raise HTTPException(status_code=500, detail=f"Erreur: {str(e)}")
