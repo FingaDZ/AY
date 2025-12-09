@@ -7,7 +7,7 @@ from database import get_db
 from models import Employe
 from services.salary_engine import SalaryEngine
 
-router = APIRouter(prefix="/api/edition-salaires", tags=["Edition Salaires"])
+router = APIRouter(prefix="/edition-salaires", tags=["Edition Salaires"])
 logger = logging.getLogger(__name__)
 
 @router.get("/preview", response_model=List[Dict[str, Any]])
