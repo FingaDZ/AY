@@ -22,4 +22,3 @@ __all__ = [
     "edition_salaires",
     "traitement_salaires",
 ]
-]
