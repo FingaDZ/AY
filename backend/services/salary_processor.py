@@ -319,8 +319,7 @@ class SalaireProcessor:
         avances = self.db.query(Avance).filter(
             Avance.employe_id == employe_id,
             Avance.annee_deduction == annee,
-            Avance.mois_deduction == mois,
-            Avance.deduit == False
+            Avance.mois_deduction == mois
         ).all()
         total_avances = sum(Decimal(str(a.montant)) for a in avances)
         
