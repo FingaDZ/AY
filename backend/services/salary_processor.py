@@ -253,7 +253,7 @@ class SalaireProcessor:
             func.month(Mission.date_mission) == mois
         ).all()
         
-        total = sum(Decimal(str(m.montant or 0)) for m in missions)
+        total = sum(Decimal(str(m.prime_calculee or 0)) for m in missions)
         return total
     
     def _calculer_irg_proratise(
@@ -328,7 +328,7 @@ class SalaireProcessor:
             Credit.employe_id == employe_id,
             Credit.statut == StatutCredit.EN_COURS
         ).all()
-        total_credits = sum(Decimal(str(c.montant_mensuel)) for c in credits)
+        total_credits = sum(Decimal(str(c.montant_mensualite)) for c in credits)
         
         total_deductions = total_avances + total_credits
         

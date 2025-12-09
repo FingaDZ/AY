@@ -374,6 +374,8 @@ def get_statistiques(
                         "nombre_employes": 0,
                         "masse_salariale_brute": "0",
                         "masse_salariale_nette": "0",
+                        "masse_cotisable": "0",
+                        "masse_imposable": "0",
                         "moyenne_salaire_net": "0",
                         "min_salaire": "0",
                         "max_salaire": "0",
@@ -383,6 +385,7 @@ def get_statistiques(
                 
                 salaires_nets = [Decimal(str(r["salaire_net"])) for r in resultats_ok]
                 salaires_bruts = [Decimal(str(r["salaire_cotisable"])) for r in resultats_ok]
+                salaires_imposables = [Decimal(str(r["salaire_imposable"])) for r in resultats_ok]
                 
                 return {
                     "annee": annee,
@@ -390,6 +393,8 @@ def get_statistiques(
                     "nombre_employes": len(resultats_ok),
                     "masse_salariale_brute": str(sum(salaires_bruts)),
                     "masse_salariale_nette": str(sum(salaires_nets)),
+                    "masse_cotisable": str(sum(salaires_bruts)),
+                    "masse_imposable": str(sum(salaires_imposables)),
                     "moyenne_salaire_net": str(sum(salaires_nets) / len(salaires_nets)),
                     "min_salaire": str(min(salaires_nets)),
                     "max_salaire": str(max(salaires_nets)),
@@ -405,6 +410,8 @@ def get_statistiques(
                     "nombre_employes": 0,
                     "masse_salariale_brute": "0",
                     "masse_salariale_nette": "0",
+                    "masse_cotisable": "0",
+                    "masse_imposable": "0",
                     "moyenne_salaire_net": "0",
                     "min_salaire": "0",
                     "max_salaire": "0",
@@ -415,6 +422,7 @@ def get_statistiques(
         # Si salaires validés existent, utiliser ceux-ci
         salaires_nets = [Decimal(str(s.salaire_net)) for s in salaires]
         salaires_bruts = [Decimal(str(s.salaire_cotisable)) for s in salaires]
+        salaires_imposables = [Decimal(str(s.salaire_imposable)) for s in salaires]
         
         return {
             "annee": annee,
@@ -422,6 +430,8 @@ def get_statistiques(
             "nombre_employes": len(salaires),
             "masse_salariale_brute": str(sum(salaires_bruts)),
             "masse_salariale_nette": str(sum(salaires_nets)),
+            "masse_cotisable": str(sum(salaires_bruts)),
+            "masse_imposable": str(sum(salaires_imposables)),
             "moyenne_salaire_net": str(sum(salaires_nets) / len(salaires_nets)),
             "min_salaire": str(min(salaires_nets)),
             "max_salaire": str(max(salaires_nets)),
@@ -437,6 +447,8 @@ def get_statistiques(
             "nombre_employes": 0,
             "masse_salariale_brute": "0",
             "masse_salariale_nette": "0",
+            "masse_cotisable": "0",
+            "masse_imposable": "0",
             "moyenne_salaire_net": "0",
             "min_salaire": "0",
             "max_salaire": "0",

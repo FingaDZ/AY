@@ -226,13 +226,29 @@ const TraitementSalaires = () => {
 
                         <div className="bg-gradient-to-br from-green-500 to-green-600 rounded-lg shadow p-6 text-white">
                             <div className="flex items-center justify-between mb-2">
-                                <h3 className="text-sm font-medium opacity-90">Salaire Net Moyen</h3>
+                                <h3 className="text-sm font-medium opacity-90">Masse Cotisable</h3>
                                 <Calculator className="w-5 h-5 opacity-75" />
                             </div>
-                            <p className="text-3xl font-bold">{formaterMontant(statistiques.moyenne_salaire_net)}</p>
-                            <p className="text-sm opacity-75 mt-1">
-                                Min: {formaterMontant(statistiques.min_salaire)} | Max: {formaterMontant(statistiques.max_salaire)}
-                            </p>
+                            <p className="text-3xl font-bold">{formaterMontant(statistiques.masse_cotisable)}</p>
+                            <p className="text-sm opacity-75 mt-1">Base de calcul Sécurité Sociale</p>
+                        </div>
+
+                        <div className="bg-gradient-to-br from-purple-500 to-purple-600 rounded-lg shadow p-6 text-white">
+                            <div className="flex items-center justify-between mb-2">
+                                <h3 className="text-sm font-medium opacity-90">Masse Imposable</h3>
+                                <Calculator className="w-5 h-5 opacity-75" />
+                            </div>
+                            <p className="text-3xl font-bold">{formaterMontant(statistiques.masse_imposable)}</p>
+                            <p className="text-sm opacity-75 mt-1">Base de calcul IRG</p>
+                        </div>
+
+                        <div className="bg-gradient-to-br from-red-500 to-red-600 rounded-lg shadow p-6 text-white">
+                            <div className="flex items-center justify-between mb-2">
+                                <h3 className="text-sm font-medium opacity-90">Total IRG</h3>
+                                <TrendingUp className="w-5 h-5 opacity-75" />
+                            </div>
+                            <p className="text-3xl font-bold">{formaterMontant(statistiques.total_irg)}</p>
+                            <p className="text-sm opacity-75 mt-1">Impôt sur le revenu global</p>
                         </div>
                     </>
                 )}
