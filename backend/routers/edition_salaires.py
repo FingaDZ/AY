@@ -25,7 +25,7 @@ def get_salary_preview(
     
     # 1. Récupérer employés actifs
     # TODO: Filtrer par date de sortie eventuellement
-    employees = db.query(Employe).filter(Employe.active == True).all()
+    employees = db.query(Employe).filter(Employe.actif == True).all()
     
     for employee in employees:
         try:
