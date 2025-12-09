@@ -1,9 +1,29 @@
-- 🔒 **Rôles Utilisateur** : Réimplémentation complète du système de rôles (Admin vs Utilisateur)
-- 📊 **PDF Logistique** : Export PDF soldes logistiques (individuel + global)
-- 🛡️ **Protection Clients** : Impossible de supprimer clients avec mouvements logistiques
-- 🎯 **Filtrage Routes** : Utilisateurs limités à Dashboard + Missions uniquement
+# AY HR System v3.0.0
 
-### v2.4.1 - 05 décembre 2025
+## 🎉 Nouveautés Version 3.0.0 (Décembre 2025)
+- 🧮 **Traitement Salaires v3.0** : Module de calcul automatique des salaires
+  - Calcul proratisé intelligent (base 30 jours) pour toutes les primes/indemnités
+  - IRG extrapolé avec proratisation selon jours travaillés
+  - 4 statistiques en temps réel (Masse Nette, Cotisable, Imposable, Total IRG)
+  - Filtrage multi-critères (Nom, Statut, Salaire Min/Max)
+  - Tableau enrichi avec colonnes Cotisable, Imposable, IRG
+  - Interface compacte et homogénéisée
+  - Validation individuelle et globale
+
+## 📋 Historique des Versions
+
+### v3.0.0 - 09 décembre 2025
+- 🧮 **Traitement Salaires** : Module complet de calcul proratisé avec filtres avancés
+- 🔢 **Proratisation Base 30j** : Toutes primes/indemnités calculées proportionnellement
+- 📊 **Statistiques Enrichies** : 4 cartes (Masse Nette, Cotisable, Imposable, IRG)
+- 🔍 **Filtres Multi-Critères** : Recherche par Nom, Statut, Salaire Min/Max
+- 🐛 **Correctifs** : Fix Credit.montant_mensualite et Mission.prime_calculee
+
+### v2.5.0 - 08 décembre 2025
+- 🧮 **Traitement Salaires** : Première version (architecture + backend + frontend)
+- 🚫 **Désactivation** : Ancien module "Edition Salaires" désactivé
+
+### v2.4.3 - 07 décembre 2025
 - 📝 **PDF Ordre Mission** : Correction erreur 500 + améliorations mise en page
 - 📦 **Logistique** : Ajout cases Montant versé (x3) et Observations (x2.5)
 - 🔗 **API Logistique** : Route `/clients/{id}/logistics-balance` pour soldes

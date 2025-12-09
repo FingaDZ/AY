@@ -1,3 +1,50 @@
+## [3.0.0] - 2025-12-09
+### 🎉 Fonctionnalités Majeures
+- **Traitement Salaires v3.0** : Nouveau module de calcul des salaires automatique et traçable
+  - **Calcul Proratisé Intelligent** : Toutes les primes/indemnités proratisées sur base 30 jours (au lieu de montants mensuels fixes)
+  - **IRG Extrapolé** : Calcul IRG avec proratisation (salaire → base 30j → IRG 30j → IRG proratisé)
+  - **4 Statistiques en Temps Réel** : Masse Nette, Masse Cotisable, Masse Imposable, Total IRG
+  - **Colonnes Enrichies** : Tableau avec Salaire Base, Cotisable, Imposable, IRG, Net
+  - **Filtrage Multi-Critères** : Recherche par Nom, Statut (OK/Alerte/Erreur), Salaire Min/Max
+  - **Interface Compacte** : Cartes statistiques homogénéisées et optimisées
+  - **Validation Individuelle** : Aperçu détaillé 13 étapes + bouton Valider
+  - **Validation Globale** : Bouton "Valider Tous" pour enregistrement en base
+
+### 🔧 Améliorations Backend
+- **Proratisation Base 30 Jours** : Correction calcul primes/indemnités
+  - Indemnité Nuisance → proratisée
+  - IFSP → proratisé
+  - IEP → proratisé
+  - Prime Encouragement → proratisée
+  - Prime Chauffeur → proratisée
+  - Prime Nuit Agent Sécurité → proratisée
+  - Panier → proratisé
+  - Prime Transport → proratisée
+  - Prime Femme Foyer → proratisée
+- **Correctifs Attributs** : Fix `Credit.montant_mensualite` et `Mission.prime_calculee`
+- **Statistiques API** : Ajout `masse_cotisable`, `masse_imposable`, `total_irg`
+
+### 🎨 Améliorations Frontend
+- **Cartes Statistiques** : Design compact et homogénéisé (grid 6 colonnes)
+- **Filtres Avancés** : Barre de recherche multi-critères avec compteur résultats
+- **Colonnes Tableau** : Ajout Salaire Cotisable, Imposable, IRG avec couleurs différenciées
+- **Responsive** : Optimisation affichage sur différentes tailles d'écran
+
+### 📦 Versions
+- Backend : `3.0.0`
+- Frontend : `3.0.0`
+- Login : `3.0.0`
+- Layout/Sidebar : `3.0.0`
+
+---
+
+## [2.5.0] - 2025-12-08
+### ✨ Fonctionnalités
+- **Traitement Salaires** : Première version module calcul salaires (architecture + backend + frontend)
+- **Désactivation Edition Salaires** : Ancien module désactivé dans menu
+
+## [2.3.0] - 2025-11-29
+### 🗑️ Simplification
 - **Nettoyage** : Suppression du module "Logs Incomplets" (simplification du flux)
 - **Version** : Passage global à la version 2.3.0
 

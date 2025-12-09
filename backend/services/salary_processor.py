@@ -112,15 +112,18 @@ class SalaireProcessor:
                 taux_horaire = salaire_base / (jours_ouvrables * 8)
                 heures_supp = Decimal(str(heures_supplementaires_pointage)) * taux_horaire * Decimal('1.5')
             
-            # 7. Primes COTISABLES (montants fixes)
-            indemnite_nuisance = Decimal(str(self.params.indemnite_nuisance))
-            ifsp = Decimal(str(self.params.ifsp))
-            iep = Decimal(str(self.params.iep)) if anciennete >= 1 else Decimal(0)
-            prime_encouragement = Decimal(str(self.params.prime_encouragement)) if anciennete >= 1 else Decimal(0)
+            # 7. Primes COTISABLES (proratisées base 30 jours)
+            # Si congés payés → montant plein, sinon proratisation
+            facteur_proratisation = Decimal(1) if jours_conges > 0 else (Decimal(str(jours_travailles)) / Decimal('30'))
             
-            # Primes conditionnelles
-            prime_chauffeur = Decimal(str(self.params.prime_chauffeur)) if employe.poste_travail == "Chauffeur" else Decimal(0)
-            prime_nuit = Decimal(str(self.params.prime_nuit_agent_securite)) if employe.prime_nuit_agent_securite else Decimal(0)
+            indemnite_nuisance = (Decimal(str(self.params.indemnite_nuisance)) * facteur_proratisation).quantize(Decimal('0.01'), ROUND_HALF_UP)
+            ifsp = (Decimal(str(self.params.ifsp)) * facteur_proratisation).quantize(Decimal('0.01'), ROUND_HALF_UP)
+            iep = (Decimal(str(self.params.iep)) * facteur_proratisation).quantize(Decimal('0.01'), ROUND_HALF_UP) if anciennete >= 1 else Decimal(0)
+            prime_encouragement = (Decimal(str(self.params.prime_encouragement)) * facteur_proratisation).quantize(Decimal('0.01'), ROUND_HALF_UP) if anciennete >= 1 else Decimal(0)
+            
+            # Primes conditionnelles (proratisées base 30 jours)
+            prime_chauffeur = (Decimal(str(self.params.prime_chauffeur)) * facteur_proratisation).quantize(Decimal('0.01'), ROUND_HALF_UP) if employe.poste_travail == "Chauffeur" else Decimal(0)
+            prime_nuit = (Decimal(str(self.params.prime_nuit_agent_securite)) * facteur_proratisation).quantize(Decimal('0.01'), ROUND_HALF_UP) if employe.prime_nuit_agent_securite else Decimal(0)
             
             # Prime déplacement (missions du mois)
             prime_deplacement = self._calculer_prime_missions(employe_id, annee, mois)
@@ -144,9 +147,9 @@ class SalaireProcessor:
             taux_ss = Decimal(str(self.params.taux_securite_sociale)) / 100
             retenue_ss = (salaire_cotisable * taux_ss).quantize(Decimal('0.01'), ROUND_HALF_UP)
             
-            # 9. Primes NON COTISABLES
-            panier = Decimal(str(self.params.panier))
-            prime_transport = Decimal(str(self.params.prime_transport))
+            # 9. Primes NON COTISABLES (proratisées base 30 jours)
+            panier = (Decimal(str(self.params.panier)) * facteur_proratisation).quantize(Decimal('0.01'), ROUND_HALF_UP)
+            prime_transport = (Decimal(str(self.params.prime_transport)) * facteur_proratisation).quantize(Decimal('0.01'), ROUND_HALF_UP)
             
             # 10. Salaire imposable
             salaire_imposable = salaire_cotisable - retenue_ss + panier + prime_transport
@@ -166,8 +169,8 @@ class SalaireProcessor:
                 salaire_imposable - irg
             )
             
-            # 13. Prime femme foyer
-            prime_femme_foyer = Decimal(str(self.params.prime_femme_foyer)) if employe.femme_au_foyer else Decimal(0)
+            # 13. Prime femme foyer (proratisée base 30 jours)
+            prime_femme_foyer = (Decimal(str(self.params.prime_femme_foyer)) * facteur_proratisation).quantize(Decimal('0.01'), ROUND_HALF_UP) if employe.femme_au_foyer else Decimal(0)
             
             # 14. Salaire net final
             salaire_net = (

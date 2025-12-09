@@ -8,7 +8,9 @@ import {
     AlertTriangle,
     RefreshCw,
     FileText,
-    TrendingUp
+    TrendingUp,
+    Search,
+    X
 } from 'lucide-react';
 import axios from 'axios';
 import { toast } from 'react-hot-toast';
@@ -29,6 +31,12 @@ const TraitementSalaires = () => {
     const [statistiques, setStatistiques] = useState(null);
     const [selectedEmploye, setSelectedEmploye] = useState(null);
     const [showDetails, setShowDetails] = useState(false);
+    
+    // Filtres de recherche
+    const [filtreNom, setFiltreNom] = useState('');
+    const [filtreStatut, setFiltreStatut] = useState('TOUS');
+    const [filtreSalaireMin, setFiltreSalaireMin] = useState('');
+    const [filtreSalaireMax, setFiltreSalaireMax] = useState('');
 
     useEffect(() => {
         chargerSalaires();
@@ -138,6 +146,38 @@ const TraitementSalaires = () => {
         );
     };
 
+    // Fonction de filtrage
+    const salairesFiltres = salaires.filter(salaire => {
+        // Filtre par nom
+        const nomComplet = `${salaire.employe_nom} ${salaire.employe_prenom}`.toLowerCase();
+        if (filtreNom && !nomComplet.includes(filtreNom.toLowerCase())) {
+            return false;
+        }
+
+        // Filtre par statut
+        if (filtreStatut !== 'TOUS') {
+            if (filtreStatut === 'OK' && salaire.status !== 'OK') return false;
+            if (filtreStatut === 'ERROR' && salaire.status !== 'ERROR') return false;
+            if (filtreStatut === 'ALERTE' && !salaire.alerte) return false;
+        }
+
+        // Filtre par salaire net
+        if (salaire.status === 'OK') {
+            const salaireNet = parseFloat(salaire.salaire_net);
+            if (filtreSalaireMin && salaireNet < parseFloat(filtreSalaireMin)) return false;
+            if (filtreSalaireMax && salaireNet > parseFloat(filtreSalaireMax)) return false;
+        }
+
+        return true;
+    });
+
+    const reinitialiserFiltres = () => {
+        setFiltreNom('');
+        setFiltreStatut('TOUS');
+        setFiltreSalaireMin('');
+        setFiltreSalaireMax('');
+    };
+
     return (
         <div className="p-6 max-w-7xl mx-auto">
             {/* En-tête */}
@@ -156,11 +196,11 @@ const TraitementSalaires = () => {
             </div>
 
             {/* Sélection période + Statistiques */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+            <div className="grid grid-cols-1 lg:grid-cols-6 gap-4 mb-6">
                 {/* Sélection */}
-                <div className="bg-white rounded-lg shadow p-6">
+                <div className="bg-white rounded-lg shadow p-4 lg:col-span-2">
                     <h3 className="text-lg font-semibold mb-4">Période</h3>
-                    <div className="space-y-4">
+                    <div className="space-y-3">
                         <div>
                             <label className="block text-sm font-medium text-gray-700 mb-1">
                                 Année
@@ -168,7 +208,7 @@ const TraitementSalaires = () => {
                             <select
                                 value={annee}
                                 onChange={(e) => setAnnee(parseInt(e.target.value))}
-                                className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                                className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm"
                             >
                                 {[...Array(5)].map((_, i) => {
                                     const year = currentYear - 2 + i;
@@ -184,7 +224,7 @@ const TraitementSalaires = () => {
                             <select
                                 value={mois}
                                 onChange={(e) => setMois(parseInt(e.target.value))}
-                                className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                                className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm"
                             >
                                 {MOIS.map((m, index) => (
                                     <option key={index + 1} value={index + 1}>{m}</option>
@@ -195,7 +235,7 @@ const TraitementSalaires = () => {
                         <button
                             onClick={chargerSalaires}
                             disabled={loading}
-                            className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50"
+                            className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 text-sm"
                         >
                             <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
                             {loading ? 'Calcul...' : 'Recalculer'}
@@ -204,7 +244,7 @@ const TraitementSalaires = () => {
                         <button
                             onClick={validerTous}
                             disabled={loading || salaires.length === 0}
-                            className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 disabled:opacity-50"
+                            className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 disabled:opacity-50 text-sm"
                         >
                             <Save className="w-4 h-4" />
                             Valider Tous
@@ -212,46 +252,119 @@ const TraitementSalaires = () => {
                     </div>
                 </div>
 
-                {/* Statistiques */}
+                {/* Statistiques - 4 cartes compactes */}
                 {statistiques && (
                     <>
-                        <div className="bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg shadow p-6 text-white">
-                            <div className="flex items-center justify-between mb-2">
-                                <h3 className="text-sm font-medium opacity-90">Masse Salariale Nette</h3>
-                                <TrendingUp className="w-5 h-5 opacity-75" />
+                        <div className="bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg shadow p-4 text-white">
+                            <div className="flex items-center justify-between mb-1">
+                                <h3 className="text-xs font-medium opacity-90">Masse Nette</h3>
+                                <TrendingUp className="w-4 h-4 opacity-75" />
                             </div>
-                            <p className="text-3xl font-bold">{formaterMontant(statistiques.masse_salariale_nette)}</p>
-                            <p className="text-sm opacity-75 mt-1">{statistiques.nombre_employes} employés</p>
+                            <p className="text-xl font-bold">{formaterMontant(statistiques.masse_salariale_nette)}</p>
+                            <p className="text-xs opacity-75 mt-1">{statistiques.nombre_employes} employés</p>
                         </div>
 
-                        <div className="bg-gradient-to-br from-green-500 to-green-600 rounded-lg shadow p-6 text-white">
-                            <div className="flex items-center justify-between mb-2">
-                                <h3 className="text-sm font-medium opacity-90">Masse Cotisable</h3>
-                                <Calculator className="w-5 h-5 opacity-75" />
+                        <div className="bg-gradient-to-br from-green-500 to-green-600 rounded-lg shadow p-4 text-white">
+                            <div className="flex items-center justify-between mb-1">
+                                <h3 className="text-xs font-medium opacity-90">Masse Cotisable</h3>
+                                <Calculator className="w-4 h-4 opacity-75" />
                             </div>
-                            <p className="text-3xl font-bold">{formaterMontant(statistiques.masse_cotisable)}</p>
-                            <p className="text-sm opacity-75 mt-1">Base de calcul Sécurité Sociale</p>
+                            <p className="text-xl font-bold">{formaterMontant(statistiques.masse_cotisable)}</p>
+                            <p className="text-xs opacity-75 mt-1">Base Sécu Sociale</p>
                         </div>
 
-                        <div className="bg-gradient-to-br from-purple-500 to-purple-600 rounded-lg shadow p-6 text-white">
-                            <div className="flex items-center justify-between mb-2">
-                                <h3 className="text-sm font-medium opacity-90">Masse Imposable</h3>
-                                <Calculator className="w-5 h-5 opacity-75" />
+                        <div className="bg-gradient-to-br from-purple-500 to-purple-600 rounded-lg shadow p-4 text-white">
+                            <div className="flex items-center justify-between mb-1">
+                                <h3 className="text-xs font-medium opacity-90">Masse Imposable</h3>
+                                <Calculator className="w-4 h-4 opacity-75" />
                             </div>
-                            <p className="text-3xl font-bold">{formaterMontant(statistiques.masse_imposable)}</p>
-                            <p className="text-sm opacity-75 mt-1">Base de calcul IRG</p>
+                            <p className="text-xl font-bold">{formaterMontant(statistiques.masse_imposable)}</p>
+                            <p className="text-xs opacity-75 mt-1">Base IRG</p>
                         </div>
 
-                        <div className="bg-gradient-to-br from-red-500 to-red-600 rounded-lg shadow p-6 text-white">
-                            <div className="flex items-center justify-between mb-2">
-                                <h3 className="text-sm font-medium opacity-90">Total IRG</h3>
-                                <TrendingUp className="w-5 h-5 opacity-75" />
+                        <div className="bg-gradient-to-br from-red-500 to-red-600 rounded-lg shadow p-4 text-white">
+                            <div className="flex items-center justify-between mb-1">
+                                <h3 className="text-xs font-medium opacity-90">Total IRG</h3>
+                                <TrendingUp className="w-4 h-4 opacity-75" />
                             </div>
-                            <p className="text-3xl font-bold">{formaterMontant(statistiques.total_irg)}</p>
-                            <p className="text-sm opacity-75 mt-1">Impôt sur le revenu global</p>
+                            <p className="text-xl font-bold">{formaterMontant(statistiques.total_irg)}</p>
+                            <p className="text-xs opacity-75 mt-1">Impôt global</p>
                         </div>
                     </>
                 )}
+            </div>
+
+            {/* Filtres de recherche */}
+            <div className="bg-white rounded-lg shadow p-4 mb-4">
+                <div className="flex items-center justify-between mb-3">
+                    <h3 className="text-sm font-semibold text-gray-700 flex items-center gap-2">
+                        <Search className="w-4 h-4" />
+                        Filtres de recherche
+                    </h3>
+                    <button
+                        onClick={reinitialiserFiltres}
+                        className="text-xs text-gray-500 hover:text-gray-700 flex items-center gap-1"
+                    >
+                        <X className="w-3 h-3" />
+                        Réinitialiser
+                    </button>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
+                    <div>
+                        <label className="block text-xs font-medium text-gray-700 mb-1">
+                            Nom / Prénom
+                        </label>
+                        <input
+                            type="text"
+                            value={filtreNom}
+                            onChange={(e) => setFiltreNom(e.target.value)}
+                            placeholder="Rechercher..."
+                            className="w-full px-3 py-1.5 border border-gray-300 rounded-md text-sm"
+                        />
+                    </div>
+                    <div>
+                        <label className="block text-xs font-medium text-gray-700 mb-1">
+                            Statut
+                        </label>
+                        <select
+                            value={filtreStatut}
+                            onChange={(e) => setFiltreStatut(e.target.value)}
+                            className="w-full px-3 py-1.5 border border-gray-300 rounded-md text-sm"
+                        >
+                            <option value="TOUS">Tous</option>
+                            <option value="OK">OK</option>
+                            <option value="ALERTE">Alerte</option>
+                            <option value="ERROR">Erreur</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label className="block text-xs font-medium text-gray-700 mb-1">
+                            Salaire Min (DA)
+                        </label>
+                        <input
+                            type="number"
+                            value={filtreSalaireMin}
+                            onChange={(e) => setFiltreSalaireMin(e.target.value)}
+                            placeholder="0"
+                            className="w-full px-3 py-1.5 border border-gray-300 rounded-md text-sm"
+                        />
+                    </div>
+                    <div>
+                        <label className="block text-xs font-medium text-gray-700 mb-1">
+                            Salaire Max (DA)
+                        </label>
+                        <input
+                            type="number"
+                            value={filtreSalaireMax}
+                            onChange={(e) => setFiltreSalaireMax(e.target.value)}
+                            placeholder="999999"
+                            className="w-full px-3 py-1.5 border border-gray-300 rounded-md text-sm"
+                        />
+                    </div>
+                </div>
+                <p className="text-xs text-gray-500 mt-2">
+                    {salairesFiltres.length} résultat(s) sur {salaires.length} employé(s)
+                </p>
             </div>
 
             {/* Liste des salaires */}
@@ -260,19 +373,28 @@ const TraitementSalaires = () => {
                     <table className="min-w-full divide-y divide-gray-200">
                         <thead className="bg-gray-50">
                             <tr>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                                     Employé
                                 </th>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                                     Salaire Base
                                 </th>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                    Salaire Cotisable
+                                </th>
+                                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                    Salaire Imposable
+                                </th>
+                                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                    IRG
+                                </th>
+                                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                                     Salaire Net
                                 </th>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                                     Statut
                                 </th>
-                                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
                                     Actions
                                 </th>
                             </tr>
@@ -280,37 +402,46 @@ const TraitementSalaires = () => {
                         <tbody className="bg-white divide-y divide-gray-200">
                             {loading ? (
                                 <tr>
-                                    <td colSpan="5" className="px-6 py-12 text-center">
+                                    <td colSpan="8" className="px-6 py-12 text-center">
                                         <RefreshCw className="w-8 h-8 animate-spin mx-auto text-blue-600 mb-2" />
                                         <p className="text-gray-500">Calcul des salaires en cours...</p>
                                     </td>
                                 </tr>
-                            ) : salaires.length === 0 ? (
+                            ) : salairesFiltres.length === 0 ? (
                                 <tr>
-                                    <td colSpan="5" className="px-6 py-12 text-center text-gray-500">
-                                        Aucun salaire calculé
+                                    <td colSpan="8" className="px-6 py-12 text-center text-gray-500">
+                                        {salaires.length === 0 ? 'Aucun salaire calculé' : 'Aucun résultat trouvé'}
                                     </td>
                                 </tr>
                             ) : (
-                                salaires.map((salaire) => (
+                                salairesFiltres.map((salaire) => (
                                     <tr key={salaire.employe_id} className="hover:bg-gray-50">
-                                        <td className="px-6 py-4 whitespace-nowrap">
+                                        <td className="px-4 py-3 whitespace-nowrap">
                                             <div className="text-sm font-medium text-gray-900">
                                                 {salaire.employe_nom} {salaire.employe_prenom}
                                             </div>
                                         </td>
-                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                        <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-500">
                                             {salaire.status === 'OK' ? formaterMontant(salaire.salaire_base) : '-'}
                                         </td>
-                                        <td className="px-6 py-4 whitespace-nowrap">
-                                            <div className="text-sm font-semibold text-gray-900">
+                                        <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-700 font-medium">
+                                            {salaire.status === 'OK' ? formaterMontant(salaire.salaire_cotisable) : '-'}
+                                        </td>
+                                        <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-700 font-medium">
+                                            {salaire.status === 'OK' ? formaterMontant(salaire.salaire_imposable) : '-'}
+                                        </td>
+                                        <td className="px-4 py-3 whitespace-nowrap text-sm text-red-600 font-semibold">
+                                            {salaire.status === 'OK' ? formaterMontant(salaire.irg) : '-'}
+                                        </td>
+                                        <td className="px-4 py-3 whitespace-nowrap">
+                                            <div className="text-sm font-bold text-green-700">
                                                 {salaire.status === 'OK' ? formaterMontant(salaire.salaire_net) : '-'}
                                             </div>
                                         </td>
-                                        <td className="px-6 py-4 whitespace-nowrap">
+                                        <td className="px-4 py-3 whitespace-nowrap">
                                             {getStatusBadge(salaire)}
                                         </td>
-                                        <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                                        <td className="px-4 py-3 whitespace-nowrap text-right text-sm font-medium">
                                             <div className="flex items-center justify-end gap-2">
                                                 {salaire.status === 'OK' && (
                                                     <>
