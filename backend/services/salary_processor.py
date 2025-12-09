@@ -87,11 +87,18 @@ class SalaireProcessor:
             # 3. Calcul ancienneté
             anciennete = self.calculer_anciennete(employe.date_recrutement, annee, mois)
             
-            # 4. Calcul salaire de base proratisé
-            salaire_base = Decimal(str(employe.salaire_base))
-            jours_travailles = pointage.jours_travailles or 0
-            jours_conges = pointage.jours_conges or 0
+            # 4. Calcul totaux pointage
+            totaux = pointage.calculer_totaux()
+            jours_travailles = totaux.get("jours_travailles", 0)
+            jours_conges = totaux.get("jours_conges", 0)
+            heures_supplementaires_pointage = totaux.get("heures_supplementaires", 0)
             jours_ouvrables = self.params.jours_ouvrables_mois or 26
+            
+            # 5. Calcul salaire de base proratisé
+            salaire_base = Decimal(str(employe.salaire_base))
+            
+            # 5. Calcul salaire de base proratisé
+            salaire_base = Decimal(str(employe.salaire_base))
             
             # Si congés payés → pas de proratisation
             if jours_conges > 0:
@@ -99,13 +106,13 @@ class SalaireProcessor:
             else:
                 salaire_base_proratis = (salaire_base / jours_ouvrables) * jours_travailles
             
-            # 5. Heures supplémentaires
+            # 6. Heures supplémentaires
             heures_supp = Decimal(0)
-            if self.params.activer_heures_supp and pointage.heures_supplementaires:
+            if self.params.activer_heures_supp and heures_supplementaires_pointage > 0:
                 taux_horaire = salaire_base / (jours_ouvrables * 8)
-                heures_supp = Decimal(str(pointage.heures_supplementaires)) * taux_horaire * Decimal('1.5')
+                heures_supp = Decimal(str(heures_supplementaires_pointage)) * taux_horaire * Decimal('1.5')
             
-            # 6. Primes COTISABLES (montants fixes)
+            # 7. Primes COTISABLES (montants fixes)
             indemnite_nuisance = Decimal(str(self.params.indemnite_nuisance))
             ifsp = Decimal(str(self.params.ifsp))
             iep = Decimal(str(self.params.iep)) if anciennete >= 1 else Decimal(0)
@@ -118,7 +125,7 @@ class SalaireProcessor:
             # Prime déplacement (missions du mois)
             prime_deplacement = self._calculer_prime_missions(employe_id, annee, mois)
             
-            # 7. Salaire cotisable
+            # 8. Salaire cotisable
             salaire_cotisable = (
                 salaire_base_proratis
                 + heures_supp
