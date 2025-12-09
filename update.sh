@@ -136,6 +136,11 @@ info "[3/8] Arrêt des services..."
 systemctl stop ayhr-backend 2>> "$LOG_FILE"
 systemctl stop ayhr-frontend 2>> "$LOG_FILE"
 
+# Force kill port 8000 if stuck
+if command -v fuser >/dev/null 2>&1; then
+    fuser -k 8000/tcp >> "$LOG_FILE" 2>&1
+fi
+
 success "Services arrêtés"
 
 #==============================================================================
