@@ -103,11 +103,12 @@ const TraitementSalaires = () => {
     };
 
     const formaterMontant = (montant) => {
+        const valeur = parseFloat(montant) || 0;
         return new Intl.NumberFormat('fr-DZ', {
             style: 'currency',
             currency: 'DZD',
             minimumFractionDigits: 2
-        }).format(montant);
+        }).format(valeur);
     };
 
     const getStatusBadge = (salaire) => {
