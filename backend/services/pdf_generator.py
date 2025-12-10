@@ -3011,8 +3011,10 @@ class PDFGenerator:
 
     def generate_tous_bulletins_combines(self, employes_data: List[Dict], periode: Dict) -> BytesIO:
         """
-        Générer un PDF combiné contenant tous les bulletins de paie
+        Générer un PDF combiné contenant tous les bulletins de paie COMPLETS
+        Format identique aux bulletins v1.3.0 avec tous les détails
         + Page de garde
+        + Bulletins individuels complets
         + Tableau récapitulatif
         """
         buffer = BytesIO()
@@ -3075,84 +3077,202 @@ class PDFGenerator:
         
         story.append(PageBreak())
         
-        # 2. BULLETINS INDIVIDUELS
-        # ------------------------
+        # 2. BULLETINS INDIVIDUELS COMPLETS
+        # -----------------------------------
         for i, emp in enumerate(employes_data):
-            # Utiliser la logique existante pour générer un bulletin
-            # Note: On réimplémente une version simplifiée ou on appelle une méthode interne qui retourne des flowables
-            # Pour simplifier ici, on va recréer le contenu du bulletin
-            
-            # En-tête société
-            story.extend(self._create_company_header())
-            story.append(Spacer(1, 0.5*cm))
-            
-            # Titre bulletin
-            story.append(Paragraph(f"BULLETIN DE PAIE - {mois_str}", self.styles['CustomTitle']))
-            
-            # Infos Employé (Tableau)
             emp_info = emp['employe_data']
             sal_data = emp['salaire_data']
             
-            # ... (logique similaire à generate_bulletin_paie mais ajoutée à story)
-            # Pour l'instant on met un résumé pour ne pas dupliquer tout le code complexe
-            # Idéalement il faudrait refactoriser generate_bulletin_paie pour retourner une liste de Flowables
+            # Générer le bulletin complet en appelant la méthode existante
+            # Créer un buffer temporaire pour chaque bulletin
+            bulletin_buffer = self.generate_bulletin_paie(
+                emp_info, 
+                {**sal_data, 'mois': periode['mois'], 'annee': periode['annee']},
+                periode
+            )
             
-            info_data = [
-                ['Matricule', str(emp_info.get('id', '')), 'Département', emp_info.get('poste_travail', '')],
-                ['Nom', emp_info.get('nom', ''), 'Prénom', emp_info.get('prenom', '')],
-                ['Date entrée', emp_info.get('date_recrutement', ''), 'N° SS', emp_info.get('numero_secu_sociale', '')],
-                ['Situation', emp_info.get('situation_familiale', ''), 'Enfants', str(emp_info.get('nombre_enfants', 0))]
+            # Lire le PDF du bulletin et l'ajouter à notre document
+            # Note: Pour combiner les PDFs, on doit extraire les éléments
+            # Ici on va recréer le bulletin directement dans story
+            
+            # QR Code
+            salaire_net_format = f"{float(sal_data.get('salaire_net', 0)):,.2f}".replace(',', ' ')
+            salaire_brut_format = f"{float(sal_data.get('salaire_brut', sal_data.get('salaire_cotisable', 0))):,.2f}".replace(',', ' ')
+            qr_data = f"ID: {emp_info.get('id', '')}\n" \
+                      f"Nom: {emp_info.get('prenom', '')} {emp_info.get('nom', '')}\n" \
+                      f"Poste: {emp_info.get('poste_travail', 'N/A')}\n" \
+                      f"N°SS: {emp_info.get('numero_secu_sociale', 'N/A')}\n" \
+                      f"Date Recrutement: {emp_info.get('date_recrutement', 'N/A')}\n" \
+                      f"Mois: {periode['mois']}/{periode['annee']}\n" \
+                      f"Salaire Brut: {salaire_brut_format} DA\n" \
+                      f"Salaire Net: {salaire_net_format} DA"
+            
+            qr = qrcode.QRCode(version=1, box_size=10, border=1)
+            qr.add_data(qr_data)
+            qr.make(fit=True)
+            qr_img = qr.make_image(fill_color="black", back_color="white")
+            
+            qr_buffer_temp = BytesIO()
+            qr_img.save(qr_buffer_temp, format='PNG')
+            qr_buffer_temp.seek(0)
+            qr_image = Image(qr_buffer_temp, width=2*cm, height=2*cm)
+            
+            # En-tête avec QR
+            header_data = [
+                [Paragraph("<b>BULLETIN DE PAIE</b>", self.styles['CustomTitle']), qr_image]
             ]
-            
-            t = Table(info_data, colWidths=[2.5*cm, 6*cm, 2.5*cm, 6*cm])
-            t.setStyle(TableStyle([
-                ('GRID', (0,0), (-1,-1), 0.5, colors.grey),
-                ('BACKGROUND', (0,0), (0,-1), colors.lightgrey),
-                ('BACKGROUND', (2,0), (2,-1), colors.lightgrey),
-                ('FONTSIZE', (0,0), (-1,-1), 8),
-                ('PADDING', (0,0), (-1,-1), 4),
+            header_table = Table(header_data, colWidths=[15*cm, 3*cm])
+            header_table.setStyle(TableStyle([
+                ('VALIGN', (0, 0), (-1, -1), 'TOP'),
+                ('ALIGN', (0, 0), (0, 0), 'CENTER'),
+                ('ALIGN', (1, 0), (1, 0), 'RIGHT'),
             ]))
-            story.append(t)
+            story.append(header_table)
+            story.append(Spacer(1, 0.3*cm))
+            
+            # Période
+            periode_text = Paragraph(f"<b>Période:</b> {mois_str}", self.styles['CustomBody'])
+            story.append(periode_text)
             story.append(Spacer(1, 0.5*cm))
             
-            # Corps du bulletin (simplifié pour cet exemple, à étoffer)
-            # Ligne de salaire de base - Convertir toutes les valeurs en float
-            salaire_base_proratis = float(sal_data.get('salaire_base_proratis', 0))
-            heures_supp = float(sal_data.get('heures_supplementaires', 0))
-            salaire_cotisable = float(sal_data.get('salaire_cotisable', 0))
-            primes = salaire_cotisable - salaire_base_proratis - heures_supp
+            # Récupérer paramètres entreprise
+            params = self._get_parametres()
+            company_name = (params.raison_sociale or params.nom_entreprise or "Entreprise") if params else "Entreprise"
+            company_address = params.adresse if params and params.adresse else "Adresse non définie"
+            company_rc = params.rc if params and params.rc else "Non défini"
+            company_ss_employeur = params.numero_secu_employeur if params and params.numero_secu_employeur else "Non défini"
             
-            rubriques = [
-                ['Rubrique', 'Base', 'Taux', 'Gains', 'Retenues'],
-                ['Salaire de base', f"{salaire_base_proratis:,.2f}", '', f"{salaire_base_proratis:,.2f}", ''],
-                ['Heures Supplémentaires', '', '', f"{heures_supp:,.2f}", ''],
-                ['Primes & Indemnités', '', '', f"{primes:,.2f}", ''],
-                ['Sécurité Sociale (9%)', f"{salaire_cotisable:,.2f}", '9%', '', f"{float(sal_data.get('retenue_securite_sociale', 0)):,.2f}"],
-                ['IRG', f"{float(sal_data.get('salaire_imposable', 0)):,.2f}", '', '', f"{float(sal_data.get('irg', 0)):,.2f}"],
-                ['Avances', '', '', '', f"{float(sal_data.get('total_avances', 0)):,.2f}"],
-                ['TOTAL', '', '', f"{float(sal_data.get('total_gains', 0)):,.2f}", f"{float(sal_data.get('total_retenues', 0)):,.2f}"],
+            # Tableau EMPLOYEUR et EMPLOYÉ
+            info_data = [
+                [Paragraph("<b>EMPLOYEUR</b>", self.styles['CustomBody']), '', 
+                 Paragraph("<b>EMPLOYÉ</b>", self.styles['CustomBody']), ''],
+                ['Raison Sociale:', Paragraph(company_name, self.styles['CustomBody']),
+                 'Nom:', f"{emp_info.get('prenom', '')} {emp_info.get('nom', '')}"],
+                ['RC:', company_rc,
+                 'Poste:', emp_info.get('poste_travail', '')],
+                ['N° SS EMPLOYEUR:', company_ss_employeur,
+                 'N° Sécurité Sociale:', emp_info.get('numero_secu_sociale', 'N/A')],
+                ['Adresse:', Paragraph(company_address, self.styles['CustomBody']),
+                 'Date de recrutement:', str(emp_info.get('date_recrutement', 'N/A'))],
             ]
             
-            # Net à payer en grand
-            story.append(Spacer(1, 1*cm))
-            net_table = Table([
-                ['NET À PAYER', f"{float(sal_data.get('salaire_net', 0)):,.2f} DA"]
-            ], colWidths=[12*cm, 5*cm])
-            net_table.setStyle(TableStyle([
-                ('BACKGROUND', (0,0), (-1,-1), colors.lightgrey),
-                ('FONTSIZE', (0,0), (-1,-1), 12),
-                ('FONTNAME', (0,0), (-1,-1), 'Helvetica-Bold'),
-                ('ALIGN', (1,0), (1,0), 'RIGHT'),
-                ('BOX', (0,0), (-1,-1), 1, colors.black),
-                ('PADDING', (0,0), (-1,-1), 10),
+            info_table = Table(info_data, colWidths=[3.5*cm, 5*cm, 3.5*cm, 6*cm])
+            info_table.setStyle(TableStyle([
+                ('BACKGROUND', (0, 0), (1, 0), colors.HexColor('#404040')),
+                ('BACKGROUND', (2, 0), (3, 0), colors.HexColor('#404040')),
+                ('TEXTCOLOR', (0, 0), (1, 0), colors.white),
+                ('TEXTCOLOR', (2, 0), (3, 0), colors.white),
+                ('FONTNAME', (0, 0), (3, 0), 'Helvetica-Bold'),
+                ('ALIGN', (0, 0), (3, 0), 'CENTER'),
+                ('FONTSIZE', (0, 0), (-1, -1), 8),
+                ('FONTNAME', (0, 1), (-1, -1), 'Helvetica'),
+                ('GRID', (0, 0), (-1, -1), 0.5, colors.black),
+                ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
+                ('LEFTPADDING', (0, 0), (-1, -1), 5),
+                ('RIGHTPADDING', (0, 0), (-1, -1), 5),
+                ('TOPPADDING', (0, 0), (-1, -1), 3),
+                ('BOTTOMPADDING', (0, 0), (-1, -1), 3),
             ]))
-            story.append(net_table)
+            story.append(info_table)
+            story.append(Spacer(1, 0.5*cm))
+            
+            # Tableau DÉTAILLÉ du salaire (format v1.3.0)
+            salaire_detail_data = [
+                ['DÉSIGNATION', 'BASE', 'TAUX', 'GAIN', 'RETENUE'],
+                ['Salaire de base (contrat)', 
+                 f"{float(emp_info.get('salaire_base', 0)):,.2f}".replace(',', ' '),
+                 f"{sal_data.get('jours_travailles', 0)}/{sal_data.get('jours_ouvrables', 26)} j",
+                 f"{float(sal_data.get('salaire_base_proratis', 0)):,.2f}".replace(',', ' '), ''],
+                ['Heures supplémentaires (1.33h/j × 150%)', '', '',
+                 f"{float(sal_data.get('heures_supplementaires', 0)):,.2f}".replace(',', ' '), ''],
+                ['Indemnité de Nuisance (IN)', f"{float(emp_info.get('salaire_base', 0)):,.2f}".replace(',', ' '), '5%',
+                 f"{float(sal_data.get('indemnite_nuisance', 0)):,.2f}".replace(',', ' '), ''],
+                ['Indemnité Forfaitaire Service Permanent (IFSP)', f"{float(emp_info.get('salaire_base', 0)):,.2f}".replace(',', ' '), '5%',
+                 f"{float(sal_data.get('ifsp', 0)):,.2f}".replace(',', ' '), ''],
+                ['Indemnité Expérience Professionnelle (IEP)', f"{float(emp_info.get('salaire_base', 0)):,.2f}".replace(',', ' '), 'Ancienneté',
+                 f"{float(sal_data.get('iep', 0)):,.2f}".replace(',', ' '), ''],
+                ['Prime d\'Encouragement', '', '10%',
+                 f"{float(sal_data.get('prime_encouragement', 0)):,.2f}".replace(',', ' '), ''],
+                ['Prime Chauffeur', '', '100 DA/j',
+                 f"{float(sal_data.get('prime_chauffeur', 0)):,.2f}".replace(',', ' '), ''],
+                ['Prime de Nuit Agent Sécurité', '', '750 DA/mois',
+                 f"{float(sal_data.get('prime_nuit_agent_securite', 0)):,.2f}".replace(',', ' '), ''],
+                ['Prime de Déplacement (Missions)', '', '',
+                 f"{float(sal_data.get('prime_deplacement', 0)):,.2f}".replace(',', ' '), ''],
+                ['SALAIRE COTISABLE', '', '', 
+                 f"{float(sal_data.get('salaire_cotisable', 0)):,.2f}".replace(',', ' '), ''],
+                ['Retenue Sécurité Sociale', f"{float(sal_data.get('salaire_cotisable', 0)):,.2f}".replace(',', ' '), '9%', '',
+                 f"{float(sal_data.get('retenue_securite_sociale', 0)):,.2f}".replace(',', ' ')],
+                ['Panier (imposable non cotisable)', '', '100 DA/j',
+                 f"{float(sal_data.get('panier', 0)):,.2f}".replace(',', ' '), ''],
+                ['Prime de Transport (imposable non cotisable)', '', '100 DA/j',
+                 f"{float(sal_data.get('prime_transport', 0)):,.2f}".replace(',', ' '), ''],
+                ['SALAIRE IMPOSABLE', '', '', 
+                 f"{float(sal_data.get('salaire_imposable', 0)):,.2f}".replace(',', ' '), ''],
+                ['IRG (Impôt sur le Revenu Global)', '', 'Barème', '',
+                 f"{float(sal_data.get('irg', 0)):,.2f}".replace(',', ' ')],
+                ['Avances sur salaire', '', '', '',
+                 f"{float(sal_data.get('total_avances', 0)):,.2f}".replace(',', ' ')],
+                ['Retenue Crédit', '', '', '',
+                 f"{float(sal_data.get('retenue_credit', 0)):,.2f}".replace(',', ' ')],
+                ['Prime Femme au Foyer', '', '',
+                 f"{float(sal_data.get('prime_femme_foyer', 0)):,.2f}".replace(',', ' '), ''],
+            ]
+            
+            salaire_table = Table(salaire_detail_data, colWidths=[6*cm, 3.5*cm, 2.5*cm, 3*cm, 3*cm])
+            salaire_table.setStyle(TableStyle([
+                ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#404040')),
+                ('TEXTCOLOR', (0, 0), (-1, 0), colors.white),
+                ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+                ('FONTSIZE', (0, 0), (-1, -1), 8),
+                ('ALIGN', (0, 0), (-1, 0), 'CENTER'),
+                ('FONTNAME', (0, 1), (-1, -1), 'Helvetica'),
+                ('ALIGN', (1, 1), (-1, -1), 'RIGHT'),
+                ('ALIGN', (0, 1), (0, -1), 'LEFT'),
+                ('BACKGROUND', (0, 11), (-1, 11), colors.HexColor('#e6f2ff')),
+                ('FONTNAME', (0, 11), (-1, 11), 'Helvetica-Bold'),
+                ('BACKGROUND', (0, 15), (-1, 15), colors.HexColor('#fff7e6')),
+                ('FONTNAME', (0, 15), (-1, 15), 'Helvetica-Bold'),
+                ('GRID', (0, 0), (-1, -1), 0.5, colors.black),
+                ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
+                ('LEFTPADDING', (0, 0), (-1, -1), 5),
+                ('RIGHTPADDING', (0, 0), (-1, -1), 5),
+            ]))
+            story.append(salaire_table)
+            story.append(Spacer(1, 0.5*cm))
+            
+            # Total final NET À PAYER
+            total_data = [
+                ['SALAIRE NET À PAYER', 
+                 f"{float(sal_data.get('salaire_net', 0)):,.2f}".replace(',', ' ') + ' DA'],
+            ]
+            total_table = Table(total_data, colWidths=[12*cm, 6*cm])
+            total_table.setStyle(TableStyle([
+                ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#52c41a')),
+                ('TEXTCOLOR', (0, 0), (-1, 0), colors.white),
+                ('FONTNAME', (0, 0), (-1, -1), 'Helvetica-Bold'),
+                ('FONTSIZE', (0, 0), (-1, -1), 11),
+                ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
+                ('ALIGN', (1, 0), (1, -1), 'RIGHT'),
+                ('GRID', (0, 0), (-1, -1), 1, colors.black),
+                ('LEFTPADDING', (0, 0), (-1, -1), 10),
+                ('RIGHTPADDING', (0, 0), (-1, -1), 10),
+                ('TOPPADDING', (0, 0), (-1, -1), 8),
+                ('BOTTOMPADDING', (0, 0), (-1, -1), 8),
+            ]))
+            story.append(total_table)
             
             # Footer bulletin
-            story.append(Spacer(1, 1*cm))
-            story.append(Paragraph("Pour acquit,", self.styles['Normal']))
+            story.append(Spacer(1, 0.5*cm))
+            footer = Paragraph(
+                f"<i>Bulletin généré le {datetime.now().strftime('%d/%m/%Y à %H:%M')}</i><br/>"
+                "<i>Ce bulletin ne doit pas être divulgué à des tiers.</i>",
+                ParagraphStyle('FooterInfo', parent=self.styles['Normal'], fontSize=7,
+                              textColor=colors.grey, alignment=TA_CENTER)
+            )
+            story.append(footer)
             
-            # Saut de page après chaque bulletin sauf le dernier
+            # Saut de page après chaque bulletin
             story.append(PageBreak())
 
         # 3. TABLEAU RÉCAPITULATIF
@@ -3196,16 +3316,18 @@ class PDFGenerator:
 
     def generate_rapport_salaires(self, resultats: List[Dict], periode: Dict) -> BytesIO:
         """
-        Générer rapport récapitulatif des salaires du mois (nouveau module v3.0)
+        Générer rapport récapitulatif DÉTAILLÉ des salaires du mois (v3.0.1)
+        Contient TOUTES les colonnes: Nom, Jours, Base, Proratisé, Primes/Indemnités détaillées,
+        Cotisable, Retenues, Imposable, IRG, Net
         """
         buffer = BytesIO()
-        doc = SimpleDocTemplate(buffer, pagesize=A4, rightMargin=2*cm, leftMargin=2*cm, 
-                               topMargin=2*cm, bottomMargin=2*cm)
+        doc = SimpleDocTemplate(buffer, pagesize=landscape(A4), rightMargin=1*cm, leftMargin=1*cm, 
+                               topMargin=1.5*cm, bottomMargin=1.5*cm)
         story = []
         
         # Titre
         mois_nom = datetime(periode['annee'], periode['mois'], 1).strftime('%B %Y').capitalize()
-        story.append(Paragraph(f"<b>RAPPORT DES SALAIRES - {mois_nom}</b>", self.styles['CustomTitle']))
+        story.append(Paragraph(f"<b>RAPPORT DÉTAILLÉ DES SALAIRES - {mois_nom}</b>", self.styles['CustomTitle']))
         story.append(Spacer(1, 0.5*cm))
         
         # Statistiques globales
@@ -3218,13 +3340,13 @@ class PDFGenerator:
         stats_data = [
             ['STATISTIQUES GÉNÉRALES', ''],
             ['Nombre d\'employés:', str(total_employes)],
-            ['Masse salariale brute (cotisable):', f"{total_brut:,.2f} DA"],
-            ['Total retenues Séc. Sociale:', f"{total_ss:,.2f} DA"],
-            ['Total IRG:', f"{total_irg:,.2f} DA"],
-            ['Masse salariale nette:', f"{total_net:,.2f} DA"],
+            ['Masse salariale brute (cotisable):', f"{total_brut:,.2f} DA".replace(',', ' ')],
+            ['Total retenues Séc. Sociale:', f"{total_ss:,.2f} DA".replace(',', ' ')],
+            ['Total IRG:', f"{total_irg:,.2f} DA".replace(',', ' ')],
+            ['Masse salariale nette:', f"{total_net:,.2f} DA".replace(',', ' ')],
         ]
         
-        stats_table = Table(stats_data, colWidths=[10*cm, 7*cm])
+        stats_table = Table(stats_data, colWidths=[12*cm, 8*cm])
         stats_table.setStyle(TableStyle([
             ('BACKGROUND', (0,0), (-1,0), colors.HexColor('#366092')),
             ('TEXTCOLOR', (0,0), (-1,0), colors.white),
@@ -3238,46 +3360,83 @@ class PDFGenerator:
         story.append(stats_table)
         story.append(Spacer(1, 0.7*cm))
         
-        # Détail par employé
-        story.append(Paragraph("<b>DÉTAIL PAR EMPLOYÉ</b>", self.styles['CustomSubtitle']))
+        # TABLEAU DÉTAILLÉ avec TOUTES les colonnes
+        story.append(Paragraph("<b>DÉTAIL COMPLET PAR EMPLOYÉ</b>", self.styles['CustomSubtitle']))
         story.append(Spacer(1, 0.3*cm))
         
+        # En-têtes sur 2 lignes pour plus de clarté
         detail_data = [
-            ['Employé', 'J.Trav', 'Base', 'Cotisable', 'IRG', 'Net']
+            ['Employé', 'J.Trav', 'Base\nContrat', 'Base\nProratisé', 'H.Supp', 'IN+IFSP\n+IEP', 
+             'Primes', 'Cotisable', 'Ret.SS\n(9%)', 'Panier+\nTransp', 'Imposable', 'IRG', 
+             'Avances+\nCrédit', 'Net à\nPayer']
         ]
         
         for r in resultats:
+            # Calculer les totaux d'indemnités et primes
+            indemnites = float(r.get('indemnite_nuisance', 0)) + float(r.get('ifsp', 0)) + float(r.get('iep', 0))
+            primes = (float(r.get('prime_encouragement', 0)) + float(r.get('prime_chauffeur', 0)) + 
+                     float(r.get('prime_nuit_agent_securite', 0)) + float(r.get('prime_deplacement', 0)))
+            panier_transport = float(r.get('panier', 0)) + float(r.get('prime_transport', 0))
+            avances_credit = float(r.get('total_avances', 0)) + float(r.get('retenue_credit', 0))
+            
             detail_data.append([
                 f"{r['employe_nom']} {r['employe_prenom']}",
                 str(r['jours_travailles']),
-                f"{float(r['salaire_base']):,.0f}",
-                f"{float(r['salaire_cotisable']):,.0f}",
-                f"{float(r['irg']):,.0f}",
-                f"{float(r['salaire_net']):,.0f}"
+                f"{float(r.get('salaire_base_initial', r.get('salaire_base', 0))):,.0f}".replace(',', ' '),
+                f"{float(r['salaire_base_proratis']):,.0f}".replace(',', ' '),
+                f"{float(r.get('heures_supplementaires', 0)):,.0f}".replace(',', ' '),
+                f"{indemnites:,.0f}".replace(',', ' '),
+                f"{primes:,.0f}".replace(',', ' '),
+                f"{float(r['salaire_cotisable']):,.0f}".replace(',', ' '),
+                f"{float(r['retenue_securite_sociale']):,.0f}".replace(',', ' '),
+                f"{panier_transport:,.0f}".replace(',', ' '),
+                f"{float(r['salaire_imposable']):,.0f}".replace(',', ' '),
+                f"{float(r['irg']):,.0f}".replace(',', ' '),
+                f"{avances_credit:,.0f}".replace(',', ' '),
+                f"{float(r['salaire_net']):,.0f}".replace(',', ' ')
             ])
         
         # Ligne de totaux
+        total_indemnites = sum(float(r.get('indemnite_nuisance', 0)) + float(r.get('ifsp', 0)) + float(r.get('iep', 0)) for r in resultats)
+        total_primes = sum(float(r.get('prime_encouragement', 0)) + float(r.get('prime_chauffeur', 0)) + 
+                          float(r.get('prime_nuit_agent_securite', 0)) + float(r.get('prime_deplacement', 0)) for r in resultats)
+        total_panier_transport = sum(float(r.get('panier', 0)) + float(r.get('prime_transport', 0)) for r in resultats)
+        total_avances = sum(float(r.get('total_avances', 0)) + float(r.get('retenue_credit', 0)) for r in resultats)
+        
         detail_data.append([
             'TOTAUX',
             '',
-            f"{sum(float(r['salaire_base']) for r in resultats):,.0f}",
-            f"{total_brut:,.0f}",
-            f"{total_irg:,.0f}",
-            f"{total_net:,.0f}"
+            f"{sum(float(r.get('salaire_base_initial', r.get('salaire_base', 0))) for r in resultats):,.0f}".replace(',', ' '),
+            f"{sum(float(r['salaire_base_proratis']) for r in resultats):,.0f}".replace(',', ' '),
+            f"{sum(float(r.get('heures_supplementaires', 0)) for r in resultats):,.0f}".replace(',', ' '),
+            f"{total_indemnites:,.0f}".replace(',', ' '),
+            f"{total_primes:,.0f}".replace(',', ' '),
+            f"{total_brut:,.0f}".replace(',', ' '),
+            f"{total_ss:,.0f}".replace(',', ' '),
+            f"{total_panier_transport:,.0f}".replace(',', ' '),
+            f"{sum(float(r['salaire_imposable']) for r in resultats):,.0f}".replace(',', ' '),
+            f"{total_irg:,.0f}".replace(',', ' '),
+            f"{total_avances:,.0f}".replace(',', ' '),
+            f"{total_net:,.0f}".replace(',', ' ')
         ])
         
-        detail_table = Table(detail_data, colWidths=[6*cm, 1.5*cm, 2.5*cm, 2.5*cm, 2.5*cm, 2.5*cm])
+        # Largeurs de colonnes pour A4 paysage (29.7cm)
+        detail_table = Table(detail_data, colWidths=[4.5*cm, 1.2*cm, 1.5*cm, 1.5*cm, 1.2*cm, 1.5*cm, 
+                                                     1.5*cm, 1.8*cm, 1.5*cm, 1.5*cm, 1.8*cm, 1.5*cm, 
+                                                     1.5*cm, 2*cm])
         detail_table.setStyle(TableStyle([
             ('BACKGROUND', (0,0), (-1,0), colors.HexColor('#366092')),
             ('TEXTCOLOR', (0,0), (-1,0), colors.white),
             ('FONTNAME', (0,0), (-1,0), 'Helvetica-Bold'),
-            ('FONTSIZE', (0,0), (-1,0), 9),
+            ('FONTSIZE', (0,0), (-1,0), 7),
             ('GRID', (0,0), (-1,-1), 0.5, colors.black),
-            ('FONTSIZE', (0,1), (-1,-1), 8),
+            ('FONTSIZE', (0,1), (-1,-1), 7),
             ('ALIGN', (1,0), (-1,-1), 'CENTER'),
             ('ALIGN', (2,0), (-1,-1), 'RIGHT'),
+            ('ALIGN', (0,1), (0,-1), 'LEFT'),
             ('BACKGROUND', (0,-1), (-1,-1), colors.lightgrey),
             ('FONTNAME', (0,-1), (-1,-1), 'Helvetica-Bold'),
+            ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
         ]))
         story.append(detail_table)
         
