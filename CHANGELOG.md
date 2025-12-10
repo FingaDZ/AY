@@ -1,3 +1,56 @@
+## [3.5.0] - 2025-12-10
+### 📄 Génération PDF Améliorée
+- **Rapport Salaires**
+  - Footer en pied de page sur toutes les pages : "Rapport généré le ... | Powered by AIRBAND"
+  - Marges étroites (0.5cm) pour optimisation espace
+  - Format paysage une seule page avec toutes colonnes
+  
+- **Page de Garde Bulletins**
+  - En-tête entreprise détaillé : Nom, Adresse, N° Employeur SS, NIF (ligne par ligne)
+  - Suppression : Total Jours Travaillés et Total Jours d'Absences
+  - Ajout : Total CNAS 9% (sous Total Salaire Cotisable)
+  - Ajout : Total IRG (sous Total Salaire Imposable)
+  - Footer en pied de page : "Powered by AIRBAND"
+  - Marges étroites (0.75cm)
+  
+- **Bulletin de Paie Individuel**
+  - Nouvelle ligne : "Jours de congé pris ce mois" (si applicable)
+  - Footer en pied de page : "Bulletin généré le ... | Powered by AIRBAND"
+  
+- **Attestation de Travail**
+  - QR Code ajouté avec : Nom, Date Naissance, Date Recrutement, Durée Contrat, Poste, N°SS, N°ANEM
+  - QR Code positionné à droite de la signature
+  
+- **Certificat de Travail**
+  - QR Code ajouté avec : Nom, Date Naissance, Date Recrutement, Date Fin Contrat, Poste, N°SS, N°ANEM
+  - QR Code positionné à droite de la signature
+  
+- **Contrat de Travail** (✅ COMPLÉTÉ)
+  - Ajout N° ANEM après N° Sécurité Sociale (ligne salarié)
+  - Génération automatique du numéro de contrat (Format: CT-XXXX-YYYY)
+  - "Date de début" → "Date de Recrutement"
+  - Durée calculée et inscrite en mois (calcul automatique entre dates)
+  - Article 1 : Poste en gras (Helvetica-Bold pour le poste uniquement)
+  - Article 3 : Mention déplacements national/international ajoutée
+  - Article 5 : Rémunération sur une seule ligne (compacté)
+  - Article 6 : Primes et indemnités du bulletin réelles (IN, IFSP, IEP, Prime Encouragement, Prime Chauffeur, Prime Nuit, Prime Déplacement, Panier, Transport)
+  - Articles 7-8-9 : Espacement réduit (y -= 15 au lieu de 20)
+  - Article 9 : Préavis de quinze (15) jours (au lieu de 1 mois)
+  - Article 10 : Tribunal de Chelghoum Laid territorialement compétent (juridiction précisée)
+  - QR Code en haut à droite avec toutes données (N° Contrat, Société, Nom, N°SS, N°ANEM, Dates, Poste, Salaire)
+  - Footer avec numérotation sur chaque page : "Page X/2 | Powered by AIRBAND"
+  - Marges optimisées pour footer
+
+### 🗄️ Base de Données
+- **Migration** : Ajout colonne `numero_anem` à la table `employes`
+- **Index** : Création index sur `numero_anem` pour optimisation recherches
+
+### 📦 Versions
+- Backend : `3.5.0`
+- Frontend : `3.5.0`
+
+---
+
 ## [3.0.0] - 2025-12-09
 ### 🎉 Fonctionnalités Majeures
 - **Traitement Salaires v3.0** : Nouveau module de calcul des salaires automatique et traçable

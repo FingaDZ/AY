@@ -6,8 +6,7 @@ import {
     WarningOutlined,
     CloseCircleOutlined,
     ReloadOutlined,
-    CheckOutlined,
-    ThunderboltOutlined
+    CheckOutlined
 } from '@ant-design/icons';
 import { attendanceService } from '../../services';
 import dayjs from 'dayjs';
@@ -87,37 +86,6 @@ function ImportPreview() {
                     setSelectedRowKeys([]);
                 } catch (error) {
                     message.error('Erreur lors de l\'importation');
-                    console.error(error);
-                } finally {
-                    setLoading(false);
-                }
-            }
-        });
-    };
-
-    const handleDirectImport = async (file) => {
-        Modal.confirm({
-            title: 'Import Direct',
-            content: 'Importer directement sans prévisualisation ? (Non recommandé)',
-            onOk: async () => {
-                try {
-                    setLoading(true);
-                    const previewResponse = await attendanceService.previewImport(file);
-
-                    // Auto-import all valid items
-                    const validIds = previewResponse.data.items
-                        .filter(item => item.status !== 'error')
-                        .map(item => item.log_id);
-
-                    const importResponse = await attendanceService.confirmImport({
-                        session_id: previewResponse.data.session_id,
-                        selected_log_ids: validIds,
-                        employee_mappings: {}
-                    });
-
-                    message.success(`Import direct réussi: ${importResponse.data.imported} jours`);
-                } catch (error) {
-                    message.error('Erreur lors de l\'import direct');
                     console.error(error);
                 } finally {
                     setLoading(false);
@@ -384,42 +352,23 @@ function ImportPreview() {
                     title="Import Pointages - Prévisualisation"
                     extra={
                         !previewData ? (
-                            <Space size="large">
-                                <Upload
-                                    beforeUpload={(file) => {
-                                        handleFileUpload(file);
-                                        return false;
-                                    }}
-                                    showUploadList={false}
-                                    accept=".xlsx,.xls,.csv"
+                            <Upload
+                                beforeUpload={(file) => {
+                                    handleFileUpload(file);
+                                    return false;
+                                }}
+                                showUploadList={false}
+                                accept=".xlsx,.xls,.csv"
+                            >
+                                <Button
+                                    icon={<UploadOutlined />}
+                                    type="primary"
+                                    loading={loading}
+                                    size="large"
                                 >
-                                    <Button
-                                        icon={<UploadOutlined />}
-                                        type="primary"
-                                        loading={loading}
-                                        size="large"
-                                    >
-                                        Charger & Prévisualiser
-                                    </Button>
-                                </Upload>
-                                <Upload
-                                    beforeUpload={(file) => {
-                                        handleDirectImport(file);
-                                        return false;
-                                    }}
-                                    showUploadList={false}
-                                    accept=".xlsx,.xls,.csv"
-                                >
-                                    <Button
-                                        icon={<ThunderboltOutlined />}
-                                        danger
-                                        loading={loading}
-                                        size="large"
-                                    >
-                                        Import Direct
-                                    </Button>
-                                </Upload>
-                            </Space>
+                                    Charger & Prévisualiser
+                                </Button>
+                            </Upload>
                         ) : null
                     }
                 >

@@ -242,27 +242,7 @@ const TraitementSalaires = () => {
         }
     };
 
-    const genererG29 = async () => {
-        try {
-            const response = await axios.get(`/api/traitement-salaires/g29`, {
-                params: { annee, mois },
-                responseType: 'blob'
-            });
-            
-            const url = window.URL.createObjectURL(new Blob([response.data]));
-            const link = document.createElement('a');
-            link.href = url;
-            link.setAttribute('download', `G29_${mois}_${annee}.xlsx`);
-            document.body.appendChild(link);
-            link.click();
-            link.remove();
-            
-            toast.success('Fichier G29 généré');
-        } catch (error) {
-            console.error('Erreur génération G29:', error);
-            toast.error('Erreur lors de la génération du G29');
-        }
-    };
+
 
     return (
         <div className="p-6 max-w-7xl mx-auto">
@@ -406,14 +386,6 @@ const TraitementSalaires = () => {
                     >
                         <Printer className="w-4 h-4" />
                         Bulletins de Paie
-                    </button>
-                    <button
-                        onClick={genererG29}
-                        disabled={loading || salaires.length === 0}
-                        className="flex items-center gap-2 px-4 py-2 bg-orange-600 text-white rounded-md hover:bg-orange-700 disabled:opacity-50 text-sm"
-                    >
-                        <FileText className="w-4 h-4" />
-                        G29 (CNAS)
                     </button>
                 </div>
             </div>

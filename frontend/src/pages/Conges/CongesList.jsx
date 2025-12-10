@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Table, Card, Input, Button, Tag, Modal, Form, InputNumber, message, Select, Statistic, Row, Col } from 'antd';
-import { SearchOutlined, EditOutlined, CalendarOutlined } from '@ant-design/icons';
+import { SearchOutlined, EditOutlined, CalendarOutlined, DownloadOutlined } from '@ant-design/icons';
 import api from '../../services/api';
 
 const { Option } = Select;
@@ -93,6 +93,28 @@ const CongesList = () => {
         }
     };
 
+    const telechargerTitreConge = async (congeId) => {
+        try {
+            const response = await api.get(`/conges/${congeId}/titre-conge`, {
+                responseType: 'blob'
+            });
+            
+            const url = window.URL.createObjectURL(new Blob([response.data]));
+            const link = document.createElement('a');
+            link.href = url;
+            link.setAttribute('download', `titre_conge_${congeId}.pdf`);
+            document.body.appendChild(link);
+            link.click();
+            link.remove();
+            window.URL.revokeObjectURL(url);
+            
+            message.success('Titre de congé téléchargé');
+        } catch (error) {
+            console.error('Erreur téléchargement titre:', error);
+            message.error('Erreur lors du téléchargement du titre de congé');
+        }
+    };
+
     const columns = [
         {
             title: 'Employé',
@@ -137,19 +159,30 @@ const CongesList = () => {
             )
         },
         {
-            title: 'Action',
-            key: 'action',
+            title: 'Actions',
+            key: 'actions',
             render: (text, record) => (
-                <Button
-                    type="primary"
-                    size="small"
-                    icon={<EditOutlined />}
-                    onClick={() => handleEdit(record)}
-                >
-                    Saisir
-                </Button>
-            ),
-        },
+                <div className="flex gap-2">
+                    <Button
+                        type="primary"
+                        size="small"
+                        icon={<EditOutlined />}
+                        onClick={() => handleEdit(record)}
+                    >
+                        Saisir
+                    </Button>
+                    <Button
+                        type="default"
+                        size="small"
+                        icon={<DownloadOutlined />}
+                        onClick={() => telechargerTitreConge(record.id)}
+                        disabled={!record.date_debut || !record.date_fin}
+                    >
+                        Titre
+                    </Button>
+                </div>
+            )
+        }
     ];
 
     return (

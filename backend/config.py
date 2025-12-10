@@ -7,7 +7,7 @@ class Settings(BaseSettings):
     
     # Application
     APP_NAME: str = "HR System"
-    APP_VERSION: str = "3.0.0"
+    APP_VERSION: str = "3.5.0"
     DEBUG: bool = True
     
     # CORS

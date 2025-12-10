@@ -9,6 +9,7 @@ from reportlab.lib.enums import TA_CENTER, TA_RIGHT, TA_LEFT
 from reportlab.pdfgen import canvas
 from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.ttfonts import TTFont
+from reportlab.lib.utils import ImageReader
 from datetime import datetime
 from io import BytesIO
 from typing import List, Dict, Optional
@@ -895,6 +896,12 @@ class PDFGenerator:
              f"{salaire_data.get('jours_travailles', 0)}/{salaire_data.get('jours_ouvrables', 26)} j",
              f"{float(salaire_data.get('salaire_base_proratis', 0)):,.2f}".replace(',', ' '),
              ''],
+            # Ligne pour jours de congés pris (si applicable)
+            ['Jours de congé pris ce mois',
+             '',
+             f"{salaire_data.get('jours_conges', 0)} j" if salaire_data.get('jours_conges', 0) > 0 else '0 j',
+             'Payé',
+             ''],
             # Heures supplémentaires
             ['Heures supplémentaires (1.33h/j × 150%)',
              '',
@@ -1042,27 +1049,19 @@ class PDFGenerator:
         ]))
         story.append(total_table)
         
-        # Pied de page
-        story.append(Spacer(1, 0.5*cm))
-        footer = Paragraph(
-            f"<i>Bulletin généré le {datetime.now().strftime('%d/%m/%Y à %H:%M')}</i><br/>"
-            "<i>Ce bulletin ne doit pas être divulgué à des tiers.</i>",
-            ParagraphStyle(
-                'FooterInfo',
-                parent=self.styles['Normal'],
-                fontSize=7,
-                textColor=colors.grey,
-                alignment=TA_CENTER
-            )
-        )
-        story.append(footer)
-        story.append(Spacer(1, 0.3*cm))
+        # Fonction pour footer en pied de page (bulletin individuel)
+        def add_bulletin_indiv_footer(canvas, doc):
+            canvas.saveState()
+            canvas.setFont('Helvetica', 7)
+            canvas.setFillColor(colors.grey)
+            footer_text_1 = f"Bulletin généré le {datetime.now().strftime('%d/%m/%Y à %H:%M')}"
+            footer_text_2 = "Powered by AIRBAND"
+            canvas.drawCentredString(A4[0]/2, 1.5*cm, footer_text_1)
+            canvas.drawCentredString(A4[0]/2, 1*cm, footer_text_2)
+            canvas.restoreState()
         
-        # Footer "Powered by AIRBAND"
-        story.append(self._create_footer())
-        
-        # Générer le PDF
-        doc.build(story)
+        # Générer le PDF avec footer en pied de page
+        doc.build(story, onFirstPage=add_bulletin_indiv_footer, onLaterPages=add_bulletin_indiv_footer)
         buffer.seek(0)
         
         return buffer
@@ -1077,17 +1076,18 @@ class PDFGenerator:
             totaux: Dictionnaire des totaux globaux
         """
         from reportlab.lib.pagesizes import landscape
+        from reportlab.platypus import PageTemplate, Frame
         
         buffer = BytesIO()
         
-        # Format paysage (A4 horizontal)
+        # Format paysage (A4 horizontal) avec marges étroites
         doc = SimpleDocTemplate(
             buffer,
             pagesize=landscape(A4),
-            rightMargin=1*cm,
-            leftMargin=1*cm,
-            topMargin=1.5*cm,
-            bottomMargin=1.5*cm
+            rightMargin=0.5*cm,
+            leftMargin=0.5*cm,
+            topMargin=1*cm,
+            bottomMargin=2*cm  # Plus d'espace pour le footer
         )
         
         story = []
@@ -1241,28 +1241,21 @@ class PDFGenerator:
         
         rapport_table.setStyle(TableStyle(table_style))
         story.append(rapport_table)
-        story.append(Spacer(1, 0.5*cm))
         
-        # Pied de page
-        footer = Paragraph(
-            f"<i>Rapport généré le {datetime.now().strftime('%d/%m/%Y à %H:%M')}</i> | "
-            "<i>Document confidentiel - Usage interne uniquement</i>",
-            ParagraphStyle(
-                'Footer',
-                parent=self.styles['Normal'],
-                fontSize=7,
-                textColor=colors.grey,
-                alignment=TA_CENTER
-            )
-        )
-        story.append(footer)
+        # Fonction pour le footer en pied de page
+        def add_page_footer(canvas, doc):
+            canvas.saveState()
+            footer_text_1 = f"Rapport généré le {datetime.now().strftime('%d/%m/%Y à %H:%M')}"
+            footer_text_2 = "Powered by AIRBAND"
+            canvas.setFont('Helvetica', 7)
+            canvas.setFillColor(colors.grey)
+            page_width = landscape(A4)[0]
+            canvas.drawCentredString(page_width/2, 1.2*cm, footer_text_1)
+            canvas.drawCentredString(page_width/2, 0.7*cm, footer_text_2)
+            canvas.restoreState()
         
-        # Footer standard
-        story.append(Spacer(1, 0.3*cm))
-        story.append(self._create_footer())
-        
-        # Générer le PDF
-        doc.build(story)
+        # Générer le PDF avec footer en pied de page sur toutes les pages
+        doc.build(story, onFirstPage=add_page_footer, onLaterPages=add_page_footer)
         buffer.seek(0)
         
         return buffer
@@ -2061,22 +2054,52 @@ class PDFGenerator:
         )
         story.append(Paragraph("Cette attestation est délivrée à l'intéressé(e) pour servir et valoir ce que de droit.", centered_style))
         
-        story.append(Spacer(1, 1*cm))
+        story.append(Spacer(1, 0.5*cm))
         
-        # Signature
+        # Générer QR Code avec les données de l'attestation
+        qr_data_attestation = (
+            f"Nom: {employe_data.get('prenom', '')} {employe_data.get('nom', '')}\n"
+            f"Date Naissance: {employe_data.get('date_naissance', 'N/A')}\n"
+            f"Date Recrutement: {date_recrutement.strftime('%d/%m/%Y')}\n"
+            f"Durée Contrat: Indéterminée (en cours)\n"
+            f"Poste: {employe_data.get('poste_travail', 'N/A')}\n"
+            f"N°SS: {employe_data.get('numero_secu_sociale', 'N/A')}\n"
+            f"N°ANEM: {employe_data.get('numero_anem', 'N/A')}"
+        )
+        
+        qr = qrcode.QRCode(version=1, box_size=8, border=1)
+        qr.add_data(qr_data_attestation)
+        qr.make(fit=True)
+        qr_img = qr.make_image(fill_color="black", back_color="white")
+        qr_buffer = BytesIO()
+        qr_img.save(qr_buffer, format='PNG')
+        qr_buffer.seek(0)
+        qr_image = Image(qr_buffer, width=3*cm, height=3*cm)
+        
+        # Disposition Signature et QR Code côte à côte
         signature_style = ParagraphStyle(
             name='Signature',
             parent=self.styles['Normal'],
             fontSize=11,
-            alignment=TA_RIGHT,
+            alignment=TA_LEFT,
             spaceAfter=8
         )
         
-        story.append(Paragraph(f"Fait à : Chelghoum Laid, le {date_aujourdhui}", signature_style))
-        story.append(Spacer(1, 0.5*cm))
-        story.append(Paragraph("<b>Le Responsable</b>", signature_style))
-        story.append(Spacer(1, 2*cm))
-        story.append(Paragraph("(Signature et cachet)", signature_style))
+        signature_qr_data = [
+            [
+                Paragraph(f"Fait à : Chelghoum Laid, le {date_aujourdhui}<br/>"
+                         "<b>Le Responsable</b><br/><br/><br/>"
+                         "(Signature et cachet)", signature_style),
+                qr_image
+            ]
+        ]
+        signature_qr_table = Table(signature_qr_data, colWidths=[11*cm, 4*cm])
+        signature_qr_table.setStyle(TableStyle([
+            ('VALIGN', (0, 0), (-1, -1), 'TOP'),
+            ('ALIGN', (0, 0), (0, 0), 'LEFT'),
+            ('ALIGN', (1, 0), (1, 0), 'RIGHT'),
+        ]))
+        story.append(signature_qr_table)
         
         # Générer le PDF
         doc.build(story)
@@ -2218,6 +2241,210 @@ class PDFGenerator:
         )
         story.append(Paragraph("Le présent certificat est délivré pour servir et valoir ce que de droit.", centered_style))
         
+        story.append(Spacer(1, 0.5*cm))
+        
+        # Générer QR Code avec les données du certificat
+        qr_data_certificat = (
+            f"Nom: {employe_data.get('prenom', '')} {employe_data.get('nom', '')}\n"
+            f"Date Naissance: {employe_data.get('date_naissance', 'N/A')}\n"
+            f"Date Recrutement: {date_recrutement.strftime('%d/%m/%Y')}\n"
+            f"Date Fin Contrat: {date_fin_contrat.strftime('%d/%m/%Y')}\n"
+            f"Poste: {employe_data.get('poste_travail', 'N/A')}\n"
+            f"N°SS: {employe_data.get('numero_secu_sociale', 'N/A')}\n"
+            f"N°ANEM: {employe_data.get('numero_anem', 'N/A')}"
+        )
+        
+        qr = qrcode.QRCode(version=1, box_size=8, border=1)
+        qr.add_data(qr_data_certificat)
+        qr.make(fit=True)
+        qr_img = qr.make_image(fill_color="black", back_color="white")
+        qr_buffer = BytesIO()
+        qr_img.save(qr_buffer, format='PNG')
+        qr_buffer.seek(0)
+        qr_image = Image(qr_buffer, width=3*cm, height=3*cm)
+        
+        # Disposition Signature et QR Code côte à côte
+        signature_style = ParagraphStyle(
+            name='Signature',
+            parent=self.styles['Normal'],
+            fontSize=11,
+            alignment=TA_LEFT,
+            spaceAfter=8
+        )
+        
+        signature_qr_data = [
+            [
+                Paragraph(f"Fait à : Chelghoum Laid, le {date_aujourdhui}<br/>"
+                         "<b>Le Responsable</b><br/><br/><br/>"
+                         "(Signature et cachet)", signature_style),
+                qr_image
+            ]
+        ]
+        signature_qr_table = Table(signature_qr_data, colWidths=[11*cm, 4*cm])
+        signature_qr_table.setStyle(TableStyle([
+            ('VALIGN', (0, 0), (-1, -1), 'TOP'),
+            ('ALIGN', (0, 0), (0, 0), 'LEFT'),
+            ('ALIGN', (1, 0), (1, 0), 'RIGHT'),
+        ]))
+        story.append(signature_qr_table)
+        
+        # Générer le PDF
+        doc.build(story)
+        buffer.seek(0)
+        return buffer
+    
+    def generate_titre_conge(self, conge_data: Dict) -> BytesIO:
+        """
+        Générer un titre de congé pour un employé
+        
+        Args:
+            conge_data: Dictionnaire contenant:
+                - employe: Objet Employe
+                - conge: Objet Conge
+                - date_debut: Date de début du congé
+                - date_fin: Date de fin du congé
+                - type_conge: Type de congé (ANNUEL, MALADIE, etc.)
+                - jours_pris: Nombre de jours pris
+                - commentaire: Commentaire optionnel
+        """
+        buffer = BytesIO()
+        doc = SimpleDocTemplate(buffer, pagesize=A4, topMargin=2*cm, bottomMargin=2*cm)
+        story = []
+        
+        # Récupérer les données
+        employe = conge_data.get('employe')
+        conge = conge_data.get('conge')
+        date_debut = conge_data.get('date_debut')
+        date_fin = conge_data.get('date_fin')
+        type_conge = conge_data.get('type_conge', 'ANNUEL')
+        jours_pris = conge_data.get('jours_pris', 0)
+        commentaire = conge_data.get('commentaire', '')
+        
+        # Récupérer les paramètres entreprise
+        params = self._get_parametres()
+        company_name = (params.raison_sociale or params.nom_entreprise or "Entreprise") if params else "Entreprise"
+        company_address = params.adresse if params and params.adresse else ""
+        
+        # En-tête entreprise
+        header_style = ParagraphStyle(
+            name='CompanyHeader',
+            parent=self.styles['Normal'],
+            fontSize=12,
+            textColor=colors.black,
+            alignment=TA_CENTER,
+            spaceAfter=5
+        )
+        
+        story.append(Paragraph(f"<b>{company_name}</b>", header_style))
+        if company_address:
+            addr_style = ParagraphStyle(name='Address', parent=self.styles['Normal'], 
+                                       fontSize=9, alignment=TA_CENTER, spaceAfter=3)
+            story.append(Paragraph(company_address, addr_style))
+        
+        story.append(Spacer(1, 1*cm))
+        
+        # Titre du document
+        title_style = ParagraphStyle(
+            name='DocTitle',
+            parent=self.styles['Heading1'],
+            fontSize=16,
+            textColor=colors.black,
+            alignment=TA_CENTER,
+            spaceAfter=30,
+            spaceBefore=10
+        )
+        story.append(Paragraph("<b>TITRE DE CONGÉ</b>", title_style))
+        story.append(Spacer(1, 1*cm))
+        
+        # Corps du texte
+        body_style = ParagraphStyle(
+            name='BodyText',
+            parent=self.styles['Normal'],
+            fontSize=11,
+            leading=18,
+            alignment=TA_LEFT,
+            spaceAfter=12
+        )
+        
+        # Date du jour
+        date_aujourdhui = datetime.now().strftime("%d/%m/%Y")
+        
+        # Convertir les dates si nécessaire
+        if isinstance(date_debut, str):
+            date_debut = datetime.strptime(date_debut, "%Y-%m-%d").date()
+        if isinstance(date_fin, str):
+            date_fin = datetime.strptime(date_fin, "%Y-%m-%d").date()
+        
+        # Type de congé en français
+        type_conge_fr = {
+            'ANNUEL': 'Congé annuel payé',
+            'MALADIE': 'Congé maladie',
+            'AUTRE': 'Autre congé'
+        }.get(type_conge, 'Congé')
+        
+        # Contenu du titre de congé
+        text_parts = [
+            f"Je soussigné(e), représentant(e) de <b>{company_name}</b>, atteste par la présente que :",
+            "",
+            f"<b>{employe.prenom} {employe.nom}</b>",
+            f"Matricule : {employe.id}",
+            f"Poste : {employe.poste_travail}",
+            f"N° Sécurité Sociale : {employe.numero_secu_sociale or 'N/A'}",
+            "",
+            f"Bénéficie d'un <b>{type_conge_fr}</b> d'une durée de <b>{jours_pris} jour(s) ouvrable(s)</b>.",
+            "",
+            f"Période de congé : du <b>{date_debut.strftime('%d/%m/%Y')}</b> au <b>{date_fin.strftime('%d/%m/%Y')}</b>",
+        ]
+        
+        if commentaire:
+            text_parts.append("")
+            text_parts.append(f"Motif/Commentaire : {commentaire}")
+        
+        for part in text_parts:
+            if part:
+                story.append(Paragraph(part, body_style))
+            else:
+                story.append(Spacer(1, 0.3*cm))
+        
+        story.append(Spacer(1, 1*cm))
+        
+        # Tableau récapitulatif
+        table_data = [
+            ['Élément', 'Information'],
+            ['Type de congé', type_conge_fr],
+            ['Date de début', date_debut.strftime('%d/%m/%Y')],
+            ['Date de fin', date_fin.strftime('%d/%m/%Y')],
+            ['Nombre de jours', f"{jours_pris} jour(s)"],
+        ]
+        
+        table = Table(table_data, colWidths=[7*cm, 9*cm])
+        table.setStyle(TableStyle([
+            ('BACKGROUND', (0, 0), (-1, 0), colors.lightgrey),
+            ('TEXTCOLOR', (0, 0), (-1, 0), colors.black),
+            ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+            ('FONTSIZE', (0, 0), (-1, -1), 10),
+            ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
+            ('GRID', (0, 0), (-1, -1), 0.5, colors.black),
+            ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
+            ('LEFTPADDING', (0, 0), (-1, -1), 10),
+            ('RIGHTPADDING', (0, 0), (-1, -1), 10),
+            ('TOPPADDING', (0, 0), (-1, -1), 8),
+            ('BOTTOMPADDING', (0, 0), (-1, -1), 8),
+        ]))
+        story.append(table)
+        
+        story.append(Spacer(1, 1.5*cm))
+        
+        # Note finale
+        centered_style = ParagraphStyle(
+            name='CenteredText',
+            parent=self.styles['Normal'],
+            fontSize=10,
+            alignment=TA_CENTER,
+            spaceAfter=12
+        )
+        story.append(Paragraph("Le présent titre est délivré pour servir et valoir ce que de droit.", centered_style))
+        
         story.append(Spacer(1, 1*cm))
         
         # Signature
@@ -2234,6 +2461,17 @@ class PDFGenerator:
         story.append(Paragraph("<b>Le Responsable</b>", signature_style))
         story.append(Spacer(1, 2*cm))
         story.append(Paragraph("(Signature et cachet)", signature_style))
+        
+        # Footer
+        story.append(Spacer(1, 1*cm))
+        footer_style = ParagraphStyle(
+            name='Footer',
+            parent=self.styles['Normal'],
+            fontSize=8,
+            textColor=colors.grey,
+            alignment=TA_CENTER
+        )
+        story.append(Paragraph("<i>Powered by AIRBAND</i>", footer_style))
         
         # Générer le PDF
         doc.build(story)
@@ -2261,11 +2499,15 @@ class PDFGenerator:
         lieu_naissance = employe_data.get('lieu_naissance', '')
         adresse = employe_data.get('adresse', '')
         numero_ss = employe_data.get('numero_secu_sociale', '')
+        numero_anem = employe_data.get('numero_anem', '')
         poste = employe_data.get('poste_travail', '')
         date_debut = employe_data.get('date_recrutement', '')
         duree_contrat = employe_data.get('duree_contrat')
         date_fin = employe_data.get('date_fin_contrat')
         salaire = employe_data.get('salaire_base', 0)
+        
+        # Génération du numéro de contrat
+        numero_contrat = f"CT-{employe_data.get('id', 0):04d}-{datetime.now().year}"
         
         # Formater les dates
         if isinstance(date_debut, str):
@@ -2287,18 +2529,79 @@ class PDFGenerator:
             
         date_aujourdhui = datetime.now().strftime("%d/%m/%Y")
         
-        # Créer le PDF avec ReportLab
+        # Calculer la durée en mois si dates disponibles
+        duree_mois_calculee = None
+        if date_debut and date_fin:
+            try:
+                if isinstance(date_debut, str):
+                    date_debut_obj = datetime.strptime(date_debut, "%Y-%m-%d")
+                else:
+                    date_debut_obj = date_debut
+                if isinstance(date_fin, str):
+                    date_fin_obj = datetime.strptime(date_fin, "%Y-%m-%d")
+                else:
+                    date_fin_obj = date_fin
+                duree_mois_calculee = ((date_fin_obj.year - date_debut_obj.year) * 12 + 
+                                       (date_fin_obj.month - date_debut_obj.month))
+            except:
+                pass
+        
+        # Créer le PDF avec ReportLab - Marges étroites
         c = canvas.Canvas(buffer, pagesize=A4)
         width, height = A4
+        page_num = 1
+        
+        # Fonction footer avec numérotation
+        def draw_footer():
+            c.saveState()
+            c.setFont("Helvetica", 7)
+            c.setFillColor(colors.grey)
+            c.drawCentredString(width/2, 1.5*cm, f"Page {page_num}/2")
+            c.drawCentredString(width/2, 1*cm, "Powered by AIRBAND")
+            c.restoreState()
         
         # Fonction pour créer une nouvelle page si nécessaire
         def check_new_page(y_position, needed_space=100):
-            if y_position < needed_space:
+            nonlocal page_num
+            if y_position < needed_space + 50:  # Plus d'espace pour footer
+                draw_footer()
                 c.showPage()
+                page_num += 1
                 return height - 50
             return y_position
         
         y = height - 50
+        
+        # Numéro de contrat en haut à gauche
+        c.setFont("Helvetica", 8)
+        c.drawString(50, y, f"N° Contrat: {numero_contrat}")
+        
+        # Générer QR Code en haut à droite
+        qr_data_contrat = (
+            f"N° Contrat: {numero_contrat}\n"
+            f"Société: {company_name}\n"
+            f"Nom employé: {prenom} {nom}\n"
+            f"N° Sécurité Sociale: {numero_ss}\n"
+            f"N° ANEM: {numero_anem}\n"
+            f"Date de Recrutement: {date_debut_str}\n"
+            f"Date de Fin: {date_fin_str}\n"
+            f"Poste: {poste}\n"
+            f"Salaire de Base: {salaire:,.2f} DA"
+        )
+        
+        qr = qrcode.QRCode(version=1, box_size=6, border=1)
+        qr.add_data(qr_data_contrat)
+        qr.make(fit=True)
+        qr_img = qr.make_image(fill_color="black", back_color="white")
+        qr_buffer = BytesIO()
+        qr_img.save(qr_buffer, format='PNG')
+        qr_buffer.seek(0)
+        
+        # Dessiner QR en haut à droite
+        c.drawImage(ImageReader(qr_buffer), width - 100, height - 100, 
+                    width=70, height=70, preserveAspectRatio=True)
+        
+        y -= 25
         
         # ========== EN-TÊTE ==========
         c.setFont("Helvetica-Bold", 13)
@@ -2370,6 +2673,8 @@ class PDFGenerator:
         c.drawString(90, y, f"Adresse : {adresse}")
         y -= 14
         c.drawString(90, y, f"N° Sécurité Sociale : {numero_ss}")
+        y -= 14
+        c.drawString(90, y, f"N° ANEM : {numero_anem}")
         y -= 18
         
         c.setFont("Helvetica-Bold", 10)
@@ -2384,7 +2689,7 @@ class PDFGenerator:
         y -= 25
         
         c.setFont("Helvetica-Bold", 10)
-        c.drawString(70, y, "Date de début :")
+        c.drawString(70, y, "Date de Recrutement :")
         c.setFont("Helvetica", 10)
         c.drawString(200, y, date_debut_str)
         
@@ -2397,7 +2702,12 @@ class PDFGenerator:
         c.setFont("Helvetica-Bold", 10)
         c.drawString(70, y, "Durée :")
         c.setFont("Helvetica", 10)
-        duree_text = f"{duree_contrat} mois" if duree_contrat else "À déterminer"
+        if duree_mois_calculee:
+            duree_text = f"{duree_mois_calculee} mois"
+        elif duree_contrat:
+            duree_text = f"{duree_contrat} mois"
+        else:
+            duree_text = "À déterminer"
         c.drawString(200, y, duree_text)
         y -= 30
         
@@ -2408,9 +2718,15 @@ class PDFGenerator:
         c.drawString(50, y, "Article 1 : Objet du contrat")
         y -= 14
         c.setFont("Helvetica", 9)
-        c.drawString(70, y, f"Le salarié est engagé en qualité de {poste} et s'engage à exécuter")
+        c.drawString(70, y, "Le salarié est engagé en qualité de ")
+        c.setFont("Helvetica-Bold", 9)
+        text_width = c.stringWidth("Le salarié est engagé en qualité de ", "Helvetica", 9)
+        c.drawString(70 + text_width, y, poste)
+        c.setFont("Helvetica", 9)
+        poste_width = c.stringWidth(poste, "Helvetica-Bold", 9)
+        c.drawString(70 + text_width + poste_width, y, " et s'engage à")
         y -= 12
-        c.drawString(70, y, "les tâches qui lui seront confiées dans le cadre de cette fonction.")
+        c.drawString(70, y, "exécuter les tâches qui lui seront confiées dans le cadre de cette fonction.")
         y -= 20
         
         y = check_new_page(y)
@@ -2436,6 +2752,10 @@ class PDFGenerator:
         y -= 14
         c.setFont("Helvetica", 9)
         c.drawString(70, y, f"Le salarié exercera ses fonctions à {company_address}.")
+        y -= 12
+        c.drawString(70, y, "Le salarié pourra être amené à effectuer des déplacements sur le")
+        y -= 12
+        c.drawString(70, y, "territoire national ou international dans le cadre de ses missions.")
         y -= 20
         
         y = check_new_page(y)
@@ -2455,28 +2775,34 @@ class PDFGenerator:
         c.drawString(50, y, "Article 5 : Rémunération")
         y -= 14
         c.setFont("Helvetica", 9)
-        c.drawString(70, y, f"Le salaire mensuel brut est fixé à {salaire:,.2f} DA.")
-        y -= 12
-        c.drawString(70, y, "Ce salaire pourra être complété par les primes prévues")
-        y -= 12
-        c.drawString(70, y, "par le règlement intérieur et la législation en vigueur.")
+        c.drawString(70, y, f"Le salaire mensuel brut est fixé à {salaire:,.2f} DA. Ce salaire pourra être complété par les primes prévues par le règlement intérieur et la législation en vigueur.")
         y -= 20
         
-        y = check_new_page(y, 120)
+        y = check_new_page(y, 160)
         
         c.setFont("Helvetica-Bold", 10)
         c.drawString(50, y, "Article 6 : Primes et indemnités")
         y -= 14
         c.setFont("Helvetica", 9)
-        c.drawString(70, y, "Le salarié pourra bénéficier des primes suivantes :")
+        c.drawString(70, y, "Le salarié pourra bénéficier des primes et indemnités suivantes :")
         y -= 12
-        c.drawString(85, y, "• Prime de rendement : 5% du salaire de base")
+        c.drawString(85, y, "• Indemnité de Nuisance (IN) : 5% du salaire de base")
         y -= 12
-        c.drawString(85, y, "• Prime de fidélité : 5% du salaire de base")
+        c.drawString(85, y, "• Indemnité Forfaitaire Service Permanent (IFSP) : 5% du salaire de base")
         y -= 12
-        c.drawString(85, y, "• Prime d'expérience : 1% par année d'ancienneté")
+        c.drawString(85, y, "• Indemnité Expérience Professionnelle (IEP) : selon ancienneté")
         y -= 12
-        c.drawString(85, y, "• Prime de panier : 100 DA/jour travaillé")
+        c.drawString(85, y, "• Prime d'Encouragement : 10% du salaire de base")
+        y -= 12
+        c.drawString(85, y, "• Prime Chauffeur : 100 DA/jour travaillé (si applicable)")
+        y -= 12
+        c.drawString(85, y, "• Prime de Nuit Agent Sécurité : 750 DA/mois (si applicable)")
+        y -= 12
+        c.drawString(85, y, "• Prime de Déplacement : selon missions effectuées")
+        y -= 12
+        c.drawString(85, y, "• Panier : 100 DA/jour travaillé")
+        y -= 12
+        c.drawString(85, y, "• Prime de Transport : 100 DA/jour travaillé")
         y -= 20
         
         y = check_new_page(y)
@@ -2488,7 +2814,7 @@ class PDFGenerator:
         c.drawString(70, y, "Le salarié bénéficiera des congés payés conformément")
         y -= 12
         c.drawString(70, y, "aux dispositions de la loi 90-11 et du règlement intérieur.")
-        y -= 20
+        y -= 15
         
         y = check_new_page(y)
         
@@ -2499,7 +2825,7 @@ class PDFGenerator:
         c.drawString(70, y, "Le salarié s'engage à respecter le règlement intérieur,")
         y -= 12
         c.drawString(70, y, "exécuter ses tâches avec soin et préserver la confidentialité.")
-        y -= 20
+        y -= 15
         
         y = check_new_page(y)
         
@@ -2507,10 +2833,10 @@ class PDFGenerator:
         c.drawString(50, y, "Article 9 : Préavis")
         y -= 14
         c.setFont("Helvetica", 9)
-        c.drawString(70, y, "En cas de rupture, un préavis d'un (1) mois devra être respecté,")
+        c.drawString(70, y, "En cas de rupture, un préavis de quinze (15) jours devra être respecté,")
         y -= 12
         c.drawString(70, y, "sauf en cas de faute grave.")
-        y -= 20
+        y -= 15
         
         y = check_new_page(y)
         
@@ -2518,7 +2844,9 @@ class PDFGenerator:
         c.drawString(50, y, "Article 10 : Litiges")
         y -= 14
         c.setFont("Helvetica", 9)
-        c.drawString(70, y, "Tout différend sera soumis aux juridictions compétentes.")
+        c.drawString(70, y, "Tout différend sera soumis aux juridictions compétentes,")
+        y -= 12
+        c.drawString(70, y, "le tribunal de Chelghoum Laid étant territorialement compétent.")
         y -= 30
         
         # ========== DATE ET SIGNATURES ==========
@@ -2540,6 +2868,9 @@ class PDFGenerator:
         c.setFont("Helvetica", 8)
         c.drawCentredString(150, y, "(Signature et cachet)")
         c.drawCentredString(width - 150, y, "(Signature)")
+        
+        # Footer de la dernière page
+        draw_footer()
         
         # Finaliser le PDF
         c.save()
@@ -3022,17 +3353,43 @@ class PDFGenerator:
             buffer,
             pagesize=A4,
             topMargin=1.5*cm,
-            bottomMargin=1.5*cm,
-            leftMargin=1.5*cm,
-            rightMargin=1.5*cm
+            bottomMargin=2.5*cm,  # Plus d'espace pour le footer
+            leftMargin=0.75*cm,   # Marges étroites
+            rightMargin=0.75*cm
         )
+        
+        # Fonction pour footer en pied de page
+        def add_bulletin_footer(canvas, doc):
+            canvas.saveState()
+            canvas.setFont('Helvetica', 7)
+            canvas.setFillColor(colors.grey)
+            footer_text_1 = f"Bulletin généré le {datetime.now().strftime('%d/%m/%Y à %H:%M')}"
+            footer_text_2 = "Powered by AIRBAND"
+            canvas.drawCentredString(A4[0]/2, 1.5*cm, footer_text_1)
+            canvas.drawCentredString(A4[0]/2, 1*cm, footer_text_2)
+            canvas.restoreState()
         
         story = []
         
-        # 1. PAGE DE RÉSUMÉ
+        # 1. PAGE DE RÉSUMÉ (PAGE DE GARDE)
         # ------------------
         params = self._get_parametres()
         company_name = params.raison_sociale or params.nom_entreprise or "AY HR"
+        company_address = params.adresse if params and params.adresse else "Adresse non définie"
+        company_ss_employeur = params.numero_secu_employeur if params and params.numero_secu_employeur else ""
+        company_nif = params.nif if params and params.nif else ""
+        
+        # EN-TÊTE ENTREPRISE (ligne par ligne)
+        header_style = ParagraphStyle('CompanyHeader', parent=self.styles['Normal'], 
+                                      fontSize=11, alignment=TA_CENTER, spaceAfter=5)
+        story.append(Spacer(1, 0.5*cm))
+        story.append(Paragraph(f"<b>{company_name}</b>", header_style))
+        story.append(Paragraph(company_address, header_style))
+        if company_ss_employeur:
+            story.append(Paragraph(f"N° Employeur Sécurité Sociale: {company_ss_employeur}", header_style))
+        if company_nif:
+            story.append(Paragraph(f"NIF: {company_nif}", header_style))
+        story.append(Spacer(1, 1*cm))
         
         # Titre
         date_obj = datetime(periode['annee'], periode['mois'], 1)
@@ -3045,14 +3402,13 @@ class PDFGenerator:
             alignment=TA_CENTER,
             spaceAfter=20
         )
-        story.append(Spacer(1, 2*cm))
-        story.append(Paragraph(f"<b>BULLETINS DE PAIE - {mois_str}</b>", title_style))
-        story.append(Spacer(1, 1*cm))
+        story.append(Paragraph(f"<b>BULLETINS DE PAIE</b>", title_style))
+        story.append(Paragraph(f"<b>{mois_str}</b>", title_style))
+        story.append(Spacer(1, 1.5*cm))
         
-        # Tableau résumé des totaux
-        total_jours_trav = sum(int(e['salaire_data'].get('jours_travailles', 0)) for e in employes_data)
-        total_jours_abs = sum(int(e['salaire_data'].get('jours_ouvrables', 26)) - int(e['salaire_data'].get('jours_travailles', 0)) for e in employes_data)
+        # Tableau résumé des totaux (sans lignes jours travaillés/absences)
         total_cotisable = sum(float(e['salaire_data'].get('salaire_cotisable', 0)) for e in employes_data)
+        total_cnas = sum(float(e['salaire_data'].get('retenue_securite_sociale', 0)) for e in employes_data)
         total_imposable = sum(float(e['salaire_data'].get('salaire_imposable', 0)) for e in employes_data)
         total_irg = sum(float(e['salaire_data'].get('irg', 0)) for e in employes_data)
         total_net = sum(float(e['salaire_data'].get('salaire_net', 0)) for e in employes_data)
@@ -3060,9 +3416,8 @@ class PDFGenerator:
         resume_bulletin_data = [
             ['RÉSUMÉ GÉNÉRAL', ''],
             ['Nombre d\'employés', str(len(employes_data))],
-            ['Total Jours Travaillés', str(total_jours_trav)],
-            ['Total Jours d\'Absences', str(total_jours_abs)],
             ['Total Salaire Cotisable', f"{total_cotisable:,.2f} DA".replace(',', ' ')],
+            ['Total CNAS 9%', f"{total_cnas:,.2f} DA".replace(',', ' ')],
             ['Total Salaire Imposable', f"{total_imposable:,.2f} DA".replace(',', ' ')],
             ['Total IRG', f"{total_irg:,.2f} DA".replace(',', ' ')],
             ['Total Salaire Net à Payer', f"{total_net:,.2f} DA".replace(',', ' ')],
@@ -3085,21 +3440,12 @@ class PDFGenerator:
         ]))
         story.append(resume_bulletin_table)
         
-        story.append(Spacer(1, 2*cm))
-        story.append(Paragraph(f"<b>Entreprise:</b> {company_name}", self.styles['CustomBody']))
-        
-        date_generation = datetime.now().strftime("%d/%m/%Y")
+        # Footer en pied de page au lieu d'en bas de tableau
         story.append(Spacer(1, 1*cm))
-        story.append(Paragraph(f"Généré le: {date_generation}", self.styles['CustomBody']))
-        
-        # Footer Powered by AIRBAND
-        story.append(Spacer(1, 2*cm))
-        footer_cover = Paragraph(
-            "<i>Powered by AIRBAND</i>",
-            ParagraphStyle('FooterAirband', parent=self.styles['Normal'], fontSize=8,
-                          textColor=colors.black, alignment=TA_CENTER)
-        )
-        story.append(footer_cover)
+        date_generation = datetime.now().strftime("%d/%m/%Y")
+        story.append(Paragraph(f"<i>Généré le: {date_generation}</i>", 
+                              ParagraphStyle('DateGen', parent=self.styles['Normal'], 
+                                           fontSize=9, alignment=TA_CENTER, textColor=colors.grey)))
         
         story.append(PageBreak())
         
@@ -3354,16 +3700,8 @@ class PDFGenerator:
         ]))
         story.append(recap_table)
         
-        # Footer Powered by AIRBAND
-        story.append(Spacer(1, 0.5*cm))
-        footer_recap = Paragraph(
-            "<i>Powered by AIRBAND</i>",
-            ParagraphStyle('FooterAirband', parent=self.styles['Normal'], fontSize=8,
-                          textColor=colors.black, alignment=TA_CENTER)
-        )
-        story.append(footer_recap)
-        
-        doc.build(story)
+        # Générer le PDF avec footer en pied de page sur toutes les pages
+        doc.build(story, onFirstPage=add_bulletin_footer, onLaterPages=add_bulletin_footer)
         buffer.seek(0)
         return buffer
 

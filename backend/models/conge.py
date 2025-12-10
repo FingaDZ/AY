@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, Numeric, ForeignKey, DateTime, func
+from sqlalchemy import Column, Integer, Numeric, ForeignKey, DateTime, Date, String, func
 from sqlalchemy.orm import relationship
 from database import Base
 
@@ -13,6 +13,13 @@ class Conge(Base):
     jours_conges_acquis = Column(Numeric(5, 2), default=0.00)
     jours_conges_pris = Column(Numeric(5, 2), default=0.00)
     jours_conges_restants = Column(Numeric(5, 2), default=0.00)
+    
+    # Nouvelles colonnes pour la saisie de congé
+    date_debut = Column(Date, nullable=True, comment="Date de début du congé pris")
+    date_fin = Column(Date, nullable=True, comment="Date de fin du congé pris")
+    type_conge = Column(String(50), nullable=True, default="ANNUEL", comment="Type: ANNUEL, MALADIE, AUTRE")
+    commentaire = Column(String(500), nullable=True, comment="Commentaire ou raison")
+    
     date_calcul = Column(DateTime, server_default=func.now())
     derniere_mise_a_jour = Column(DateTime, server_default=func.now(), onupdate=func.now())
     

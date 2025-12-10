@@ -81,6 +81,22 @@ function GrillePointage() {
     filterEmployes();
   }, [employes, filters.poste, selectedEmployeFilter, searchId]);
 
+  // Recharger les données quand l'utilisateur revient sur la page (visibilité)
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (!document.hidden) {
+        // L'utilisateur revient sur l'onglet, recharger les données
+        loadData();
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, [filters.annee, filters.mois, filters.statut]);
+
   const loadData = async () => {
     try {
       setLoading(true);
@@ -384,6 +400,7 @@ function GrillePointage() {
       const nbJours = getDaysInMonth(filters.annee, filters.mois);
       const employe = employes.find(e => e.id === employeId);
       const dateRecrutement = new Date(employe.date_recrutement);
+      const dateFinContrat = employe.date_fin_contrat ? new Date(employe.date_fin_contrat) : null;
 
       const updatedData = pointage ? { ...pointage } : {
         employe_id: employeId,
@@ -401,7 +418,11 @@ function GrillePointage() {
         if (dateJour < dateRecrutement) {
           updatedData[jourKey] = 0;
         }
-        // Vendredi = Férié (1)
+        // Après la date de fin de contrat = Absent (0)
+        else if (dateFinContrat && dateJour > dateFinContrat) {
+          updatedData[jourKey] = 0;
+        }
+        // Vendredi = Férié (1) - seulement si dans la période de contrat
         else if (jourSemaine === 5) {
           updatedData[jourKey] = 1;
         }
@@ -454,6 +475,7 @@ function GrillePointage() {
           }
 
           const dateRecrutement = new Date(employe.date_recrutement);
+          const dateFinContrat = employe.date_fin_contrat ? new Date(employe.date_fin_contrat) : null;
           const updatedData = pointage ? { ...pointage } : {
             employe_id: employe.id,
             annee: filters.annee,
@@ -470,7 +492,11 @@ function GrillePointage() {
             if (dateJour < dateRecrutement) {
               updatedData[jourKey] = 0;
             }
-            // Vendredi = Férié (1)
+            // Après la date de fin de contrat = Absent (0)
+            else if (dateFinContrat && dateJour > dateFinContrat) {
+              updatedData[jourKey] = 0;
+            }
+            // Vendredi = Férié (1) - seulement si dans la période de contrat
             else if (jourSemaine === 5) {
               updatedData[jourKey] = 1;
             }
@@ -598,6 +624,9 @@ function GrillePointage() {
         message.error(`${successCount} sauvegardés, ${errorCount} erreur(s), ${skippedCount} verrouillés. Voir console pour détails.`);
         console.error('Errors:', errorMsg);
       }
+
+      // Recharger les données pour avoir l'état actuel de la base de données
+      await loadData();
 
     } catch (error) {
       message.error('Erreur lors de la sauvegarde');

@@ -1,16 +1,23 @@
-# HR System - Système de Gestion des Ressources Humaines
+# AY HR Management System - Système de Gestion des Ressources Humaines
 
-[![Version](https://img.shields.io/badge/version-2.3.0-blue.svg)](https://github.com/FingaDZ/AY/releases/tag/v2.3.0)
+[![Version](https://img.shields.io/badge/version-3.5.0-blue.svg)](https://github.com/FingaDZ/AY/releases/tag/v3.5.0)
 [![Status](https://img.shields.io/badge/status-stable-green.svg)](https://github.com/FingaDZ/AY)
 [![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20Linux-lightgrey.svg)]()
 [![License](https://img.shields.io/badge/license-Private-red.svg)]()
-[![Python](https://img.shields.io/badge/python-3.9+-blue.svg)](https://www.python.org/)
+[![Python](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/)
 [![React](https://img.shields.io/badge/react-18.3-61dafb.svg)](https://reactjs.org/)
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.104-009688.svg)](https://fastapi.tiangolo.com/)
 
-> **Version actuelle** : 1.7.0 (Hybrid Incomplete Logs)  
-> **Dernière mise à jour** : 28 novembre 2025  
+> **Version actuelle** : 3.5.0 (PDF Enhancement + ANEM Integration)  
+> **Dernière mise à jour** : 10 décembre 2025  
 > **Statut** : ✅ Production Ready
+
+## 🎉 Nouveautés v3.5.0
+- 📄 **PDF Améliorés** : Footer automatique, marges étroites, QR codes
+- 🆔 **N° ANEM** : Intégration complète dans documents RH
+- 📋 **Contrats** : Numérotation unique, mentions légales, QR codes
+- 🎫 **Congés** : Ligne jours de congé dans bulletins de paie
+- 📊 **Rapports** : Optimisation layout et footers en pied de page
 
 ---
 
