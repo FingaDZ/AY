@@ -3029,51 +3029,77 @@ class PDFGenerator:
         
         story = []
         
-        # 1. PAGE DE GARDE
-        # ----------------
+        # 1. PAGE DE RÉSUMÉ
+        # ------------------
         params = self._get_parametres()
         company_name = params.raison_sociale or params.nom_entreprise or "AY HR"
         
-        # Logo (si disponible)
-        # TODO: Gestion logo
-        
-        story.append(Spacer(1, 5*cm))
-        
         # Titre
+        date_obj = datetime(periode['annee'], periode['mois'], 1)
+        mois_str = date_obj.strftime("%B %Y").capitalize()
+        
         title_style = ParagraphStyle(
             name='CoverTitle',
             parent=self.styles['Heading1'],
-            fontSize=24,
+            fontSize=20,
             alignment=TA_CENTER,
-            spaceAfter=30
+            spaceAfter=20
         )
-        story.append(Paragraph("BULLETINS DE PAIE", title_style))
+        story.append(Spacer(1, 2*cm))
+        story.append(Paragraph(f"<b>BULLETINS DE PAIE - {mois_str}</b>", title_style))
+        story.append(Spacer(1, 1*cm))
         
-        # Période
-        date_obj = datetime(periode['annee'], periode['mois'], 1)
-        mois_str = date_obj.strftime("%B %Y").capitalize()
-        subtitle_style = ParagraphStyle(
-            name='CoverSubtitle',
-            parent=self.styles['Heading2'],
-            fontSize=18,
-            alignment=TA_CENTER,
-            textColor=colors.grey,
-            spaceAfter=50
-        )
-        story.append(Paragraph(mois_str, subtitle_style))
+        # Tableau résumé des totaux
+        total_jours_trav = sum(int(e['salaire_data'].get('jours_travailles', 0)) for e in employes_data)
+        total_jours_abs = sum(int(e['salaire_data'].get('jours_ouvrables', 26)) - int(e['salaire_data'].get('jours_travailles', 0)) for e in employes_data)
+        total_cotisable = sum(float(e['salaire_data'].get('salaire_cotisable', 0)) for e in employes_data)
+        total_imposable = sum(float(e['salaire_data'].get('salaire_imposable', 0)) for e in employes_data)
+        total_irg = sum(float(e['salaire_data'].get('irg', 0)) for e in employes_data)
+        total_net = sum(float(e['salaire_data'].get('salaire_net', 0)) for e in employes_data)
         
-        # Infos entreprise
+        resume_bulletin_data = [
+            ['RÉSUMÉ GÉNÉRAL', ''],
+            ['Nombre d\'employés', str(len(employes_data))],
+            ['Total Jours Travaillés', str(total_jours_trav)],
+            ['Total Jours d\'Absences', str(total_jours_abs)],
+            ['Total Salaire Cotisable', f"{total_cotisable:,.2f} DA".replace(',', ' ')],
+            ['Total Salaire Imposable', f"{total_imposable:,.2f} DA".replace(',', ' ')],
+            ['Total IRG', f"{total_irg:,.2f} DA".replace(',', ' ')],
+            ['Total Salaire Net à Payer', f"{total_net:,.2f} DA".replace(',', ' ')],
+        ]
+        
+        resume_bulletin_table = Table(resume_bulletin_data, colWidths=[12*cm, 6*cm])
+        resume_bulletin_table.setStyle(TableStyle([
+            ('BACKGROUND', (0,0), (-1,0), colors.black),
+            ('TEXTCOLOR', (0,0), (-1,0), colors.white),
+            ('FONTNAME', (0,0), (-1,0), 'Helvetica-Bold'),
+            ('FONTSIZE', (0,0), (-1,0), 11),
+            ('FONTNAME', (0,1), (0,-1), 'Helvetica-Bold'),
+            ('FONTSIZE', (0,1), (-1,-1), 10),
+            ('ALIGN', (0,0), (0,0), 'LEFT'),
+            ('ALIGN', (1,0), (1,-1), 'RIGHT'),
+            ('GRID', (0,0), (-1,-1), 0.5, colors.black),
+            ('BACKGROUND', (0,-1), (-1,-1), colors.lightgrey),
+            ('FONTNAME', (0,-1), (-1,-1), 'Helvetica-Bold'),
+            ('FONTSIZE', (0,-1), (-1,-1), 11),
+        ]))
+        story.append(resume_bulletin_table)
+        
         story.append(Spacer(1, 2*cm))
         story.append(Paragraph(f"<b>Entreprise:</b> {company_name}", self.styles['CustomBody']))
         
-        # Résumé
-        total_net = sum(float(e['salaire_data'].get('salaire_net', 0)) for e in employes_data)
-        story.append(Paragraph(f"<b>Nombre d'employés:</b> {len(employes_data)}", self.styles['CustomBody']))
-        story.append(Paragraph(f"<b>Total Net à Payer:</b> {total_net:,.2f} DA", self.styles['CustomBody']))
-        
         date_generation = datetime.now().strftime("%d/%m/%Y")
         story.append(Spacer(1, 1*cm))
-        story.append(Paragraph(f"Généré le: {date_generation}", self.styles['Footer']))
+        story.append(Paragraph(f"Généré le: {date_generation}", self.styles['CustomBody']))
+        
+        # Footer Powered by AIRBAND
+        story.append(Spacer(1, 2*cm))
+        footer_cover = Paragraph(
+            "<i>Powered by AIRBAND</i>",
+            ParagraphStyle('FooterAirband', parent=self.styles['Normal'], fontSize=8,
+                          textColor=colors.black, alignment=TA_CENTER)
+        )
+        story.append(footer_cover)
         
         story.append(PageBreak())
         
@@ -3158,8 +3184,8 @@ class PDFGenerator:
             
             info_table = Table(info_data, colWidths=[3.5*cm, 5*cm, 3.5*cm, 6*cm])
             info_table.setStyle(TableStyle([
-                ('BACKGROUND', (0, 0), (1, 0), colors.HexColor('#404040')),
-                ('BACKGROUND', (2, 0), (3, 0), colors.HexColor('#404040')),
+                ('BACKGROUND', (0, 0), (1, 0), colors.black),
+                ('BACKGROUND', (2, 0), (3, 0), colors.black),
                 ('TEXTCOLOR', (0, 0), (1, 0), colors.white),
                 ('TEXTCOLOR', (2, 0), (3, 0), colors.white),
                 ('FONTNAME', (0, 0), (3, 0), 'Helvetica-Bold'),
@@ -3221,7 +3247,7 @@ class PDFGenerator:
             
             salaire_table = Table(salaire_detail_data, colWidths=[6*cm, 3.5*cm, 2.5*cm, 3*cm, 3*cm])
             salaire_table.setStyle(TableStyle([
-                ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#404040')),
+                ('BACKGROUND', (0, 0), (-1, 0), colors.black),
                 ('TEXTCOLOR', (0, 0), (-1, 0), colors.white),
                 ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
                 ('FONTSIZE', (0, 0), (-1, -1), 8),
@@ -3229,9 +3255,9 @@ class PDFGenerator:
                 ('FONTNAME', (0, 1), (-1, -1), 'Helvetica'),
                 ('ALIGN', (1, 1), (-1, -1), 'RIGHT'),
                 ('ALIGN', (0, 1), (0, -1), 'LEFT'),
-                ('BACKGROUND', (0, 11), (-1, 11), colors.HexColor('#e6f2ff')),
+                ('BACKGROUND', (0, 11), (-1, 11), colors.lightgrey),
                 ('FONTNAME', (0, 11), (-1, 11), 'Helvetica-Bold'),
-                ('BACKGROUND', (0, 15), (-1, 15), colors.HexColor('#fff7e6')),
+                ('BACKGROUND', (0, 15), (-1, 15), colors.lightgrey),
                 ('FONTNAME', (0, 15), (-1, 15), 'Helvetica-Bold'),
                 ('GRID', (0, 0), (-1, -1), 0.5, colors.black),
                 ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
@@ -3248,7 +3274,7 @@ class PDFGenerator:
             ]
             total_table = Table(total_data, colWidths=[12*cm, 6*cm])
             total_table.setStyle(TableStyle([
-                ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#52c41a')),
+                ('BACKGROUND', (0, 0), (-1, 0), colors.black),
                 ('TEXTCOLOR', (0, 0), (-1, 0), colors.white),
                 ('FONTNAME', (0, 0), (-1, -1), 'Helvetica-Bold'),
                 ('FONTSIZE', (0, 0), (-1, -1), 11),
@@ -3262,53 +3288,80 @@ class PDFGenerator:
             ]))
             story.append(total_table)
             
-            # Footer bulletin
+            # Footer bulletin - Powered by AIRBAND
             story.append(Spacer(1, 0.5*cm))
             footer = Paragraph(
                 f"<i>Bulletin généré le {datetime.now().strftime('%d/%m/%Y à %H:%M')}</i><br/>"
-                "<i>Ce bulletin ne doit pas être divulgué à des tiers.</i>",
-                ParagraphStyle('FooterInfo', parent=self.styles['Normal'], fontSize=7,
-                              textColor=colors.grey, alignment=TA_CENTER)
+                "<i>Powered by AIRBAND</i>",
+                ParagraphStyle('FooterInfo', parent=self.styles['Normal'], fontSize=8,
+                              textColor=colors.black, alignment=TA_CENTER)
             )
             story.append(footer)
             
             # Saut de page après chaque bulletin
             story.append(PageBreak())
 
-        # 3. TABLEAU RÉCAPITULATIF
-        # ------------------------
+        # 3. TABLEAU RÉCAPITULATIF GÉNÉRAL DÉTAILLÉ
+        # -------------------------------------------
         story.append(Paragraph("RÉCAPITULATIF GÉNÉRAL", self.styles['CustomTitle']))
         story.append(Spacer(1, 0.5*cm))
         
-        recap_data = [['Nom & Prénom', 'Salaire Base', 'Cotisable', 'Net à Payer']]
-        for emp in employes_data:
+        # En-têtes du tableau
+        recap_data = [['N°', 'Matricule', 'Nom & Prénom', 'Base', 'Cotisable', 'CNAS 9%', 'Imposable', 'IRG', 'Net']]
+        
+        # Lignes par employé
+        for idx, emp in enumerate(employes_data, start=1):
             d = emp['salaire_data']
+            e_info = emp['employe_data']
             recap_data.append([
-                f"{emp['employe_data']['nom']} {emp['employe_data']['prenom']}",
-                f"{float(d.get('salaire_base_proratis', 0)):,.2f}",
-                f"{float(d.get('salaire_cotisable', 0)):,.2f}",
-                f"{float(d.get('salaire_net', 0)):,.2f}"
+                str(idx),
+                str(e_info.get('id', '')),
+                f"{e_info.get('nom', '')} {e_info.get('prenom', '')}",
+                f"{float(d.get('salaire_base_proratis', 0)):,.0f}".replace(',', ' '),
+                f"{float(d.get('salaire_cotisable', 0)):,.0f}".replace(',', ' '),
+                f"{float(d.get('retenue_securite_sociale', 0)):,.0f}".replace(',', ' '),
+                f"{float(d.get('salaire_imposable', 0)):,.0f}".replace(',', ' '),
+                f"{float(d.get('irg', 0)):,.0f}".replace(',', ' '),
+                f"{float(d.get('salaire_net', 0)):,.0f}".replace(',', ' ')
             ])
             
-        # Totaux
+        # Ligne totaux
         recap_data.append([
-            'TOTAL GÉNÉRAL',
-            f"{sum(float(e['salaire_data'].get('salaire_base_proratis', 0)) for e in employes_data):,.2f}",
-            f"{sum(float(e['salaire_data'].get('salaire_cotisable', 0)) for e in employes_data):,.2f}",
-            f"{total_net:,.2f}"
+            '',
+            'TOTAUX',
+            '',
+            f"{sum(float(e['salaire_data'].get('salaire_base_proratis', 0)) for e in employes_data):,.0f}".replace(',', ' '),
+            f"{sum(float(e['salaire_data'].get('salaire_cotisable', 0)) for e in employes_data):,.0f}".replace(',', ' '),
+            f"{sum(float(e['salaire_data'].get('retenue_securite_sociale', 0)) for e in employes_data):,.0f}".replace(',', ' '),
+            f"{sum(float(e['salaire_data'].get('salaire_imposable', 0)) for e in employes_data):,.0f}".replace(',', ' '),
+            f"{sum(float(e['salaire_data'].get('irg', 0)) for e in employes_data):,.0f}".replace(',', ' '),
+            f"{total_net:,.0f}".replace(',', ' ')
         ])
         
-        recap_table = Table(recap_data, colWidths=[7*cm, 3.5*cm, 3.5*cm, 3.5*cm])
+        recap_table = Table(recap_data, colWidths=[1*cm, 1.5*cm, 5*cm, 2*cm, 2*cm, 2*cm, 2*cm, 2*cm, 2.5*cm])
         recap_table.setStyle(TableStyle([
             ('GRID', (0,0), (-1,-1), 0.5, colors.black),
-            ('BACKGROUND', (0,0), (-1,0), colors.grey),
+            ('BACKGROUND', (0,0), (-1,0), colors.black),
             ('TEXTCOLOR', (0,0), (-1,0), colors.white),
             ('FONTNAME', (0,0), (-1,0), 'Helvetica-Bold'),
-            ('ALIGN', (1,0), (-1,-1), 'RIGHT'),
+            ('FONTSIZE', (0,0), (-1,0), 8),
+            ('FONTSIZE', (0,1), (-1,-1), 7),
+            ('ALIGN', (0,0), (-1,-1), 'CENTER'),
+            ('ALIGN', (3,1), (-1,-1), 'RIGHT'),
+            ('ALIGN', (2,1), (2,-1), 'LEFT'),
             ('BACKGROUND', (0,-1), (-1,-1), colors.lightgrey),
             ('FONTNAME', (0,-1), (-1,-1), 'Helvetica-Bold'),
         ]))
         story.append(recap_table)
+        
+        # Footer Powered by AIRBAND
+        story.append(Spacer(1, 0.5*cm))
+        footer_recap = Paragraph(
+            "<i>Powered by AIRBAND</i>",
+            ParagraphStyle('FooterAirband', parent=self.styles['Normal'], fontSize=8,
+                          textColor=colors.black, alignment=TA_CENTER)
+        )
+        story.append(footer_recap)
         
         doc.build(story)
         buffer.seek(0)
@@ -3316,123 +3369,211 @@ class PDFGenerator:
 
     def generate_rapport_salaires(self, resultats: List[Dict], periode: Dict) -> BytesIO:
         """
-        Générer rapport récapitulatif DÉTAILLÉ des salaires du mois (v3.0.1)
-        Contient TOUTES les colonnes: Nom, Jours, Base, Proratisé, Primes/Indemnités détaillées,
-        Cotisable, Retenues, Imposable, IRG, Net
+        Générer rapport DÉTAILLÉ style v1.3.0 avec:
+        - Page 1: Résumé des totaux par catégorie
+        - Pages suivantes: Détails par employé avec colonnes séparées
+        - Cachet et Signature
+        - Powered by AIRBAND
+        - Format noir et blanc pour impression
         """
         buffer = BytesIO()
         doc = SimpleDocTemplate(buffer, pagesize=landscape(A4), rightMargin=1*cm, leftMargin=1*cm, 
-                               topMargin=1.5*cm, bottomMargin=1.5*cm)
+                               topMargin=1.5*cm, bottomMargin=2*cm)
         story = []
         
-        # Titre
+        # PAGE 1: RÉSUMÉ DES TOTAUX
+        # --------------------------
         mois_nom = datetime(periode['annee'], periode['mois'], 1).strftime('%B %Y').capitalize()
-        story.append(Paragraph(f"<b>RAPPORT DÉTAILLÉ DES SALAIRES - {mois_nom}</b>", self.styles['CustomTitle']))
-        story.append(Spacer(1, 0.5*cm))
+        story.append(Paragraph(f"<b>RAPPORT DES SALAIRES - {mois_nom}</b>", self.styles['CustomTitle']))
+        story.append(Spacer(1, 0.8*cm))
         
-        # Statistiques globales
+        # Calculer TOUS les totaux
         total_employes = len(resultats)
-        total_brut = sum(float(r['salaire_cotisable']) for r in resultats)
-        total_net = sum(float(r['salaire_net']) for r in resultats)
-        total_irg = sum(float(r['irg']) for r in resultats)
+        total_base_contrat = sum(float(r.get('salaire_base_initial', r.get('salaire_base', 0))) for r in resultats)
+        total_base_proratis = sum(float(r['salaire_base_proratis']) for r in resultats)
+        total_heures_supp = sum(float(r.get('heures_supplementaires', 0)) for r in resultats)
+        total_in = sum(float(r.get('indemnite_nuisance', 0)) for r in resultats)
+        total_ifsp = sum(float(r.get('ifsp', 0)) for r in resultats)
+        total_iep = sum(float(r.get('iep', 0)) for r in resultats)
+        total_prime_encour = sum(float(r.get('prime_encouragement', 0)) for r in resultats)
+        total_prime_chauff = sum(float(r.get('prime_chauffeur', 0)) for r in resultats)
+        total_prime_nuit = sum(float(r.get('prime_nuit_agent_securite', 0)) for r in resultats)
+        total_prime_depl = sum(float(r.get('prime_deplacement', 0)) for r in resultats)
+        total_cotisable = sum(float(r['salaire_cotisable']) for r in resultats)
         total_ss = sum(float(r['retenue_securite_sociale']) for r in resultats)
+        total_panier = sum(float(r.get('panier', 0)) for r in resultats)
+        total_transport = sum(float(r.get('prime_transport', 0)) for r in resultats)
+        total_imposable = sum(float(r['salaire_imposable']) for r in resultats)
+        total_irg = sum(float(r['irg']) for r in resultats)
+        total_avances = sum(float(r.get('total_avances', 0)) for r in resultats)
+        total_credit = sum(float(r.get('retenue_credit', 0)) for r in resultats)
+        total_net = sum(float(r['salaire_net']) for r in resultats)
         
-        stats_data = [
-            ['STATISTIQUES GÉNÉRALES', ''],
-            ['Nombre d\'employés:', str(total_employes)],
-            ['Masse salariale brute (cotisable):', f"{total_brut:,.2f} DA".replace(',', ' ')],
-            ['Total retenues Séc. Sociale:', f"{total_ss:,.2f} DA".replace(',', ' ')],
-            ['Total IRG:', f"{total_irg:,.2f} DA".replace(',', ' ')],
-            ['Masse salariale nette:', f"{total_net:,.2f} DA".replace(',', ' ')],
+        # Tableau résumé des totaux
+        resume_data = [
+            ['ÉLÉMENTS DU SALAIRE', 'MONTANT TOTAL (DA)'],
+            ['Nombre d\'employés', str(total_employes)],
+            ['', ''],
+            ['SALAIRE DE BASE', ''],
+            ['Salaire Base Contrat', f"{total_base_contrat:,.2f}".replace(',', ' ')],
+            ['Salaire Base Proratisé', f"{total_base_proratis:,.2f}".replace(',', ' ')],
+            ['Heures Supplémentaires', f"{total_heures_supp:,.2f}".replace(',', ' ')],
+            ['', ''],
+            ['INDEMNITÉS', ''],
+            ['Indemnité de Nuisance (IN)', f"{total_in:,.2f}".replace(',', ' ')],
+            ['Indemnité Forfaitaire Service Permanent (IFSP)', f"{total_ifsp:,.2f}".replace(',', ' ')],
+            ['Indemnité Expérience Professionnelle (IEP)', f"{total_iep:,.2f}".replace(',', ' ')],
+            ['', ''],
+            ['PRIMES', ''],
+            ['Prime d\'Encouragement', f"{total_prime_encour:,.2f}".replace(',', ' ')],
+            ['Prime Chauffeur', f"{total_prime_chauff:,.2f}".replace(',', ' ')],
+            ['Prime de Nuit Agent Sécurité', f"{total_prime_nuit:,.2f}".replace(',', ' ')],
+            ['Prime de Déplacement', f"{total_prime_depl:,.2f}".replace(',', ' ')],
+            ['', ''],
+            ['SALAIRE COTISABLE', f"{total_cotisable:,.2f}".replace(',', ' ')],
+            ['Retenue Sécurité Sociale (9%)', f"{total_ss:,.2f}".replace(',', ' ')],
+            ['', ''],
+            ['ÉLÉMENTS IMPOSABLES NON COTISABLES', ''],
+            ['Panier', f"{total_panier:,.2f}".replace(',', ' ')],
+            ['Prime de Transport', f"{total_transport:,.2f}".replace(',', ' ')],
+            ['', ''],
+            ['SALAIRE IMPOSABLE', f"{total_imposable:,.2f}".replace(',', ' ')],
+            ['IRG (Impôt sur le Revenu Global)', f"{total_irg:,.2f}".replace(',', ' ')],
+            ['', ''],
+            ['RETENUES DIVERSES', ''],
+            ['Avances sur salaire', f"{total_avances:,.2f}".replace(',', ' ')],
+            ['Retenue Crédit', f"{total_credit:,.2f}".replace(',', ' ')],
+            ['', ''],
+            ['SALAIRE NET À PAYER', f"{total_net:,.2f}".replace(',', ' ')],
         ]
         
-        stats_table = Table(stats_data, colWidths=[12*cm, 8*cm])
-        stats_table.setStyle(TableStyle([
-            ('BACKGROUND', (0,0), (-1,0), colors.HexColor('#366092')),
+        resume_table = Table(resume_data, colWidths=[15*cm, 8*cm])
+        resume_table.setStyle(TableStyle([
+            ('BACKGROUND', (0,0), (-1,0), colors.black),
             ('TEXTCOLOR', (0,0), (-1,0), colors.white),
             ('FONTNAME', (0,0), (-1,0), 'Helvetica-Bold'),
-            ('GRID', (0,0), (-1,-1), 0.5, colors.black),
-            ('FONTNAME', (0,1), (0,-1), 'Helvetica-Bold'),
+            ('FONTSIZE', (0,0), (-1,0), 10),
+            ('ALIGN', (0,0), (0,0), 'LEFT'),
+            ('ALIGN', (1,0), (1,0), 'RIGHT'),
+            ('FONTNAME', (0,1), (0,-1), 'Helvetica'),
+            ('FONTNAME', (0,3), (0,3), 'Helvetica-Bold'),
+            ('FONTNAME', (0,8), (0,8), 'Helvetica-Bold'),
+            ('FONTNAME', (0,13), (0,13), 'Helvetica-Bold'),
+            ('FONTNAME', (0,19), (0,19), 'Helvetica-Bold'),
+            ('FONTNAME', (0,22), (0,22), 'Helvetica-Bold'),
+            ('FONTNAME', (0,26), (0,26), 'Helvetica-Bold'),
+            ('FONTNAME', (0,29), (0,29), 'Helvetica-Bold'),
+            ('FONTNAME', (0,33), (0,33), 'Helvetica-Bold'),
+            ('FONTSIZE', (0,1), (-1,-1), 9),
             ('ALIGN', (1,1), (1,-1), 'RIGHT'),
-            ('BACKGROUND', (0,-1), (-1,-1), colors.lightgrey),
-            ('FONTNAME', (0,-1), (-1,-1), 'Helvetica-Bold'),
+            ('GRID', (0,0), (-1,-1), 0.5, colors.black),
+            ('LINEBELOW', (0,19), (-1,19), 2, colors.black),
+            ('LINEBELOW', (0,26), (-1,26), 2, colors.black),
+            ('LINEBELOW', (0,33), (-1,33), 2, colors.black),
+            ('BACKGROUND', (0,33), (-1,33), colors.lightgrey),
+            ('FONTNAME', (0,33), (-1,33), 'Helvetica-Bold'),
+            ('FONTSIZE', (0,33), (-1,33), 11),
         ]))
-        story.append(stats_table)
-        story.append(Spacer(1, 0.7*cm))
+        story.append(resume_table)
+        story.append(Spacer(1, 1*cm))
         
-        # TABLEAU DÉTAILLÉ avec TOUTES les colonnes
-        story.append(Paragraph("<b>DÉTAIL COMPLET PAR EMPLOYÉ</b>", self.styles['CustomSubtitle']))
-        story.append(Spacer(1, 0.3*cm))
+        # Cachet et Signature
+        signature_data = [['', '', 'Cachet et Signature']]
+        signature_table = Table(signature_data, colWidths=[10*cm, 5*cm, 8*cm])
+        signature_table.setStyle(TableStyle([
+            ('FONTNAME', (2,0), (2,0), 'Helvetica-Bold'),
+            ('ALIGN', (2,0), (2,0), 'CENTER'),
+            ('LINEABOVE', (2,0), (2,0), 1, colors.black),
+        ]))
+        story.append(signature_table)
         
-        # En-têtes sur 2 lignes pour plus de clarté
+        # Footer Page 1
+        story.append(Spacer(1, 0.5*cm))
+        footer_p1 = Paragraph(
+            "<i>Powered by AIRBAND</i>",
+            ParagraphStyle('FooterAirband', parent=self.styles['Normal'], fontSize=8,
+                          textColor=colors.black, alignment=TA_CENTER)
+        )
+        story.append(footer_p1)
+        
+        story.append(PageBreak())
+        
+        # PAGES SUIVANTES: DÉTAILS PAR EMPLOYÉ
+        # -------------------------------------
+        story.append(Paragraph(f"<b>DÉTAIL PAR EMPLOYÉ - {mois_nom}</b>", self.styles['CustomTitle']))
+        story.append(Spacer(1, 0.5*cm))
+        
+        # Tableau détaillé avec colonnes séparées pour primes et indemnités
         detail_data = [
-            ['Employé', 'J.Trav', 'Base\nContrat', 'Base\nProratisé', 'H.Supp', 'IN+IFSP\n+IEP', 
-             'Primes', 'Cotisable', 'Ret.SS\n(9%)', 'Panier+\nTransp', 'Imposable', 'IRG', 
-             'Avances+\nCrédit', 'Net à\nPayer']
+            ['Employé', 'J.Trav', 'Base\nContrat', 'Base\nProratisé', 'H.Supp', 
+             'IN', 'IFSP', 'IEP', 'P.Encour', 'P.Chauff', 'P.Nuit', 'P.Dépl',
+             'Cotisable', 'CNAS\n9%', 'Panier', 'Transp', 'Imposable', 'IRG', 
+             'Avances', 'Crédit', 'Net']
         ]
         
         for r in resultats:
-            # Calculer les totaux d'indemnités et primes
-            indemnites = float(r.get('indemnite_nuisance', 0)) + float(r.get('ifsp', 0)) + float(r.get('iep', 0))
-            primes = (float(r.get('prime_encouragement', 0)) + float(r.get('prime_chauffeur', 0)) + 
-                     float(r.get('prime_nuit_agent_securite', 0)) + float(r.get('prime_deplacement', 0)))
-            panier_transport = float(r.get('panier', 0)) + float(r.get('prime_transport', 0))
-            avances_credit = float(r.get('total_avances', 0)) + float(r.get('retenue_credit', 0))
-            
             detail_data.append([
                 f"{r['employe_nom']} {r['employe_prenom']}",
                 str(r['jours_travailles']),
                 f"{float(r.get('salaire_base_initial', r.get('salaire_base', 0))):,.0f}".replace(',', ' '),
                 f"{float(r['salaire_base_proratis']):,.0f}".replace(',', ' '),
                 f"{float(r.get('heures_supplementaires', 0)):,.0f}".replace(',', ' '),
-                f"{indemnites:,.0f}".replace(',', ' '),
-                f"{primes:,.0f}".replace(',', ' '),
+                f"{float(r.get('indemnite_nuisance', 0)):,.0f}".replace(',', ' '),
+                f"{float(r.get('ifsp', 0)):,.0f}".replace(',', ' '),
+                f"{float(r.get('iep', 0)):,.0f}".replace(',', ' '),
+                f"{float(r.get('prime_encouragement', 0)):,.0f}".replace(',', ' '),
+                f"{float(r.get('prime_chauffeur', 0)):,.0f}".replace(',', ' '),
+                f"{float(r.get('prime_nuit_agent_securite', 0)):,.0f}".replace(',', ' '),
+                f"{float(r.get('prime_deplacement', 0)):,.0f}".replace(',', ' '),
                 f"{float(r['salaire_cotisable']):,.0f}".replace(',', ' '),
                 f"{float(r['retenue_securite_sociale']):,.0f}".replace(',', ' '),
-                f"{panier_transport:,.0f}".replace(',', ' '),
+                f"{float(r.get('panier', 0)):,.0f}".replace(',', ' '),
+                f"{float(r.get('prime_transport', 0)):,.0f}".replace(',', ' '),
                 f"{float(r['salaire_imposable']):,.0f}".replace(',', ' '),
                 f"{float(r['irg']):,.0f}".replace(',', ' '),
-                f"{avances_credit:,.0f}".replace(',', ' '),
+                f"{float(r.get('total_avances', 0)):,.0f}".replace(',', ' '),
+                f"{float(r.get('retenue_credit', 0)):,.0f}".replace(',', ' '),
                 f"{float(r['salaire_net']):,.0f}".replace(',', ' ')
             ])
         
         # Ligne de totaux
-        total_indemnites = sum(float(r.get('indemnite_nuisance', 0)) + float(r.get('ifsp', 0)) + float(r.get('iep', 0)) for r in resultats)
-        total_primes = sum(float(r.get('prime_encouragement', 0)) + float(r.get('prime_chauffeur', 0)) + 
-                          float(r.get('prime_nuit_agent_securite', 0)) + float(r.get('prime_deplacement', 0)) for r in resultats)
-        total_panier_transport = sum(float(r.get('panier', 0)) + float(r.get('prime_transport', 0)) for r in resultats)
-        total_avances = sum(float(r.get('total_avances', 0)) + float(r.get('retenue_credit', 0)) for r in resultats)
-        
         detail_data.append([
-            'TOTAUX',
-            '',
-            f"{sum(float(r.get('salaire_base_initial', r.get('salaire_base', 0))) for r in resultats):,.0f}".replace(',', ' '),
-            f"{sum(float(r['salaire_base_proratis']) for r in resultats):,.0f}".replace(',', ' '),
-            f"{sum(float(r.get('heures_supplementaires', 0)) for r in resultats):,.0f}".replace(',', ' '),
-            f"{total_indemnites:,.0f}".replace(',', ' '),
-            f"{total_primes:,.0f}".replace(',', ' '),
-            f"{total_brut:,.0f}".replace(',', ' '),
+            'TOTAUX', '',
+            f"{total_base_contrat:,.0f}".replace(',', ' '),
+            f"{total_base_proratis:,.0f}".replace(',', ' '),
+            f"{total_heures_supp:,.0f}".replace(',', ' '),
+            f"{total_in:,.0f}".replace(',', ' '),
+            f"{total_ifsp:,.0f}".replace(',', ' '),
+            f"{total_iep:,.0f}".replace(',', ' '),
+            f"{total_prime_encour:,.0f}".replace(',', ' '),
+            f"{total_prime_chauff:,.0f}".replace(',', ' '),
+            f"{total_prime_nuit:,.0f}".replace(',', ' '),
+            f"{total_prime_depl:,.0f}".replace(',', ' '),
+            f"{total_cotisable:,.0f}".replace(',', ' '),
             f"{total_ss:,.0f}".replace(',', ' '),
-            f"{total_panier_transport:,.0f}".replace(',', ' '),
-            f"{sum(float(r['salaire_imposable']) for r in resultats):,.0f}".replace(',', ' '),
+            f"{total_panier:,.0f}".replace(',', ' '),
+            f"{total_transport:,.0f}".replace(',', ' '),
+            f"{total_imposable:,.0f}".replace(',', ' '),
             f"{total_irg:,.0f}".replace(',', ' '),
             f"{total_avances:,.0f}".replace(',', ' '),
+            f"{total_credit:,.0f}".replace(',', ' '),
             f"{total_net:,.0f}".replace(',', ' ')
         ])
         
-        # Largeurs de colonnes pour A4 paysage (29.7cm)
-        detail_table = Table(detail_data, colWidths=[4.5*cm, 1.2*cm, 1.5*cm, 1.5*cm, 1.2*cm, 1.5*cm, 
-                                                     1.5*cm, 1.8*cm, 1.5*cm, 1.5*cm, 1.8*cm, 1.5*cm, 
-                                                     1.5*cm, 2*cm])
+        # Largeurs de colonnes optimisées pour 21 colonnes
+        detail_table = Table(detail_data, colWidths=[3*cm, 1*cm, 1.2*cm, 1.2*cm, 1*cm,
+                                                     0.8*cm, 0.8*cm, 0.8*cm, 1*cm, 1*cm, 0.9*cm, 0.9*cm,
+                                                     1.3*cm, 1*cm, 0.9*cm, 0.9*cm, 1.3*cm, 1*cm,
+                                                     1*cm, 0.9*cm, 1.5*cm])
         detail_table.setStyle(TableStyle([
-            ('BACKGROUND', (0,0), (-1,0), colors.HexColor('#366092')),
+            ('BACKGROUND', (0,0), (-1,0), colors.black),
             ('TEXTCOLOR', (0,0), (-1,0), colors.white),
             ('FONTNAME', (0,0), (-1,0), 'Helvetica-Bold'),
-            ('FONTSIZE', (0,0), (-1,0), 7),
+            ('FONTSIZE', (0,0), (-1,0), 6),
             ('GRID', (0,0), (-1,-1), 0.5, colors.black),
-            ('FONTSIZE', (0,1), (-1,-1), 7),
+            ('FONTSIZE', (0,1), (-1,-1), 6),
             ('ALIGN', (1,0), (-1,-1), 'CENTER'),
-            ('ALIGN', (2,0), (-1,-1), 'RIGHT'),
+            ('ALIGN', (2,1), (-1,-1), 'RIGHT'),
             ('ALIGN', (0,1), (0,-1), 'LEFT'),
             ('BACKGROUND', (0,-1), (-1,-1), colors.lightgrey),
             ('FONTNAME', (0,-1), (-1,-1), 'Helvetica-Bold'),
@@ -3440,11 +3581,17 @@ class PDFGenerator:
         ]))
         story.append(detail_table)
         
-        # Footer
-        story.append(Spacer(1, 1*cm))
+        # Footer avec Powered by AIRBAND
+        story.append(Spacer(1, 0.8*cm))
         story.append(Paragraph(
             f"<i>Rapport généré le {datetime.now().strftime('%d/%m/%Y à %H:%M')}</i>",
-            self.styles['CustomBody']
+            ParagraphStyle('FooterDate', parent=self.styles['Normal'], fontSize=8,
+                          textColor=colors.black, alignment=TA_CENTER)
+        ))
+        story.append(Paragraph(
+            "<i>Powered by AIRBAND</i>",
+            ParagraphStyle('FooterAirband', parent=self.styles['Normal'], fontSize=8,
+                          textColor=colors.black, alignment=TA_CENTER)
         ))
         
         doc.build(story)
