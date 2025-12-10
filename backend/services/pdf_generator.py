@@ -69,6 +69,15 @@ class PDFGenerator:
             textColor=colors.grey,
             alignment=TA_CENTER,
         ))
+        
+        # Style pour les sous-titres personnalisés
+        self.styles.add(ParagraphStyle(
+            name='CustomSubtitle',
+            parent=self.styles['Heading2'],
+            fontSize=11,
+            textColor=colors.black,
+            spaceAfter=12,
+        ))
     
     def _create_company_header(self, include_details=True) -> List:
         """Créer l'en-tête avec les informations de l'entreprise"""
@@ -3056,7 +3065,7 @@ class PDFGenerator:
         story.append(Paragraph(f"<b>Entreprise:</b> {company_name}", self.styles['CustomBody']))
         
         # Résumé
-        total_net = sum(e['salaire_data'].get('salaire_net', 0) for e in employes_data)
+        total_net = sum(float(e['salaire_data'].get('salaire_net', 0)) for e in employes_data)
         story.append(Paragraph(f"<b>Nombre d'employés:</b> {len(employes_data)}", self.styles['CustomBody']))
         story.append(Paragraph(f"<b>Total Net à Payer:</b> {total_net:,.2f} DA", self.styles['CustomBody']))
         
@@ -3107,22 +3116,27 @@ class PDFGenerator:
             story.append(Spacer(1, 0.5*cm))
             
             # Corps du bulletin (simplifié pour cet exemple, à étoffer)
-            # Ligne de salaire de base
+            # Ligne de salaire de base - Convertir toutes les valeurs en float
+            salaire_base_proratis = float(sal_data.get('salaire_base_proratis', 0))
+            heures_supp = float(sal_data.get('heures_supplementaires', 0))
+            salaire_cotisable = float(sal_data.get('salaire_cotisable', 0))
+            primes = salaire_cotisable - salaire_base_proratis - heures_supp
+            
             rubriques = [
                 ['Rubrique', 'Base', 'Taux', 'Gains', 'Retenues'],
-                ['Salaire de base', f"{sal_data.get('salaire_base_proratis', 0):,.2f}", '', f"{sal_data.get('salaire_base_proratis', 0):,.2f}", ''],
-                ['Heures Supplémentaires', '', '', f"{sal_data.get('heures_supplementaires', 0):,.2f}", ''],
-                ['Primes & Indemnités', '', '', f"{(sal_data.get('salaire_cotisable', 0) - sal_data.get('salaire_base_proratis', 0) - sal_data.get('heures_supplementaires', 0)):,.2f}", ''],
-                ['Sécurité Sociale (9%)', f"{sal_data.get('salaire_cotisable', 0):,.2f}", '9%', '', f"{sal_data.get('retenue_securite_sociale', 0):,.2f}"],
-                ['IRG', f"{sal_data.get('salaire_imposable', 0):,.2f}", '', '', f"{sal_data.get('irg', 0):,.2f}"],
-                ['Avances', '', '', '', f"{sal_data.get('total_avances', 0):,.2f}"],
-                ['TOTAL', '', '', f"{sal_data.get('total_gains', 0):,.2f}", f"{sal_data.get('total_retenues', 0):,.2f}"],
+                ['Salaire de base', f"{salaire_base_proratis:,.2f}", '', f"{salaire_base_proratis:,.2f}", ''],
+                ['Heures Supplémentaires', '', '', f"{heures_supp:,.2f}", ''],
+                ['Primes & Indemnités', '', '', f"{primes:,.2f}", ''],
+                ['Sécurité Sociale (9%)', f"{salaire_cotisable:,.2f}", '9%', '', f"{float(sal_data.get('retenue_securite_sociale', 0)):,.2f}"],
+                ['IRG', f"{float(sal_data.get('salaire_imposable', 0)):,.2f}", '', '', f"{float(sal_data.get('irg', 0)):,.2f}"],
+                ['Avances', '', '', '', f"{float(sal_data.get('total_avances', 0)):,.2f}"],
+                ['TOTAL', '', '', f"{float(sal_data.get('total_gains', 0)):,.2f}", f"{float(sal_data.get('total_retenues', 0)):,.2f}"],
             ]
             
             # Net à payer en grand
             story.append(Spacer(1, 1*cm))
             net_table = Table([
-                ['NET À PAYER', f"{sal_data.get('salaire_net', 0):,.2f} DA"]
+                ['NET À PAYER', f"{float(sal_data.get('salaire_net', 0)):,.2f} DA"]
             ], colWidths=[12*cm, 5*cm])
             net_table.setStyle(TableStyle([
                 ('BACKGROUND', (0,0), (-1,-1), colors.lightgrey),
@@ -3151,16 +3165,16 @@ class PDFGenerator:
             d = emp['salaire_data']
             recap_data.append([
                 f"{emp['employe_data']['nom']} {emp['employe_data']['prenom']}",
-                f"{d.get('salaire_base_proratis', 0):,.2f}",
-                f"{d.get('salaire_cotisable', 0):,.2f}",
-                f"{d.get('salaire_net', 0):,.2f}"
+                f"{float(d.get('salaire_base_proratis', 0)):,.2f}",
+                f"{float(d.get('salaire_cotisable', 0)):,.2f}",
+                f"{float(d.get('salaire_net', 0)):,.2f}"
             ])
             
         # Totaux
         recap_data.append([
             'TOTAL GÉNÉRAL',
-            f"{sum(e['salaire_data'].get('salaire_base_proratis', 0) for e in employes_data):,.2f}",
-            f"{sum(e['salaire_data'].get('salaire_cotisable', 0) for e in employes_data):,.2f}",
+            f"{sum(float(e['salaire_data'].get('salaire_base_proratis', 0)) for e in employes_data):,.2f}",
+            f"{sum(float(e['salaire_data'].get('salaire_cotisable', 0)) for e in employes_data):,.2f}",
             f"{total_net:,.2f}"
         ])
         
