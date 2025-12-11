@@ -210,6 +210,31 @@ if [ -f "fix_db_schema.py" ]; then
     fi
 fi
 
+# Execute SQL migrations if they exist
+if [ -d "$APP_DIR/database/migrations" ]; then
+    info "Exécution des migrations SQL..."
+    
+    # Find all .sql files in migrations directory
+    for migration_file in "$APP_DIR/database/migrations"/*.sql; do
+        if [ -f "$migration_file" ]; then
+            migration_name=$(basename "$migration_file")
+            info "  → Migration: $migration_name"
+            
+            if [ -n "$DB_NAME" ] && [ -n "$DB_USER" ]; then
+                mysql -h"$DB_HOST" -u"$DB_USER" -p"$DB_PASS" "$DB_NAME" < "$migration_file" >> "$LOG_FILE" 2>&1
+                
+                if [ $? -eq 0 ]; then
+                    success "  ✓ Migration $migration_name appliquée"
+                else
+                    warning "  ⚠ Échec migration $migration_name (peut-être déjà appliquée)"
+                fi
+            else
+                warning "  ⚠ Identifiants DB manquants, migration $migration_name ignorée"
+            fi
+        fi
+    done
+fi
+
 # Create static directory if not exists
 mkdir -p static
 

@@ -163,24 +163,23 @@ def update_avance(
     if not avance:
         raise HTTPException(status_code=404, detail="Avance non trouvée")
     
-    # Récupérer l'employé
-    employe_id = avance_update.employe_id if avance_update.employe_id else avance.employe_id
-    employe = db.query(Employe).filter(Employe.id == employe_id).first()
+    # Récupérer l'employé (l'employe_id ne change jamais lors d'une mise à jour)
+    employe = db.query(Employe).filter(Employe.id == avance.employe_id).first()
     
     if not employe:
         raise HTTPException(status_code=404, detail="Employé non trouvé")
     
     # Déterminer les valeurs à utiliser pour la validation
-    nouveau_montant = avance_update.montant if avance_update.montant else avance.montant
-    nouveau_mois = avance_update.mois_deduction if avance_update.mois_deduction else avance.mois_deduction
-    nouvelle_annee = avance_update.annee_deduction if avance_update.annee_deduction else avance.annee_deduction
+    nouveau_montant = avance_update.montant if avance_update.montant is not None else avance.montant
+    nouveau_mois = avance_update.mois_deduction if avance_update.mois_deduction is not None else avance.mois_deduction
+    nouvelle_annee = avance_update.annee_deduction if avance_update.annee_deduction is not None else avance.annee_deduction
     
     # Calculer la limite autorisée (70% du salaire de base)
     limite_autorisee = employe.salaire_base * Decimal('0.70')
     
     # Calculer le total des autres avances du même mois (excluant l'avance actuelle)
     total_autres_avances = db.query(func.sum(Avance.montant)).filter(
-        Avance.employe_id == employe_id,
+        Avance.employe_id == avance.employe_id,
         Avance.mois_deduction == nouveau_mois,
         Avance.annee_deduction == nouvelle_annee,
         Avance.id != avance_id  # Exclure l'avance en cours de modification
