@@ -12,7 +12,7 @@ const currentMonth = new Date().getMonth() + 1;
 const TYPE_JOUR = {
   'Tr': { label: 'Travaillé', color: 'green', short: 'T', value: 1 },
   'Ab': { label: 'Absent', color: 'red', short: 'A', value: 0 },
-  'Co': { label: 'Congé', color: 'blue', short: 'C', value: 0 },
+  'Co': { label: 'Congé', color: 'blue', short: 'C', value: 1 },
   'Ma': { label: 'Maladie', color: 'orange', short: 'M', value: 0 },
   'Fe': { label: 'Férié', color: 'purple', short: 'F', value: 1 },
   'Ar': { label: 'Arrêt', color: 'gray', short: 'R', value: 0 },

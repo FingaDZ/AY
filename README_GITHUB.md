@@ -9,7 +9,7 @@
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.104-009688.svg)](https://fastapi.tiangolo.com/)
 
 > **Version actuelle** : 3.5.0 (PDF Enhancement + ANEM Integration)  
-> **Dernière mise à jour** : 10 décembre 2025  
+> **Dernière mise à jour** : 11 décembre 2025  
 > **Statut** : ✅ Production Ready
 
 ## 🎉 Nouveautés v3.5.0
@@ -18,6 +18,7 @@
 - 📋 **Contrats** : Numérotation unique, mentions légales, QR codes
 - 🎫 **Congés** : Ligne jours de congé dans bulletins de paie
 - 📊 **Rapports** : Optimisation layout et footers en pied de page
+- 🔧 **Pointages** : Congé comptabilisé comme jour travaillé (valeur = 1)
 
 ---
 

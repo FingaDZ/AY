@@ -1,16 +1,21 @@
-# AY HR System v3.0.0
+# AY HR System v3.5.0
 
-## 🎉 Nouveautés Version 3.0.0 (Décembre 2025)
-- 🧮 **Traitement Salaires v3.0** : Module de calcul automatique des salaires
-  - Calcul proratisé intelligent (base 30 jours) pour toutes les primes/indemnités
-  - IRG extrapolé avec proratisation selon jours travaillés
-  - 4 statistiques en temps réel (Masse Nette, Cotisable, Imposable, Total IRG)
-  - Filtrage multi-critères (Nom, Statut, Salaire Min/Max)
-  - Tableau enrichi avec colonnes Cotisable, Imposable, IRG
-  - Interface compacte et homogénéisée
-  - Validation individuelle et globale
+## 🎉 Nouveautés Version 3.5.0 (Décembre 2025)
+- 📄 **PDF Améliorés** : Footer automatique, marges étroites, QR codes intégrés
+- 🆔 **N° ANEM** : Intégration complète dans tous les documents RH
+- 📋 **Contrats** : Numérotation unique automatique, mentions légales, QR codes
+- 🎫 **Congés** : Ligne détaillée des jours de congé dans bulletins de paie
+- 📊 **Rapports** : Optimisation layout et footers professionnels
+- 🔧 **Pointages** : Congé maintenant comptabilisé comme jour travaillé (payé)
 
 ## 📋 Historique des Versions
+
+### v3.5.0 - 11 décembre 2025
+- 📄 **PDF Enhancement** : Footers automatiques, marges étroites, QR codes
+- 🆔 **ANEM Integration** : Numéro ANEM dans tous les documents
+- 📋 **Contrats v13** : 13 types de contrats avec numérotation unique
+- 🎫 **Congés** : Ligne congé dans bulletins de paie
+- 🔧 **Pointages** : Congé = valeur 1 (jour travaillé payé)
 
 ### v3.0.0 - 09 décembre 2025
 - 🧮 **Traitement Salaires** : Module complet de calcul proratisé avec filtres avancés
