@@ -166,11 +166,7 @@ def update_pointage(
         )
     
     # Mettre à jour les jours (valeurs numériques: 0 ou 1)
-    # D'abord, mettre TOUS les jours à NULL (reset complet)
-    for jour in range(1, 32):
-        pointage.set_jour(jour, None)
-    
-    # Ensuite, appliquer les valeurs envoyées
+    # Le frontend envoie maintenant TOUS les jours (1-31), donc on peut appliquer directement
     for jour, valeur in pointage_update.jours.items():
         if jour < 1 or jour > 31:
             raise HTTPException(status_code=400, detail=f"Numéro de jour invalide: {jour}")

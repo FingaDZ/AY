@@ -564,11 +564,16 @@ function GrillePointage() {
           // Préparer les données à envoyer avec valeurs numériques
           if (pointage.id) {
             // Update - Transformer en format {jours: {1: 1, 2: 0...}}
+            // IMPORTANT: Envoyer TOUS les jours (1-31) pour que le backend sache lesquels sont NULL
             const joursDict = {};
             for (let i = 1; i <= 31; i++) {
               const jourKey = `jour_${i.toString().padStart(2, '0')}`;
-              if (pointage[jourKey] !== undefined && pointage[jourKey] !== null) {
-                joursDict[i] = pointage[jourKey]; // Déjà en format numérique
+              const valeur = pointage[jourKey];
+              // Envoyer la valeur (0, 1, ou null) pour TOUS les jours
+              if (valeur !== undefined) {
+                joursDict[i] = valeur;
+              } else {
+                joursDict[i] = null; // Explicitement NULL si pas défini
               }
             }
 
