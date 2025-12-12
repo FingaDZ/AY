@@ -1,11 +1,11 @@
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
 from datetime import date
 from typing import Optional
 
 from database import get_db
-from models import Pointage, Employe, StatutContrat, Parametres
+from models import Pointage, Employe, StatutContrat, Parametres, ActionType, User
 from schemas import (
     PointageCreate,
     PointageUpdate,
@@ -15,6 +15,8 @@ from schemas import (
     PointageTotaux,
 )
 from services.pdf_generator import PDFGenerator
+from services.logging_service import log_action
+from middleware.auth import get_current_user
 
 router = APIRouter(prefix="/pointages", tags=["Pointages"])
 
@@ -42,7 +44,12 @@ def _pointage_to_response(pointage: Pointage) -> PointageResponse:
     )
 
 @router.post("/", response_model=PointageResponse, status_code=201)
-def create_pointage(pointage: PointageCreate, db: Session = Depends(get_db)):
+def create_pointage(
+    pointage: PointageCreate,
+    request: Request,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
     """Créer un nouveau pointage mensuel pour un employé"""
     
     # Vérifier que l'employé existe
@@ -67,6 +74,18 @@ def create_pointage(pointage: PointageCreate, db: Session = Depends(get_db)):
     db.add(db_pointage)
     db.commit()
     db.refresh(db_pointage)
+    
+    # Log l'action
+    log_action(
+        db=db,
+        module_name="pointages",
+        action_type=ActionType.CREATE,
+        record_id=db_pointage.id,
+        new_data={"employe_id": pointage.employe_id, "annee": pointage.annee, "mois": pointage.mois},
+        description=f"Création pointage {pointage.mois}/{pointage.annee} - Employé #{pointage.employe_id}",
+        user=current_user,
+        request=request
+    )
     
     return _pointage_to_response(db_pointage)
 
@@ -152,7 +171,9 @@ def get_pointage(pointage_id: int, db: Session = Depends(get_db)):
 def update_pointage(
     pointage_id: int,
     pointage_update: PointageUpdate,
-    db: Session = Depends(get_db)
+    request: Request,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
 ):
     """Mettre à jour un pointage"""
     
@@ -166,6 +187,9 @@ def update_pointage(
             status_code=400,
             detail="Le pointage est verrouillé et ne peut pas être modifié"
         )
+    
+    # Sauvegarder l'ancien état pour le log
+    old_jours = {i: pointage.get_jour(i) for i in range(1, 32)}
     
     # Log pour debug
     print(f"[DEBUG] Updating pointage {pointage_id} for employee {pointage.employe_id}")
@@ -188,6 +212,19 @@ def update_pointage(
     
     db.commit()
     db.refresh(pointage)
+    
+    # Log l'action
+    log_action(
+        db=db,
+        module_name="pointages",
+        action_type=ActionType.UPDATE,
+        record_id=pointage_id,
+        old_data={"jours": {k: v for k, v in old_jours.items() if v is not None}},
+        new_data={"jours": pointage_update.jours},
+        description=f"Modification pointage {pointage.mois}/{pointage.annee} - Employé #{pointage.employe_id}",
+        user=current_user,
+        request=request
+    )
     
     return _pointage_to_response(pointage)
 
@@ -286,7 +323,12 @@ def toggle_verrouillage_pointage(pointage_id: int, verrouillage: PointageVerroui
     return _pointage_to_response(pointage)
 
 @router.delete("/{pointage_id}", status_code=204)
-def delete_pointage(pointage_id: int, db: Session = Depends(get_db)):
+def delete_pointage(
+    pointage_id: int,
+    request: Request,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
     """Supprimer un pointage"""
     
     pointage = db.query(Pointage).filter(Pointage.id == pointage_id).first()
@@ -300,8 +342,27 @@ def delete_pointage(pointage_id: int, db: Session = Depends(get_db)):
             detail="Le pointage est verrouillé et ne peut pas être supprimé"
         )
     
+    # Sauvegarder les données avant suppression
+    old_data = {
+        "employe_id": pointage.employe_id,
+        "annee": pointage.annee,
+        "mois": pointage.mois
+    }
+    
     db.delete(pointage)
     db.commit()
+    
+    # Log l'action
+    log_action(
+        db=db,
+        module_name="pointages",
+        action_type=ActionType.DELETE,
+        record_id=pointage_id,
+        old_data=old_data,
+        description=f"Suppression pointage {old_data['mois']}/{old_data['annee']} - Employé #{old_data['employe_id']}",
+        user=current_user,
+        request=request
+    )
     
     return None
 

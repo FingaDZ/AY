@@ -1,4 +1,17 @@
-# AY HR System v3.5.1
+# AY HR System v3.5.2
+
+## 🎉 Nouveautés Version 3.5.2 (Décembre 2025)
+
+### 🎨 **AMÉLIORATIONS UX/UI**
+- **Page Congés** : Groupement par employé + totaux + popup détails périodes
+- **Page Employés** : Couleurs contrats (rouge=expiré, orange<30j)
+- **Page Pointages** : Validation dates hors contrat avec popup
+- **Page Logs** : Colonnes complètes (Utilisateur, ID Enregistrement)
+
+### 📊 **AUDIT & TRAÇABILITÉ**
+- **Logs complets** : Pointages, Congés, Salaires
+- **Données enrichies** : user_email et record_id partout
+- **Conformité** : Traçabilité totale des opérations
 
 ## 🎉 Nouveautés Version 3.5.1 (Décembre 2025)
 
@@ -31,6 +44,16 @@
 
 ## 📋 Historique des Versions
 
+### v3.5.2 - 12 décembre 2025
+- 🎨 **AMÉLIORATIONS UX/UI**
+  - Page Congés : Vue groupée par employé avec totaux et détails
+  - Page Employés : Coloration automatique statut contrats
+  - Page Pointages : Popup validation dates hors contrat
+  - Page Logs : Affichage complet utilisateur + ID enregistrement
+- 📊 **AUDIT**
+  - Logs ajoutés : Pointages, Congés, Salaires
+  - Traçabilité complète avec user_email et record_id
+  
 ### v3.5.1 - 12 décembre 2025
 - 🐛 **CORRECTIF CRITIQUE** : Pointages - Sauvegarde manuelle ne fonctionne pas
   - Backend : `_pointage_to_response` n'envoie que les jours non-NULL

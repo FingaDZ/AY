@@ -48,6 +48,27 @@ function EmployesList() {
     }
   };
 
+  // Calculer le statut d'expiration du contrat
+  const getContractStatus = (dateFin) => {
+    if (!dateFin) return { status: 'none', daysRemaining: null, color: '' };
+    
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const contractEnd = new Date(dateFin);
+    contractEnd.setHours(0, 0, 0, 0);
+    
+    const diffTime = contractEnd - today;
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    
+    if (diffDays < 0) {
+      return { status: 'expired', daysRemaining: diffDays, color: 'red' };
+    } else if (diffDays <= 30) {
+      return { status: 'expiring', daysRemaining: diffDays, color: 'orange' };
+    } else {
+      return { status: 'valid', daysRemaining: diffDays, color: 'green' };
+    }
+  };
+
   const handleDeleteClick = async (employe) => {
     try {
       // Vérifier si l'employé peut être supprimé
@@ -373,6 +394,40 @@ function EmployesList() {
       responsive: ['lg'],
     },
     {
+      title: 'Fin Contrat',
+      dataIndex: 'date_fin_contrat',
+      key: 'date_fin_contrat',
+      render: (date, record) => {
+        if (!date) return '-';
+        const contractStatus = getContractStatus(date);
+        const formattedDate = format(new Date(date), 'dd/MM/yyyy');
+        
+        let tagColor = 'default';
+        let statusText = '';
+        
+        if (contractStatus.status === 'expired') {
+          tagColor = 'red';
+          statusText = 'Expiré';
+        } else if (contractStatus.status === 'expiring') {
+          tagColor = 'orange';
+          statusText = `${contractStatus.daysRemaining}j restants`;
+        } else {
+          tagColor = 'green';
+          statusText = `${contractStatus.daysRemaining}j restants`;
+        }
+        
+        return (
+          <Space direction="vertical" size={0}>
+            <Text style={{ fontSize: 12 }}>{formattedDate}</Text>
+            <Tag color={tagColor} style={{ margin: 0, fontSize: 11 }}>
+              {statusText}
+            </Tag>
+          </Space>
+        );
+      },
+      responsive: ['lg'],
+    },
+    {
       title: 'Statut',
       dataIndex: 'statut_contrat',
       key: 'statut_contrat',
@@ -557,6 +612,20 @@ function EmployesList() {
 
   return (
     <div>
+      <style>{`
+        .contract-expired {
+          background-color: #ffebee !important;
+        }
+        .contract-expired:hover {
+          background-color: #ffcdd2 !important;
+        }
+        .contract-expiring {
+          background-color: #fff3e0 !important;
+        }
+        .contract-expiring:hover {
+          background-color: #ffe0b2 !important;
+        }
+      `}</style>
       <div style={{
         display: 'flex',
         flexDirection: isMobile ? 'column' : 'row',
@@ -654,6 +723,13 @@ function EmployesList() {
         dataSource={employes}
         rowKey="id"
         mobileRenderItem={mobileRenderItem}
+        rowClassName={(record) => {
+          if (!record.date_fin_contrat) return '';
+          const contractStatus = getContractStatus(record.date_fin_contrat);
+          if (contractStatus.status === 'expired') return 'contract-expired';
+          if (contractStatus.status === 'expiring') return 'contract-expiring';
+          return '';
+        }}
         pagination={{
           pageSize: isMobile ? 10 : 10,
           showSizeChanger: !isMobile,

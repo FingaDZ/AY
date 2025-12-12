@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Table, Card, Input, Button, Tag, Modal, Form, InputNumber, message, Select, Statistic, Row, Col } from 'antd';
-import { SearchOutlined, EditOutlined, CalendarOutlined, DownloadOutlined } from '@ant-design/icons';
+import { Table, Card, Button, Tag, Modal, Form, InputNumber, message, Select, Statistic, Row, Col, Space } from 'antd';
+import { EditOutlined, CalendarOutlined, DownloadOutlined, EyeOutlined } from '@ant-design/icons';
 import api from '../../services/api';
 
 const { Option } = Select;
@@ -9,7 +9,6 @@ const CongesList = () => {
     const [conges, setConges] = useState([]);
     const [loading, setLoading] = useState(false);
     const [employes, setEmployes] = useState([]);
-    const [searchText, setSearchText] = useState('');
 
     // Filtres
     const [selectedEmploye, setSelectedEmploye] = useState(null);
@@ -20,7 +19,12 @@ const CongesList = () => {
     const [currentConge, setCurrentConge] = useState(null);
     const [form] = Form.useForm();
 
-    // Stats
+    // Modal Détails Périodes
+    const [detailsModalVisible, setDetailsModalVisible] = useState(false);
+    const [detailsEmploye, setDetailsEmploye] = useState(null);
+    const [detailsPeriodes, setDetailsPeriodes] = useState([]);
+
+    // Stats globales
     const [synthese, setSynthese] = useState(null);
 
     useEffect(() => {
@@ -70,12 +74,50 @@ const CongesList = () => {
         }
     };
 
-    const handleEdit = (record) => {
-        setCurrentConge(record);
+    // Grouper les congés par employé
+    const groupCongesByEmploye = () => {
+        const grouped = {};
+        conges.forEach(conge => {
+            const key = `${conge.employe_id}`;
+            if (!grouped[key]) {
+                grouped[key] = {
+                    employe_id: conge.employe_id,
+                    employe_nom: `${conge.employe_prenom} ${conge.employe_nom}`,
+                    periodes: [],
+                    total_travailles: 0,
+                    total_acquis: 0,
+                    total_pris: 0,
+                    solde: 0
+                };
+            }
+            grouped[key].periodes.push(conge);
+            grouped[key].total_travailles += conge.jours_travailles || 0;
+            grouped[key].total_acquis += conge.jours_conges_acquis || 0;
+            grouped[key].total_pris += conge.jours_conges_pris || 0;
+        });
+
+        // Calculer soldes
+        Object.keys(grouped).forEach(key => {
+            grouped[key].solde = grouped[key].total_acquis - grouped[key].total_pris;
+        });
+
+        return Object.values(grouped);
+    };
+
+    const handleEdit = (employe, periodes) => {
+        // Trouver la dernière période pour édition
+        const lastPeriode = periodes[periodes.length - 1];
+        setCurrentConge(lastPeriode);
         form.setFieldsValue({
-            jours_pris: record.jours_conges_pris
+            jours_pris: lastPeriode.jours_conges_pris
         });
         setIsModalVisible(true);
+    };
+
+    const handleShowDetails = (employe) => {
+        setDetailsEmploye(employe.employe_nom);
+        setDetailsPeriodes(employe.periodes);
+        setDetailsModalVisible(true);
     };
 
     const handleSave = async () => {
@@ -89,7 +131,6 @@ const CongesList = () => {
             fetchConges();
             if (selectedEmploye) fetchSynthese(selectedEmploye);
         } catch (error) {
-            // Afficher le message d'erreur du backend (validation congés > acquis)
             const errorMsg = error.response?.data?.detail || "Erreur lors de la mise à jour";
             message.error(errorMsg, 5);
             console.error('Erreur:', error);
@@ -121,14 +162,72 @@ const CongesList = () => {
     const columns = [
         {
             title: 'Employé',
-            key: 'employe',
-            render: (text, record) => `${record.employe_prenom} ${record.employe_nom}`,
-            filteredValue: [searchText],
-            onFilter: (value, record) => {
-                const fullName = `${record.employe_prenom} ${record.employe_nom}`.toLowerCase();
-                return fullName.includes(value.toLowerCase());
-            },
+            dataIndex: 'employe_nom',
+            key: 'employe_nom',
+            fixed: 'left',
+            width: 200,
         },
+        {
+            title: 'Total Travaillés',
+            dataIndex: 'total_travailles',
+            key: 'total_travailles',
+            width: 130,
+            render: (val) => <span className="font-semibold">{val} j</span>
+        },
+        {
+            title: 'Total Acquis',
+            dataIndex: 'total_acquis',
+            key: 'total_acquis',
+            width: 120,
+            render: (val) => <span className="font-semibold text-green-600">{val} j</span>
+        },
+        {
+            title: 'Total Pris',
+            dataIndex: 'total_pris',
+            key: 'total_pris',
+            width: 110,
+            render: (val) => <span className="font-semibold text-orange-500">{val} j</span>
+        },
+        {
+            title: 'Solde',
+            dataIndex: 'solde',
+            key: 'solde',
+            width: 100,
+            render: (val) => (
+                <Tag color={val >= 0 ? 'green' : 'red'} className="font-bold">
+                    {val} j
+                </Tag>
+            )
+        },
+        {
+            title: 'Actions',
+            key: 'actions',
+            fixed: 'right',
+            width: 200,
+            render: (text, record) => (
+                <Space>
+                    <Button
+                        type="link"
+                        size="small"
+                        icon={<EyeOutlined />}
+                        onClick={() => handleShowDetails(record)}
+                    >
+                        Détails
+                    </Button>
+                    <Button
+                        type="primary"
+                        size="small"
+                        icon={<EditOutlined />}
+                        onClick={() => handleEdit(record, record.periodes)}
+                    >
+                        Éditer
+                    </Button>
+                </Space>
+            )
+        }
+    ];
+
+    const detailColumns = [
         {
             title: 'Période',
             key: 'periode',
@@ -140,53 +239,30 @@ const CongesList = () => {
             key: 'jours_travailles',
         },
         {
-            title: 'Acquis (Jours)',
+            title: 'Acquis',
             dataIndex: 'jours_conges_acquis',
             key: 'jours_conges_acquis',
-            render: (val) => <span className="font-semibold text-green-600">{val}</span>
+            render: (val) => <span className="text-green-600">{val} j</span>
         },
         {
-            title: 'Pris (Jours)',
+            title: 'Pris',
             dataIndex: 'jours_conges_pris',
             key: 'jours_conges_pris',
-            render: (val) => <span className="font-semibold text-orange-500">{val}</span>
+            render: (val) => <span className="text-orange-500">{val} j</span>
         },
         {
-            title: 'Solde Mensuel',
+            title: 'Solde',
             dataIndex: 'jours_conges_restants',
             key: 'jours_conges_restants',
             render: (val) => (
                 <Tag color={val >= 0 ? 'green' : 'red'}>
-                    {val}
+                    {val} j
                 </Tag>
-            )
-        },
-        {
-            title: 'Actions',
-            key: 'actions',
-            render: (text, record) => (
-                <div className="flex gap-2">
-                    <Button
-                        type="primary"
-                        size="small"
-                        icon={<EditOutlined />}
-                        onClick={() => handleEdit(record)}
-                    >
-                        Saisir
-                    </Button>
-                    <Button
-                        type="default"
-                        size="small"
-                        icon={<DownloadOutlined />}
-                        onClick={() => telechargerTitreConge(record.id)}
-                        disabled={!record.date_debut || !record.date_fin}
-                    >
-                        Titre
-                    </Button>
-                </div>
             )
         }
     ];
+
+    const groupedData = groupCongesByEmploye();
 
     return (
         <div className="p-6">
@@ -217,38 +293,53 @@ const CongesList = () => {
             {synthese && (
                 <Card className="mb-6 bg-blue-50 border-blue-200">
                     <Row gutter={16}>
-                        <Col span={8}>
-                            <Statistic title="Total Acquis (Année)" value={synthese.total_acquis} precision={1} suffix="jours" valueStyle={{ color: '#3f8600' }} />
+                        <Col span={6}>
+                            <Statistic 
+                                title="Total Travaillés" 
+                                value={groupedData[0]?.total_travailles || 0} 
+                                suffix="jours" 
+                            />
                         </Col>
-                        <Col span={8}>
-                            <Statistic title="Total Consommé" value={synthese.total_pris} precision={1} suffix="jours" valueStyle={{ color: '#cf1322' }} />
+                        <Col span={6}>
+                            <Statistic 
+                                title="Total Acquis" 
+                                value={synthese.total_acquis} 
+                                suffix="jours" 
+                                valueStyle={{ color: '#3f8600' }} 
+                            />
                         </Col>
-                        <Col span={8}>
-                            <Statistic title="Solde Global" value={synthese.solde} precision={1} suffix="jours" valueStyle={{ color: '#1890ff' }} />
+                        <Col span={6}>
+                            <Statistic 
+                                title="Total Pris" 
+                                value={synthese.total_pris} 
+                                suffix="jours" 
+                                valueStyle={{ color: '#cf1322' }} 
+                            />
+                        </Col>
+                        <Col span={6}>
+                            <Statistic 
+                                title="Solde Global" 
+                                value={synthese.solde} 
+                                suffix="jours" 
+                                valueStyle={{ color: synthese.solde >= 0 ? '#1890ff' : '#cf1322' }} 
+                            />
                         </Col>
                     </Row>
                 </Card>
             )}
 
             <Card>
-                <div className="mb-4">
-                    <Input
-                        placeholder="Rechercher un employé..."
-                        prefix={<SearchOutlined />}
-                        onChange={e => setSearchText(e.target.value)}
-                        style={{ width: 300 }}
-                    />
-                </div>
-
                 <Table
                     columns={columns}
-                    dataSource={conges}
-                    rowKey="id"
+                    dataSource={groupedData}
+                    rowKey="employe_id"
                     loading={loading}
-                    pagination={{ pageSize: 12 }}
+                    pagination={{ pageSize: 15 }}
+                    scroll={{ x: 800 }}
                 />
             </Card>
 
+            {/* Modal Saisie Congés */}
             <Modal
                 title="Saisie Consommation Congé"
                 open={isModalVisible}
@@ -264,9 +355,30 @@ const CongesList = () => {
                         label="Jours Pris"
                         rules={[{ required: true, message: 'Veuillez saisir une valeur' }]}
                     >
-                        <InputNumber min={0} max={30} step={0.5} style={{ width: '100%' }} />
+                        <InputNumber min={0} max={30} style={{ width: '100%' }} />
                     </Form.Item>
                 </Form>
+            </Modal>
+
+            {/* Modal Détails Périodes */}
+            <Modal
+                title={`Détails des périodes - ${detailsEmploye}`}
+                open={detailsModalVisible}
+                onCancel={() => setDetailsModalVisible(false)}
+                footer={[
+                    <Button key="close" onClick={() => setDetailsModalVisible(false)}>
+                        Fermer
+                    </Button>
+                ]}
+                width={700}
+            >
+                <Table
+                    columns={detailColumns}
+                    dataSource={detailsPeriodes}
+                    rowKey="id"
+                    pagination={false}
+                    size="small"
+                />
             </Modal>
         </div>
     );

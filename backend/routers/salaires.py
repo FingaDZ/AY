@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
 from typing import Optional, List
@@ -8,7 +8,7 @@ from io import BytesIO
 import zipfile
 
 from database import get_db
-from models import Employe, StatutContrat
+from models import Employe, StatutContrat, ActionType, User
 from schemas import (
     SalaireCalculCreate, 
     SalaireCalculTousCreate, 
@@ -17,6 +17,8 @@ from schemas import (
 )
 from services import SalaireCalculator
 from services.pdf_generator import PDFGenerator
+from services.logging_service import log_action
+from middleware.auth import get_current_user
 
 router = APIRouter(prefix="/salaires", tags=["Salaires"])
 
@@ -46,7 +48,9 @@ def calculer_salaire(
 @router.post("/calculer-tous")
 def calculer_tous_salaires(
     params: SalaireCalculTousCreate,
-    db: Session = Depends(get_db)
+    request: Request,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
 ):
     """Calculer les salaires de tous les employés actifs pour un mois"""
     
@@ -130,6 +134,16 @@ def calculer_tous_salaires(
     # Convertir les Decimal en float pour la réponse JSON
     totaux_str = {k: float(v) for k, v in totaux.items()}
     
+    # Log l'action
+    log_action(
+        db=db,
+        module_name="salaires",
+        action_type=ActionType.CREATE,
+        description=f"Calcul salaires tous employés {params.mois}/{params.annee} - {len(resultats)} calculés",
+        user=current_user,
+        request=request
+    )
+    
     return {
         "annee": params.annee,
         "mois": params.mois,
@@ -144,7 +158,9 @@ def calculer_tous_salaires(
 @router.post("/bulletins-paie/generer")
 def generer_bulletins_paie(
     params: SalaireCalculTousCreate,
-    db: Session = Depends(get_db)
+    request: Request,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
 ):
     """Générer tous les bulletins de paie en PDF (ZIP)"""
     
@@ -223,6 +239,16 @@ def generer_bulletins_paie(
                 continue
     
     zip_buffer.seek(0)
+    
+    # Log l'action
+    log_action(
+        db=db,
+        module_name="salaires",
+        action_type=ActionType.CREATE,
+        description=f"Génération bulletins paie (ZIP) {params.mois}/{params.annee}",
+        user=current_user,
+        request=request
+    )
     
     # Retourner le ZIP
     return StreamingResponse(

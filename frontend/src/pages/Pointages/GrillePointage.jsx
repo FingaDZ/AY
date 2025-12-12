@@ -348,6 +348,47 @@ function GrillePointage() {
       message.warning('Ce pointage est verrouillé et ne peut pas être modifié');
       return;
     }
+
+    // Vérifier si la date est dans la période du contrat
+    const employe = employes.find(e => e.id === employeId);
+    if (employe && (employe.date_debut_contrat || employe.date_fin_contrat)) {
+      const dateSelectionnee = new Date(filters.annee, filters.mois - 1, jour);
+      const dateDebut = employe.date_debut_contrat ? new Date(employe.date_debut_contrat) : null;
+      const dateFin = employe.date_fin_contrat ? new Date(employe.date_fin_contrat) : null;
+
+      let horsContrat = false;
+      let messageContrat = '';
+
+      if (dateDebut && dateSelectionnee < dateDebut) {
+        horsContrat = true;
+        messageContrat = `La date sélectionnée (${dateSelectionnee.toLocaleDateString('fr-FR')}) est avant le début du contrat (${dateDebut.toLocaleDateString('fr-FR')}).`;
+      } else if (dateFin && dateSelectionnee > dateFin) {
+        horsContrat = true;
+        messageContrat = `La date sélectionnée (${dateSelectionnee.toLocaleDateString('fr-FR')}) est après la fin du contrat (${dateFin.toLocaleDateString('fr-FR')}).`;
+      }
+
+      if (horsContrat) {
+        Modal.warning({
+          title: '⚠️ Date hors période de contrat',
+          content: (
+            <div>
+              <p>{messageContrat}</p>
+              <p style={{ marginTop: 10 }}>
+                <strong>Période du contrat :</strong><br />
+                Début : {dateDebut ? dateDebut.toLocaleDateString('fr-FR') : 'Non défini'}<br />
+                Fin : {dateFin ? dateFin.toLocaleDateString('fr-FR') : 'Non défini'}
+              </p>
+              <p style={{ marginTop: 10, color: '#ff4d4f' }}>
+                ⚠️ L'enregistrement de pointages hors de la période du contrat n'est pas recommandé.
+              </p>
+            </div>
+          ),
+          okText: 'Compris',
+        });
+        return;
+      }
+    }
+
     setEditCell({ employeId, jour });
   };
 

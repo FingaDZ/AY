@@ -440,6 +440,27 @@
 }
 
 /* ============================================
+   CONTRACT STATUS COLORS (Page Employés)
+   ============================================ */
+/* Contrat expiré - Rouge */
+.contract-expired {
+  background-color: #ffebee !important;
+}
+
+.contract-expired:hover {
+  background-color: #ffcdd2 !important;
+}
+
+/* Contrat expire bientôt (<30 jours) - Orange */
+.contract-expiring {
+  background-color: #fff3e0 !important;
+}
+
+.contract-expiring:hover {
+  background-color: #ffe0b2 !important;
+}
+
+/* ============================================
    TOUCH OPTIMIZATIONS
    ============================================ */
 @media (hover: none) and (pointer: coarse) {

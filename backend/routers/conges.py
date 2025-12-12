@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
 from sqlalchemy import func
@@ -6,9 +6,11 @@ from typing import Optional, List
 from decimal import Decimal
 
 from database import get_db
-from models import Conge, Employe, Pointage
+from models import Conge, Employe, Pointage, ActionType, User
 from pydantic import BaseModel
 from datetime import date, datetime, timedelta
+from services.logging_service import log_action
+from middleware.auth import get_current_user
 
 router = APIRouter(prefix="/conges", tags=["Congés"])
 
@@ -84,12 +86,17 @@ def list_conges(
 def update_consommation(
     conge_id: int,
     update: CongeUpdate,
-    db: Session = Depends(get_db)
+    request: Request,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
 ):
     """Mettre à jour la consommation de congés pour un mois donné"""
     conge = db.query(Conge).filter(Conge.id == conge_id).first()
     if not conge:
         raise HTTPException(status_code=404, detail="Enregistrement congé non trouvé")
+    
+    # Sauvegarder l'ancienne valeur
+    old_jours_pris = conge.jours_conges_pris
     
     # v3.5.1: VALIDATION STRICTE - Bloquer si congés pris > acquis
     jours_pris = int(round(update.jours_pris))
@@ -126,6 +133,19 @@ def update_consommation(
     
     db.commit()
     db.refresh(conge)
+    
+    # Log l'action
+    log_action(
+        db=db,
+        module_name="conges",
+        action_type=ActionType.UPDATE,
+        record_id=conge_id,
+        old_data={"jours_pris": old_jours_pris},
+        new_data={"jours_pris": jours_pris},
+        description=f"Modification consommation congés {conge.mois}/{conge.annee} - Employé #{conge.employe_id}",
+        user=current_user,
+        request=request
+    )
     
     return {"message": "Consommation mise à jour", "conge_id": conge.id}
 
