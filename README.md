@@ -2,6 +2,11 @@
 
 ## 🎉 Nouveautés Version 3.5.1 (Décembre 2025)
 - 🐛 **Pointages Fix** : Correction sauvegarde manuelle - ne plus écraser les jours NULL
+- 📅 **NOUVELLES RÈGLES CONGÉS** : Système simplifié sans décimales
+  - **8 jours travaillés = 1 jour de congé** (plus de 2.5j/30j)
+  - Nouveaux: minimum 15 jours pour 1 jour
+  - **Plus de décimales** : valeurs entières avec arrondi intelligent
+  - **Exclusion critiques** : Congés pris exclus du calcul des droits
 - 🔧 **Backend** : API retourne seulement les jours avec valeur (pas NULL)
 - 🎯 **Frontend** : N'envoie que les jours modifiés lors de la sauvegarde
 - 📝 **Logs** : Ajout logs de debug pour tracer les mises à jour
@@ -15,6 +20,16 @@
   - Frontend : `handleSaveAll` envoie seulement les jours avec valeur
   - Logs : Ajout de debug dans `update_pointage`
   - Résultat : Les modifications sont maintenant bien enregistrées en DB
+
+- 📅 **REFONTE SYSTÈME CONGÉS** : Nouvelles règles simplifiées
+  - **Règle 1** : 8 jours travaillés = 1 jour de congé
+    * 8-15 jours → 1 jour
+    * 16-23 jours → 2 jours
+    * 24-30+ jours → 3 jours
+  - **Règle 2** : Nouveaux recrutés (<3 mois) : minimum 15 jours pour 1 jour
+  - **Règle 3** : Plus de décimales (0.3j, 0.8j), uniquement valeurs entières
+  - **Règle 4** : Jours de congé PRIS exclus du calcul des jours travaillés
+  - Migration SQL : `database/migration_conges_v3.5.1.sql`
 
 ### v3.5.0 - 11 décembre 2025
 - 📄 **PDF Enhancement** : Footers automatiques, marges étroites, QR codes
