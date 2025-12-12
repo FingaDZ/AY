@@ -1,13 +1,14 @@
 #!/bin/bash
 
-# Script de déploiement rapide - Fix Pointages Sauvegarde
+# Script de déploiement v3.5.1 - Correctif Sauvegarde Pointages
 # Date: 12 décembre 2025
-# Commit: bcf6bcf (pas de NULL + Vendredi intelligent)
+# Commit: 986723f (Backend + Frontend fix)
 
 echo "=========================================="
-echo "Déploiement Fix Pointages - v3.5.0"
-echo "Commit: bcf6bcf"
-echo "Fix: Ne plus envoyer NULL + Vendredi intelligent"
+echo "Déploiement v3.5.1 - Correctif Pointages"
+echo "Commit: 986723f"
+echo "Fix: Backend n'envoie que jours non-NULL"
+echo "     Frontend n'envoie que jours avec valeur"
 echo "=========================================="
 
 cd /opt/ay-hr
