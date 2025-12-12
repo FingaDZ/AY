@@ -1,12 +1,13 @@
 #!/bin/bash
 
 # Script de déploiement rapide - Fix Pointages Sauvegarde
-# Date: 11 décembre 2025
-# Commit: 2dc8c40 (envoi de TOUS les jours 1-31)
+# Date: 12 décembre 2025
+# Commit: bcf6bcf (pas de NULL + Vendredi intelligent)
 
 echo "=========================================="
 echo "Déploiement Fix Pointages - v3.5.0"
-echo "Commit: 2dc8c40"
+echo "Commit: bcf6bcf"
+echo "Fix: Ne plus envoyer NULL + Vendredi intelligent"
 echo "=========================================="
 
 cd /opt/ay-hr
