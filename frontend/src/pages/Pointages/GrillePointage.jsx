@@ -351,6 +351,55 @@ function GrillePointage() {
     setEditCell({ employeId, jour });
   };
 
+  // Logique Vendredi intelligent basé sur Jeudi/Samedi
+  const appliquerLogiqueVendredi = (employeId, jourVendredi) => {
+    // Vérifier si c'est bien un vendredi
+    const date = new Date(filters.annee, filters.mois - 1, jourVendredi);
+    if (date.getDay() !== 5) return; // Pas un vendredi
+
+    const pointage = pointages[employeId];
+    if (!pointage) return;
+
+    // Récupérer Jeudi (jour-1) et Samedi (jour+1)
+    const jeudiKey = `jour_${(jourVendredi - 1).toString().padStart(2, '0')}`;
+    const samediKey = `jour_${(jourVendredi + 1).toString().padStart(2, '0')}`;
+    const vendrediKey = `jour_${jourVendredi.toString().padStart(2, '0')}`;
+
+    const jeudi = pointage[jeudiKey];
+    const samedi = pointage[samediKey];
+
+    // Règles:
+    // - Jeudi=1 ET Samedi=1 → Vendredi=1 (travaillé)
+    // - Jeudi=0 ET Samedi=0 → Vendredi=0 (absent)
+    // - Jeudi=0 ET Samedi=1 → Vendredi=1 (travaillé)
+    // - Jeudi=1 ET Samedi=0 → Vendredi=1 (travaillé)
+    let nouvelleValeur = null;
+
+    if (jeudi !== undefined && jeudi !== null && samedi !== undefined && samedi !== null) {
+      // Les deux sont définis
+      if (jeudi === 1 && samedi === 1) nouvelleValeur = 1;
+      else if (jeudi === 0 && samedi === 0) nouvelleValeur = 0;
+      else if (jeudi === 0 && samedi === 1) nouvelleValeur = 1;
+      else if (jeudi === 1 && samedi === 0) nouvelleValeur = 1;
+    } else if (jeudi !== undefined && jeudi !== null) {
+      // Seulement Jeudi défini → Vendredi prend la valeur de Jeudi
+      nouvelleValeur = jeudi;
+    } else if (samedi !== undefined && samedi !== null) {
+      // Seulement Samedi défini → Vendredi prend la valeur de Samedi
+      nouvelleValeur = samedi;
+    }
+
+    if (nouvelleValeur !== null) {
+      setPointages(prev => ({
+        ...prev,
+        [employeId]: {
+          ...prev[employeId],
+          [vendrediKey]: nouvelleValeur,
+        },
+      }));
+    }
+  };
+
   const handleTypeSelect = async () => {
     if (!editCell) return;
 
@@ -378,6 +427,17 @@ function GrillePointage() {
         ...prev,
         [employeId]: pointage,
       }));
+
+      // Appliquer logique Vendredi si on modifie Jeudi ou Samedi
+      const date = new Date(filters.annee, filters.mois - 1, jour);
+      const dayOfWeek = date.getDay();
+      if (dayOfWeek === 4 && jour < 31) {
+        // Jeudi → Appliquer logique au Vendredi suivant (jour+1)
+        setTimeout(() => appliquerLogiqueVendredi(employeId, jour + 1), 100);
+      } else if (dayOfWeek === 6 && jour > 1) {
+        // Samedi → Appliquer logique au Vendredi précédent (jour-1)
+        setTimeout(() => appliquerLogiqueVendredi(employeId, jour - 1), 100);
+      }
 
       setEditCell(null);
 
@@ -563,17 +623,14 @@ function GrillePointage() {
         try {
           // Préparer les données à envoyer avec valeurs numériques
           if (pointage.id) {
-            // Update - Transformer en format {jours: {1: 1, 2: 0...}}
-            // IMPORTANT: Envoyer TOUS les jours (1-31) pour que le backend sache lesquels sont NULL
+            // Update - Envoyer SEULEMENT les jours qui ont une valeur (pas de NULL)
             const joursDict = {};
             for (let i = 1; i <= 31; i++) {
               const jourKey = `jour_${i.toString().padStart(2, '0')}`;
               const valeur = pointage[jourKey];
-              // Envoyer la valeur (0, 1, ou null) pour TOUS les jours
-              if (valeur !== undefined) {
+              // Envoyer seulement si la valeur existe (0 ou 1), pas NULL
+              if (valeur !== undefined && valeur !== null) {
                 joursDict[i] = valeur;
-              } else {
-                joursDict[i] = null; // Explicitement NULL si pas défini
               }
             }
 
