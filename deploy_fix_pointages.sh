@@ -2,13 +2,13 @@
 
 # Script de déploiement v3.5.1 - Correctif Sauvegarde Pointages
 # Date: 12 décembre 2025
-# Commit: 986723f (Backend + Frontend fix)
+# Commit: 758b3a7 (Fix format données update)
 
 echo "=========================================="
 echo "Déploiement v3.5.1 - Correctif Pointages"
-echo "Commit: 986723f"
-echo "Fix: Backend n'envoie que jours non-NULL"
-echo "     Frontend n'envoie que jours avec valeur"
+echo "Commit: 758b3a7"
+echo "Fix: Format données update corrigé"
+echo "     handleSaveAll -> jour_XX format"
 echo "=========================================="
 
 cd /opt/ay-hr
