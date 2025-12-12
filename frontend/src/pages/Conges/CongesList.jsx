@@ -89,7 +89,10 @@ const CongesList = () => {
             fetchConges();
             if (selectedEmploye) fetchSynthese(selectedEmploye);
         } catch (error) {
-            message.error("Erreur lors de la mise à jour");
+            // Afficher le message d'erreur du backend (validation congés > acquis)
+            const errorMsg = error.response?.data?.detail || "Erreur lors de la mise à jour";
+            message.error(errorMsg, 5);
+            console.error('Erreur:', error);
         }
     };
 

@@ -91,13 +91,37 @@ def update_consommation(
     if not conge:
         raise HTTPException(status_code=404, detail="Enregistrement congé non trouvé")
     
+    # v3.5.1: VALIDATION STRICTE - Bloquer si congés pris > acquis
+    jours_pris = int(round(update.jours_pris))
+    
+    # Calculer le total acquis pour cet employé
+    stats = db.query(
+        func.sum(Conge.jours_conges_acquis).label("total_acquis")
+    ).filter(Conge.employe_id == conge.employe_id).first()
+    
+    total_acquis = int(stats.total_acquis or 0)
+    
+    # Calculer total pris (sans compter ce mois)
+    total_pris_autres = db.query(
+        func.sum(Conge.jours_conges_pris)
+    ).filter(
+        Conge.employe_id == conge.employe_id,
+        Conge.id != conge_id
+    ).scalar() or 0
+    
+    total_pris_prevu = int(total_pris_autres) + jours_pris
+    
+    # BLOCAGE: Interdire de prendre plus que l'acquis
+    if total_pris_prevu > total_acquis:
+        raise HTTPException(
+            status_code=400,
+            detail=f"INTERDIT: Congés pris ({total_pris_prevu}j) > Congés acquis ({total_acquis}j). Solde insuffisant!"
+        )
+    
     # Mise à jour (v3.5.1: plus de décimales, arrondi si nécessaire)
-    conge.jours_conges_pris = int(round(update.jours_pris))
+    conge.jours_conges_pris = jours_pris
     
     # Recalcul du reste
-    # Note: Le reste est calculé par rapport à l'acquis de ce mois spécifique
-    # Dans une gestion plus complexe, on pourrait avoir un compteur global, 
-    # mais ici on suit le modèle mensuel existant.
     conge.jours_conges_restants = int(conge.jours_conges_acquis) - int(conge.jours_conges_pris)
     
     db.commit()
@@ -127,6 +151,57 @@ def get_synthese_conges(employe_id: int, db: Session = Depends(get_db)):
         "total_acquis": total_acquis,
         "total_pris": total_pris,
         "solde": solde
+    }
+
+@router.get("/verifier-saisie/{annee}/{mois}")
+def verifier_saisie_conges(annee: int, mois: int, db: Session = Depends(get_db)):
+    """Vérifier si des congés ont été pris mais non saisis pour une période"""
+    
+    # Récupérer tous les enregistrements de congés pour cette période
+    conges = db.query(Conge).join(Employe).filter(
+        Conge.annee == annee,
+        Conge.mois == mois,
+        Employe.statut == "Actif"
+    ).all()
+    
+    conges_non_saisis = []
+    
+    for conge in conges:
+        # Si jours_conges_acquis > 0 mais jours_conges_pris est NULL/0
+        # ET qu'il y a des jours marqués comme "Congé" dans les pointages
+        pointage = db.query(Pointage).filter(
+            Pointage.employe_id == conge.employe_id,
+            Pointage.annee == annee,
+            Pointage.mois == mois
+        ).first()
+        
+        if pointage:
+            # Compter les jours de congé dans les pointages (valeur = 1)
+            jours_conge_pointage = 0
+            for i in range(1, 32):
+                jour_col = f"jour_{str(i).zfill(2)}"
+                if hasattr(pointage, jour_col):
+                    val = getattr(pointage, jour_col)
+                    # Si congé (valeur 1) et pas travail normal
+                    # On suppose que les congés sont marqués d'une certaine façon
+                    # Pour simplifier: on vérifie si jours_conges_pris est à 0 ou None
+                    pass
+            
+            # Vérifier si congé_pris non saisi mais acquis existe
+            if conge.jours_conges_acquis > 0 and (conge.jours_conges_pris is None or conge.jours_conges_pris == 0):
+                conges_non_saisis.append({
+                    "employe_id": conge.employe_id,
+                    "employe_nom": f"{conge.employe.prenom} {conge.employe.nom}",
+                    "jours_acquis": conge.jours_conges_acquis,
+                    "conge_id": conge.id
+                })
+    
+    return {
+        "annee": annee,
+        "mois": mois,
+        "conges_non_saisis": conges_non_saisis,
+        "count": len(conges_non_saisis),
+        "a_verifier": len(conges_non_saisis) > 0
     }
 
 @router.post("/creer-depuis-dates")

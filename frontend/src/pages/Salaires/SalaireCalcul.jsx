@@ -1,7 +1,9 @@
 import { useState, useEffect } from 'react';
 import { Card, Select, Button, Table, message, Spin, Descriptions, InputNumber, Tag, Space, Dropdown, Menu, Modal } from 'antd';
-import { CalculatorOutlined, EyeOutlined, FilePdfOutlined, FileZipOutlined, SaveOutlined, DownOutlined, CheckCircleOutlined, DollarCircleOutlined, EditOutlined, StopOutlined } from '@ant-design/icons';
+import { CalculatorOutlined, EyeOutlined, FilePdfOutlined, FileZipOutlined, SaveOutlined, DownOutlined, CheckCircleOutlined, DollarCircleOutlined, EditOutlined, StopOutlined, WarningOutlined } from '@ant-design/icons';
 import { salaireService, employeService } from '../../services';
+import { useNavigate } from 'react-router-dom';
+import api from '../../services/api';
 
 const { Option } = Select;
 
@@ -90,6 +92,18 @@ function SalaireCalcul() {
     }
   };
 
+  const navigate = useNavigate();
+
+  const verifierCongesAvantGeneration = async () => {
+    try {
+      const response = await api.get(`/conges/verifier-saisie/${filters.annee}/${filters.mois}`);
+      return response.data;
+    } catch (error) {
+      console.error('Erreur vérification congés:', error);
+      return { a_verifier: false, count: 0, conges_non_saisis: [] };
+    }
+  };
+
   const handleGenererBulletins = async () => {
     if (!filters.annee || !filters.mois) {
       message.warning('Veuillez sélectionner une année et un mois');
@@ -101,6 +115,40 @@ function SalaireCalcul() {
       return;
     }
 
+    // Vérifier si des congés doivent être saisis
+    const verif = await verifierCongesAvantGeneration();
+    
+    if (verif.a_verifier && verif.count > 0) {
+      Modal.confirm({
+        title: 'Attention : Congés non saisis',
+        icon: <WarningOutlined style={{ color: '#faad14' }} />,
+        content: (
+          <div>
+            <p>Il y a <b>{verif.count} employé(s)</b> avec des congés acquis mais non saisis pour {filters.mois}/{filters.annee}:</p>
+            <ul style={{ maxHeight: '200px', overflowY: 'auto' }}>
+              {verif.conges_non_saisis.map((c, i) => (
+                <li key={i}>{c.employe_nom} - {c.jours_acquis} jour(s) acquis</li>
+              ))}
+            </ul>
+            <p><b>Voulez-vous aller sur la page Congés pour les saisir maintenant ?</b></p>
+          </div>
+        ),
+        okText: 'Oui, aller aux Congés',
+        cancelText: 'Non, continuer quand même',
+        width: 600,
+        onOk: () => {
+          navigate('/conges');
+        },
+        onCancel: () => {
+          procederGenerationBulletins();
+        }
+      });
+    } else {
+      procederGenerationBulletins();
+    }
+  };
+
+  const procederGenerationBulletins = async () => {
     try {
       setLoading(true);
       const response = await salaireService.genererBulletins(filters);
