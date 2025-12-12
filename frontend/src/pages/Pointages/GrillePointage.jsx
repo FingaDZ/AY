@@ -623,21 +623,17 @@ function GrillePointage() {
         try {
           // Préparer les données à envoyer avec valeurs numériques
           if (pointage.id) {
-            // Update - Envoyer SEULEMENT les jours NON-NULL (comme dans l'import)
-            const joursDict = {};
+            // Update - Envoyer SEULEMENT les jours avec valeur (jour_XX: 0 ou 1)
+            // Le service convertira automatiquement en {jours: {1: val, 2: val...}}
+            const updateData = {};
             for (let i = 1; i <= 31; i++) {
               const jourKey = `jour_${i.toString().padStart(2, '0')}`;
               const valeur = pointage[jourKey];
-              // N'envoyer que les jours qui ont vraiment une valeur (pas NULL/undefined)
-              // Les jours à 0 ou 1 sont envoyés, NULL est ignoré
+              // N'envoyer que les jours qui ont une valeur (0 ou 1), pas NULL
               if (valeur !== null && valeur !== undefined) {
-                joursDict[i] = valeur;
+                updateData[jourKey] = valeur;
               }
             }
-
-            const updateData = {
-              jours: joursDict
-            };
 
             console.log('Updating pointage', pointage.id, 'for employee', employeId, ':', updateData);
             await pointageService.update(pointage.id, updateData);
