@@ -345,7 +345,21 @@ def generer_rapport_pointages_mensuel(
         emp = data['employe']
         p = data['pointage']
         totaux = p.calculer_totaux()
-        jours_travailles = totaux.get('jours_travailles', 0)
+        jours_travailles_brut = totaux.get('jours_travailles', 0)
+        
+        # RÈGLE 4 v3.5.1: Récupérer les jours de congés PRIS ce mois pour les EXCLURE
+        conge_existant = db.query(Conge).filter(
+            Conge.employe_id == emp_id,
+            Conge.annee == annee,
+            Conge.mois == mois
+        ).first()
+        
+        jours_conges_pris = int(conge_existant.jours_conges_pris) if conge_existant else 0
+        
+        # IMPORTANT: Exclure les congés pris du calcul des jours travaillés
+        # jours_travailles_brut contient TOUT (travail réel + congés car valeur=1)
+        # On doit calculer les droits SEULEMENT sur les jours réellement travaillés
+        jours_reellement_travailles = max(0, jours_travailles_brut - jours_conges_pris)
         
         # Vérifier si l'employé est nouveau (moins de 3 mois depuis le recrutement)
         est_nouveau_recrue = False
@@ -354,8 +368,8 @@ def generer_rapport_pointages_mensuel(
                              (datetime.now().month - emp.date_recrutement.month)
             est_nouveau_recrue = mois_anciennete < 3
         
-        # Calculer les jours de congés acquis
-        jours_conges_acquis = Conge.calculer_jours_conges(jours_travailles, est_nouveau_recrue)
+        # Calculer les jours de congés acquis (NOUVELLE RÈGLE: 8j = 1j, pas de décimal)
+        jours_conges_acquis = Conge.calculer_jours_conges(jours_reellement_travailles, est_nouveau_recrue)
         
         # Enregistrer ou mettre à jour dans la table conges
         conge_record = db.query(Conge).filter(
@@ -364,16 +378,19 @@ def generer_rapport_pointages_mensuel(
             Conge.mois == mois
         ).first()
         
-        if conge_record:
-            conge_record.jours_travailles = jours_travailles
-            conge_record.jours_conges_acquis = jours_conges_acquis
-            conge_record.jours_conges_restants = float(conge_record.jours_conges_acquis) - float(conge_record.jours_conges_pris)
+        if conge_existant:
+            # Mettre à jour l'enregistrement existant
+            conge_existant.jours_travailles = jours_reellement_travailles
+            conge_existant.jours_conges_acquis = jours_conges_acquis
+            # jours_conges_pris reste inchangé (saisi manuellement)
+            conge_existant.jours_conges_restants = int(conge_existant.jours_conges_acquis) - int(conge_existant.jours_conges_pris)
         else:
+            # Créer un nouvel enregistrement
             conge_record = Conge(
                 employe_id=emp_id,
                 annee=annee,
                 mois=mois,
-                jours_travailles=jours_travailles,
+                jours_travailles=jours_reellement_travailles,
                 jours_conges_acquis=jours_conges_acquis,
                 jours_conges_pris=0,
                 jours_conges_restants=jours_conges_acquis
@@ -387,7 +404,7 @@ def generer_rapport_pointages_mensuel(
             'matricule': str(emp.id) if emp else '-',
             'nom_complet': f"{emp.nom} {emp.prenom}" if emp else '-',
             'poste_travail': emp.poste_travail if emp else '-',
-            'jours_travailles': jours_travailles,
+            'jours_travailles': jours_reellement_travailles,  # Jours RÉELLEMENT travaillés (sans congés)
             'absences': totaux.get('jours_absences', 0),
             'jours_conges_acquis': jours_conges_acquis,
             'statut': 'Verrouillé' if p.verrouille else 'En cours'

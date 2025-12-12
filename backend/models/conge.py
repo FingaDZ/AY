@@ -10,9 +10,9 @@ class Conge(Base):
     annee = Column(Integer, nullable=False, index=True)
     mois = Column(Integer, nullable=False, index=True)
     jours_travailles = Column(Integer, default=0)
-    jours_conges_acquis = Column(Numeric(5, 2), default=0.00)
-    jours_conges_pris = Column(Numeric(5, 2), default=0.00)
-    jours_conges_restants = Column(Numeric(5, 2), default=0.00)
+    jours_conges_acquis = Column(Integer, default=0)  # v3.5.1: Plus de décimales
+    jours_conges_pris = Column(Integer, default=0)     # v3.5.1: Plus de décimales
+    jours_conges_restants = Column(Integer, default=0)  # v3.5.1: Plus de décimales
     
     # Nouvelles colonnes pour la saisie de congé
     date_debut = Column(Date, nullable=True, comment="Date de début du congé pris")
@@ -27,27 +27,49 @@ class Conge(Base):
     employe = relationship("Employe", back_populates="conges")
     
     @staticmethod
-    def calculer_jours_conges(jours_travailles: int, est_nouveau_recrue: bool = False) -> float:
+    def calculer_jours_conges(jours_travailles: int, est_nouveau_recrue: bool = False) -> int:
         """
-        Calculer les jours de congés acquis selon les règles:
-        - 30 jours travaillés = 2.5 jours de congé
-        - Minimum 8 jours travaillés pour avoir 1 jour de congé
-        - Nouveaux recrutements: minimum 15 jours travaillés pour calculer 2.5 jours
+        Calculer les jours de congés acquis selon les NOUVELLES règles v3.5.1:
+        
+        RÈGLE 1: 8 jours travaillés = 1 jour de congé (pas de décimal)
+        RÈGLE 2: Nouveau recruté: minimum 15 jours travaillés pour avoir 1 jour
+        RÈGLE 3: Pas de décimales, arrondi intelligent:
+                 - 8-15 jours → 1 jour
+                 - 16-23 jours → 2 jours  
+                 - 24-30 jours → 3 jours
+        RÈGLE 4: IMPORTANT - jours_travailles doit EXCLURE les jours de congé pris
+                 (comptage basé uniquement sur jours réellement travaillés)
+        
+        Retour: int (nombre entier de jours, pas de décimal)
         """
-        if jours_travailles < 8:
-            return 0.0
-        
-        if est_nouveau_recrue and jours_travailles < 15:
-            return 0.0
-        
-        # Calcul proportionnel: (jours_travailles / 30) * 2.5
-        jours_conges = (jours_travailles / 30) * 2.5
-        
-        # Plafonner à 2.5 jours maximum (30-31 jours = 2.5 jours)
-        jours_conges = min(jours_conges, 2.5)
-        
-        # Arrondir à 1 décimale
-        return round(jours_conges, 1)
+        # RÈGLE 1 & 2: Seuil minimum
+        if est_nouveau_recrue:
+            # Nouveau recruté: minimum 15 jours pour avoir 1 jour
+            if jours_travailles < 15:
+                return 0
+            # Entre 15-22 jours → 1 jour
+            elif jours_travailles < 23:
+                return 1
+            # 23-30 jours → 2 jours
+            elif jours_travailles <= 30:
+                return 2
+            else:
+                return 2  # Plafond pour nouveau
+        else:
+            # Employé standard: 8 jours = 1 jour de congé
+            if jours_travailles < 8:
+                return 0
+            
+            # RÈGLE 3: Arrondi intelligent par tranches
+            # 8-15 jours → 1 jour
+            if jours_travailles < 16:
+                return 1
+            # 16-23 jours → 2 jours
+            elif jours_travailles < 24:
+                return 2
+            # 24-30+ jours → 3 jours
+            else:
+                return 3
     
     def __repr__(self):
         return f"<Conge {self.employe_id} - {self.mois}/{self.annee}: {self.jours_conges_acquis}j>"

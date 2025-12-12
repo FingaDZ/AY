@@ -14,7 +14,7 @@ router = APIRouter(prefix="/conges", tags=["Congés"])
 
 # Schemas locaux pour éviter les dépendances circulaires ou complexes
 class CongeUpdate(BaseModel):
-    jours_pris: float
+    jours_pris: int  # v3.5.1: Plus de décimales
 
 class CongeCreateFromDates(BaseModel):
     employe_id: int
@@ -31,9 +31,9 @@ class CongeResponse(BaseModel):
     annee: int
     mois: int
     jours_travailles: int
-    jours_conges_acquis: float
-    jours_conges_pris: float
-    jours_conges_restants: float
+    jours_conges_acquis: int  # v3.5.1: Plus de décimales
+    jours_conges_pris: int    # v3.5.1: Plus de décimales
+    jours_conges_restants: int  # v3.5.1: Plus de décimales
 
     class Config:
         from_attributes = True
@@ -73,9 +73,9 @@ def list_conges(
             annee=c.annee,
             mois=c.mois,
             jours_travailles=c.jours_travailles,
-            jours_conges_acquis=float(c.jours_conges_acquis or 0),
-            jours_conges_pris=float(c.jours_conges_pris or 0),
-            jours_conges_restants=float(c.jours_conges_restants or 0)
+            jours_conges_acquis=int(c.jours_conges_acquis or 0),
+            jours_conges_pris=int(c.jours_conges_pris or 0),
+            jours_conges_restants=int(c.jours_conges_restants or 0)
         ))
         
     return results
@@ -91,14 +91,14 @@ def update_consommation(
     if not conge:
         raise HTTPException(status_code=404, detail="Enregistrement congé non trouvé")
     
-    # Mise à jour
-    conge.jours_conges_pris = Decimal(update.jours_pris)
+    # Mise à jour (v3.5.1: plus de décimales, arrondi si nécessaire)
+    conge.jours_conges_pris = int(round(update.jours_pris))
     
     # Recalcul du reste
     # Note: Le reste est calculé par rapport à l'acquis de ce mois spécifique
     # Dans une gestion plus complexe, on pourrait avoir un compteur global, 
     # mais ici on suit le modèle mensuel existant.
-    conge.jours_conges_restants = conge.jours_conges_acquis - conge.jours_conges_pris
+    conge.jours_conges_restants = int(conge.jours_conges_acquis) - int(conge.jours_conges_pris)
     
     db.commit()
     db.refresh(conge)
@@ -118,8 +118,8 @@ def get_synthese_conges(employe_id: int, db: Session = Depends(get_db)):
         func.sum(Conge.jours_conges_pris).label("total_pris")
     ).filter(Conge.employe_id == employe_id).first()
     
-    total_acquis = float(stats.total_acquis or 0)
-    total_pris = float(stats.total_pris or 0)
+    total_acquis = int(stats.total_acquis or 0)
+    total_pris = int(stats.total_pris or 0)
     solde = total_acquis - total_pris
     
     return {
@@ -199,14 +199,14 @@ def creer_conge_depuis_dates(
             )
             db.add(conge)
         
-        # Ajouter les jours pris dans ce mois
+        # Ajouter les jours pris dans ce mois (v3.5.1: integers seulement)
         jours_mois = len(jours)
-        conge.jours_conges_pris = float(conge.jours_conges_pris or 0) + jours_mois
+        conge.jours_conges_pris = int(conge.jours_conges_pris or 0) + jours_mois
         conge.date_debut = conge_data.date_debut
         conge.date_fin = conge_data.date_fin
         conge.type_conge = conge_data.type_conge
         conge.commentaire = conge_data.commentaire
-        conge.jours_conges_restants = float(conge.jours_conges_acquis or 0) - float(conge.jours_conges_pris or 0)
+        conge.jours_conges_restants = int(conge.jours_conges_acquis or 0) - int(conge.jours_conges_pris or 0)
     
     db.commit()
     
