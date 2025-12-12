@@ -87,7 +87,7 @@ function LoginPage() {
         </form>
 
         <div className="mt-6 text-center">
-          <div className="text-xs text-gray-400">Version 3.5.0</div>
+          <div className="text-xs text-gray-400">Version 3.5.1</div>
           <div className="text-xs text-gray-400 mt-1 font-medium">Powered By AIRBAND</div>
         </div>
       </div>

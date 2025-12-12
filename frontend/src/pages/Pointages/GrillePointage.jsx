@@ -623,13 +623,14 @@ function GrillePointage() {
         try {
           // Préparer les données à envoyer avec valeurs numériques
           if (pointage.id) {
-            // Update - Envoyer SEULEMENT les jours qui ont une valeur (pas de NULL)
+            // Update - Envoyer SEULEMENT les jours NON-NULL (comme dans l'import)
             const joursDict = {};
             for (let i = 1; i <= 31; i++) {
               const jourKey = `jour_${i.toString().padStart(2, '0')}`;
               const valeur = pointage[jourKey];
-              // Envoyer seulement si la valeur existe (0 ou 1), pas NULL
-              if (valeur !== undefined && valeur !== null) {
+              // N'envoyer que les jours qui ont vraiment une valeur (pas NULL/undefined)
+              // Les jours à 0 ou 1 sont envoyés, NULL est ignoré
+              if (valeur !== null && valeur !== undefined) {
                 joursDict[i] = valeur;
               }
             }

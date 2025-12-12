@@ -27,7 +27,7 @@ const Layout = ({ children }) => {
 
                 {/* Footer */}
                 <div className="p-4 border-t border-gray-200 bg-white text-center text-xs text-gray-500 shrink-0">
-                    <span className="text-gray-400">v3.5.0</span>
+                    <span className="text-gray-400">v3.5.1</span>
                 </div>
             </div>
         </div>

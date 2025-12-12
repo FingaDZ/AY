@@ -1,6 +1,6 @@
 # AY HR Management System - Système de Gestion des Ressources Humaines
 
-[![Version](https://img.shields.io/badge/version-3.5.0-blue.svg)](https://github.com/FingaDZ/AY/releases/tag/v3.5.0)
+[![Version](https://img.shields.io/badge/version-3.5.1-blue.svg)](https://github.com/FingaDZ/AY/releases/tag/v3.5.1)
 [![Status](https://img.shields.io/badge/status-stable-green.svg)](https://github.com/FingaDZ/AY)
 [![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20Linux-lightgrey.svg)]()
 [![License](https://img.shields.io/badge/license-Private-red.svg)]()
@@ -8,17 +8,16 @@
 [![React](https://img.shields.io/badge/react-18.3-61dafb.svg)](https://reactjs.org/)
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.104-009688.svg)](https://fastapi.tiangolo.com/)
 
-> **Version actuelle** : 3.5.0 (PDF Enhancement + ANEM Integration)  
-> **Dernière mise à jour** : 11 décembre 2025  
+> **Version actuelle** : 3.5.1 (Bugfix Pointages Sauvegarde Manuelle)  
+> **Dernière mise à jour** : 12 décembre 2025  
 > **Statut** : ✅ Production Ready
 
-## 🎉 Nouveautés v3.5.0
-- 📄 **PDF Améliorés** : Footer automatique, marges étroites, QR codes
-- 🆔 **N° ANEM** : Intégration complète dans documents RH
-- 📋 **Contrats** : Numérotation unique, mentions légales, QR codes
-- 🎫 **Congés** : Ligne jours de congé dans bulletins de paie
-- 📊 **Rapports** : Optimisation layout et footers en pied de page
-- 🔧 **Pointages** : Congé comptabilisé comme jour travaillé (valeur = 1)
+## 🎉 Nouveautés v3.5.1
+- 🐛 **Correctif Critique** : Sauvegarde manuelle des pointages ne persistait pas
+- 🔧 **Backend Fix** : API retourne seulement les jours avec valeur (pas NULL)
+- 🎯 **Frontend Fix** : N'envoie que les jours modifiés lors de la sauvegarde
+- 📝 **Debug** : Logs ajoutés pour tracer les mises à jour
+- ✨ **Vendredi Intelligent** : Calcul automatique basé sur Jeudi/Samedi
 
 ---
 

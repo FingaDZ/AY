@@ -23,8 +23,10 @@ def _pointage_to_response(pointage: Pointage) -> PointageResponse:
     jours_dict = {}
     for i in range(1, 32):
         valeur = pointage.get_jour(i)
-        # valeur est un integer (0 ou 1) ou None
-        jours_dict[i] = valeur
+        # N'envoyer que les jours qui ont une valeur (0 ou 1), pas NULL
+        # Cela évite que le frontend écrase les jours NULL avec des 0
+        if valeur is not None:
+            jours_dict[i] = valeur
     
     totaux_dict = pointage.calculer_totaux()
     totaux = PointageTotaux(**totaux_dict)
@@ -165,8 +167,12 @@ def update_pointage(
             detail="Le pointage est verrouillé et ne peut pas être modifié"
         )
     
+    # Log pour debug
+    print(f"[DEBUG] Updating pointage {pointage_id} for employee {pointage.employe_id}")
+    print(f"[DEBUG] Received jours: {pointage_update.jours}")
+    
     # Mettre à jour les jours (valeurs numériques: 0 ou 1)
-    # Le frontend envoie maintenant TOUS les jours (1-31), donc on peut appliquer directement
+    # Le frontend envoie SEULEMENT les jours avec valeur (pas NULL)
     for jour, valeur in pointage_update.jours.items():
         if jour < 1 or jour > 31:
             raise HTTPException(status_code=400, detail=f"Numéro de jour invalide: {jour}")

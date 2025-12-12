@@ -1,14 +1,20 @@
-# AY HR System v3.5.0
+# AY HR System v3.5.1
 
-## 🎉 Nouveautés Version 3.5.0 (Décembre 2025)
-- 📄 **PDF Améliorés** : Footer automatique, marges étroites, QR codes intégrés
-- 🆔 **N° ANEM** : Intégration complète dans tous les documents RH
-- 📋 **Contrats** : Numérotation unique automatique, mentions légales, QR codes
-- 🎫 **Congés** : Ligne détaillée des jours de congé dans bulletins de paie
-- 📊 **Rapports** : Optimisation layout et footers professionnels
-- 🔧 **Pointages** : Congé maintenant comptabilisé comme jour travaillé (payé)
+## 🎉 Nouveautés Version 3.5.1 (Décembre 2025)
+- 🐛 **Pointages Fix** : Correction sauvegarde manuelle - ne plus écraser les jours NULL
+- 🔧 **Backend** : API retourne seulement les jours avec valeur (pas NULL)
+- 🎯 **Frontend** : N'envoie que les jours modifiés lors de la sauvegarde
+- 📝 **Logs** : Ajout logs de debug pour tracer les mises à jour
+- ✨ **Vendredi Intelligent** : Logique automatique basée sur Jeudi/Samedi
 
 ## 📋 Historique des Versions
+
+### v3.5.1 - 12 décembre 2025
+- 🐛 **CORRECTIF CRITIQUE** : Pointages - Sauvegarde manuelle ne fonctionne pas
+  - Backend : `_pointage_to_response` n'envoie que les jours non-NULL
+  - Frontend : `handleSaveAll` envoie seulement les jours avec valeur
+  - Logs : Ajout de debug dans `update_pointage`
+  - Résultat : Les modifications sont maintenant bien enregistrées en DB
 
 ### v3.5.0 - 11 décembre 2025
 - 📄 **PDF Enhancement** : Footers automatiques, marges étroites, QR codes
