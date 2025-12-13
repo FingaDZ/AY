@@ -92,10 +92,7 @@ class SalaireProcessor:
             jours_travailles = totaux.get("jours_travailles", 0)
             jours_conges = totaux.get("jours_conges", 0)
             heures_supplementaires_pointage = totaux.get("heures_supplementaires", 0)
-            jours_ouvrables = 26  # Nombre de jours ouvrables standard
-            
-            # 5. Calcul salaire de base proratisé
-            salaire_base = Decimal(str(employe.salaire_base))
+            jours_ouvrables = 30  # v3.5.3: Base 30 jours au lieu de 26
             
             # 5. Calcul salaire de base proratisé
             salaire_base = Decimal(str(employe.salaire_base))

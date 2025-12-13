@@ -1,4 +1,11 @@
-# AY HR System v3.5.2
+# AY HR System v3.5.3
+
+## 🎉 Nouveautés Version 3.5.3 (Décembre 2025)
+
+### 📊 **MODIFICATIONS CALCULS**
+- **Congés** : Retour aux décimales avec max 2.5j/mois (formule: jours/30*2.5)
+- **Salaires** : Base 30 jours au lieu de 26 (30000 DA pour 30 jours)
+- **Bulletin PDF** : Ligne congés masquée
 
 ## 🎉 Nouveautés Version 3.5.2 (Décembre 2025)
 
@@ -43,6 +50,15 @@
 - `CONGES_NOUVELLES_REGLES_V3.5.1.md` : Détails techniques
 
 ## 📋 Historique des Versions
+
+### v3.5.3 - 13 décembre 2025
+- 📊 **MODIFICATIONS CALCULS**
+  - Congés : Retour décimales max 2.5j/mois (formule: jours/30*2.5)
+  - Salaires : Base 30 jours au lieu de 26
+  - Bulletin PDF : Ligne congés masquée
+- 🗄️ **MIGRATION**
+  - SQL : INTEGER → DECIMAL(5,2) pour congés
+  - Compatibilité avec anciennes données maintenue
 
 ### v3.5.2 - 12 décembre 2025
 - 🎨 **AMÉLIORATIONS UX/UI**

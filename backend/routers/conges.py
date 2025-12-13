@@ -16,7 +16,7 @@ router = APIRouter(prefix="/conges", tags=["Congés"])
 
 # Schemas locaux pour éviter les dépendances circulaires ou complexes
 class CongeUpdate(BaseModel):
-    jours_pris: int  # v3.5.1: Plus de décimales
+    jours_pris: float  # v3.5.3: Décimales supportées
 
 class CongeCreateFromDates(BaseModel):
     employe_id: int
@@ -33,9 +33,9 @@ class CongeResponse(BaseModel):
     annee: int
     mois: int
     jours_travailles: int
-    jours_conges_acquis: int  # v3.5.1: Plus de décimales
-    jours_conges_pris: int    # v3.5.1: Plus de décimales
-    jours_conges_restants: int  # v3.5.1: Plus de décimales
+    jours_conges_acquis: float  # v3.5.3: Décimales
+    jours_conges_pris: float    # v3.5.3: Décimales
+    jours_conges_restants: float  # v3.5.3: Décimales
 
     class Config:
         from_attributes = True
@@ -98,15 +98,15 @@ def update_consommation(
     # Sauvegarder l'ancienne valeur
     old_jours_pris = conge.jours_conges_pris
     
-    # v3.5.1: VALIDATION STRICTE - Bloquer si congés pris > acquis
-    jours_pris = int(round(update.jours_pris))
+    # v3.5.3: VALIDATION STRICTE avec support décimales
+    jours_pris = float(update.jours_pris)
     
     # Calculer le total acquis pour cet employé
     stats = db.query(
         func.sum(Conge.jours_conges_acquis).label("total_acquis")
     ).filter(Conge.employe_id == conge.employe_id).first()
     
-    total_acquis = int(stats.total_acquis or 0)
+    total_acquis = float(stats.total_acquis or 0)
     
     # Calculer total pris (sans compter ce mois)
     total_pris_autres = db.query(
@@ -116,20 +116,20 @@ def update_consommation(
         Conge.id != conge_id
     ).scalar() or 0
     
-    total_pris_prevu = int(total_pris_autres) + jours_pris
+    total_pris_prevu = float(total_pris_autres) + jours_pris
     
     # BLOCAGE: Interdire de prendre plus que l'acquis
     if total_pris_prevu > total_acquis:
         raise HTTPException(
             status_code=400,
-            detail=f"INTERDIT: Congés pris ({total_pris_prevu}j) > Congés acquis ({total_acquis}j). Solde insuffisant!"
+            detail=f"INTERDIT: Congés pris ({total_pris_prevu:.2f}j) > Congés acquis ({total_acquis:.2f}j). Solde insuffisant!"
         )
     
-    # Mise à jour (v3.5.1: plus de décimales, arrondi si nécessaire)
+    # Mise à jour (v3.5.3: avec décimales)
     conge.jours_conges_pris = jours_pris
     
     # Recalcul du reste
-    conge.jours_conges_restants = int(conge.jours_conges_acquis) - int(conge.jours_conges_pris)
+    conge.jours_conges_restants = float(conge.jours_conges_acquis or 0) - float(conge.jours_conges_pris or 0)
     
     db.commit()
     db.refresh(conge)
@@ -162,15 +162,15 @@ def get_synthese_conges(employe_id: int, db: Session = Depends(get_db)):
         func.sum(Conge.jours_conges_pris).label("total_pris")
     ).filter(Conge.employe_id == employe_id).first()
     
-    total_acquis = int(stats.total_acquis or 0)
-    total_pris = int(stats.total_pris or 0)
+    total_acquis = float(stats.total_acquis or 0)
+    total_pris = float(stats.total_pris or 0)
     solde = total_acquis - total_pris
     
     return {
         "employe": f"{employe.prenom} {employe.nom}",
-        "total_acquis": total_acquis,
-        "total_pris": total_pris,
-        "solde": solde
+        "total_acquis": round(total_acquis, 2),
+        "total_pris": round(total_pris, 2),
+        "solde": round(solde, 2)
     }
 
 @router.get("/verifier-saisie/{annee}/{mois}")
@@ -294,14 +294,14 @@ def creer_conge_depuis_dates(
             )
             db.add(conge)
         
-        # Ajouter les jours pris dans ce mois (v3.5.1: integers seulement)
-        jours_mois = len(jours)
-        conge.jours_conges_pris = int(conge.jours_conges_pris or 0) + jours_mois
+        # Ajouter les jours pris dans ce mois (v3.5.3: avec décimales)
+        jours_mois = float(len(jours))
+        conge.jours_conges_pris = float(conge.jours_conges_pris or 0) + jours_mois
         conge.date_debut = conge_data.date_debut
         conge.date_fin = conge_data.date_fin
         conge.type_conge = conge_data.type_conge
         conge.commentaire = conge_data.commentaire
-        conge.jours_conges_restants = int(conge.jours_conges_acquis or 0) - int(conge.jours_conges_pris or 0)
+        conge.jours_conges_restants = float(conge.jours_conges_acquis or 0) - float(conge.jours_conges_pris or 0)
     
     db.commit()
     

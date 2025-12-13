@@ -83,7 +83,7 @@ function Dashboard() {
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
         <div>
           <h1 className="text-3xl font-bold text-gray-800">Dashboard</h1>
-          <p className="text-gray-500 mt-1">Vue d'ensemble du système AY HR <span className="text-xs ml-2 px-2 py-1 bg-blue-100 text-blue-600 rounded-full">v3.5.2</span></p>
+          <p className="text-gray-500 mt-1">Vue d'ensemble du système AY HR <span className="text-xs ml-2 px-2 py-1 bg-blue-100 text-blue-600 rounded-full">v3.5.3</span></p>
         </div>
       </div>
 
