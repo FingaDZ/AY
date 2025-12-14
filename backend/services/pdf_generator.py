@@ -896,8 +896,12 @@ class PDFGenerator:
              f"{salaire_data.get('jours_travailles', 0)}/{salaire_data.get('jours_ouvrables', 26)} j",
              f"{float(salaire_data.get('salaire_base_proratis', 0)):,.2f}".replace(',', ' '),
              ''],
-            # v3.5.3: Ligne congés supprimée (masquée du bulletin)
-            # ['Jours de congé pris ce mois', '', ..., 'Payé', ''],
+            # ⭐ RÉACTIVÉ: Affichage congés pris ce mois
+            ['Jours de congé pris ce mois',
+             '',
+             f"{salaire_data.get('jours_conges', 0):.1f} j" if salaire_data.get('jours_conges', 0) > 0 else '0 j',
+             'Payé',
+             ''],
             # Heures supplémentaires
             ['Heures supplémentaires (1.33h/j × 150%)',
              '',

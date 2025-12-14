@@ -90,9 +90,18 @@ class SalaireProcessor:
             # 4. Calcul totaux pointage
             totaux = pointage.calculer_totaux()
             jours_travailles = totaux.get("jours_travailles", 0)
-            jours_conges = totaux.get("jours_conges", 0)
             heures_supplementaires_pointage = totaux.get("heures_supplementaires", 0)
             jours_ouvrables = 30  # v3.5.3: Base 30 jours au lieu de 26
+            
+            # ⭐ NOUVEAU v3.5.3: Récupérer les congés RÉELS depuis la table conges
+            from models import Conge
+            conge_record = self.db.query(Conge).filter(
+                Conge.employe_id == employe_id,
+                Conge.annee == annee,
+                Conge.mois == mois
+            ).first()
+            
+            jours_conges = float(conge_record.jours_conges_pris or 0) if conge_record else 0
             
             # 5. Calcul salaire de base proratisé
             salaire_base = Decimal(str(employe.salaire_base))
