@@ -311,6 +311,45 @@ def creer_conge_depuis_dates(
         "mois_impactes": len(jours_par_mois)
     }
 
+@router.post("/recalculer-periode")
+def recalculer_conges_periode(
+    annee: int,
+    mois: int,
+    request: Request,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """
+    Recalculer tous les congés pour une période donnée
+    
+    Utile après:
+    - Vidage de la base de données
+    - Corrections massives de pointages
+    - Migration de version
+    """
+    from services.conges_calculator import recalculer_conges_periode
+    
+    results = recalculer_conges_periode(db, annee, mois)
+    
+    # Log l'action
+    log_action(
+        db=db,
+        module_name="conges",
+        action_type=ActionType.UPDATE,
+        record_id=0,
+        new_data=results,
+        description=f"Recalcul batch congés {mois}/{annee} - {results['recalcules']} recalculés",
+        user=current_user,
+        request=request
+    )
+    
+    return {
+        "message": f"Recalcul terminé pour {mois}/{annee}",
+        "recalcules": results["recalcules"],
+        "erreurs": results["erreurs"],
+        "details": results["details"]
+    }
+
 @router.get("/{conge_id}/titre-conge")
 def generer_titre_conge(conge_id: int, db: Session = Depends(get_db)):
     """Générer un titre de congé (PDF) pour un employé"""

@@ -75,6 +75,19 @@ def create_pointage(
     db.commit()
     db.refresh(db_pointage)
     
+    # ⭐ NOUVEAU v3.5.3: Calculer automatiquement les congés
+    from services.conges_calculator import calculer_et_enregistrer_conges
+    try:
+        calculer_et_enregistrer_conges(
+            db=db,
+            employe_id=pointage.employe_id,
+            annee=pointage.annee,
+            mois=pointage.mois
+        )
+    except Exception as e:
+        print(f"[WARNING] Erreur calcul congés après création pointage: {e}")
+        # Ne pas bloquer la création du pointage si calcul congés échoue
+    
     # Log l'action
     log_action(
         db=db,
@@ -212,6 +225,19 @@ def update_pointage(
     
     db.commit()
     db.refresh(pointage)
+    
+    # ⭐ NOUVEAU v3.5.3: Recalculer automatiquement les congés
+    from services.conges_calculator import calculer_et_enregistrer_conges
+    try:
+        calculer_et_enregistrer_conges(
+            db=db,
+            employe_id=pointage.employe_id,
+            annee=pointage.annee,
+            mois=pointage.mois
+        )
+    except Exception as e:
+        print(f"[WARNING] Erreur recalcul congés après modification pointage: {e}")
+        # Ne pas bloquer la modification du pointage si calcul congés échoue
     
     # Log l'action
     log_action(
