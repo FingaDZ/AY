@@ -63,6 +63,16 @@ class SalaireCalculator:
         totaux = pointage.calculer_totaux()
         jours_travailles = totaux["total_travailles"]  # Tr + Fe
         
+        # ⭐ NOUVEAU v3.5.3: Récupérer les congés RÉELS depuis la table conges
+        from models import Conge
+        conge_record = self.db.query(Conge).filter(
+            Conge.employe_id == employe_id,
+            Conge.annee == annee,
+            Conge.mois == mois
+        ).first()
+        
+        jours_conges = float(conge_record.jours_conges_pris or 0) if conge_record else 0
+        
         # Nombre de jours ouvrables du mois
         jours_ouvrables = self.params.jours_ouvrables_base
         
@@ -174,6 +184,7 @@ class SalaireCalculator:
             "annee": annee,
             "mois": mois,
             "jours_travailles": jours_travailles,
+            "jours_conges": jours_conges,  # ⭐ AJOUTÉ v3.5.3: Congés pris ce mois
             "jours_ouvrables": jours_ouvrables,
             "salaire_base_proratis": salaire_base_proratis,
             "heures_supplementaires": heures_supplementaires,
