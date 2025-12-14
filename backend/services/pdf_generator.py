@@ -991,6 +991,12 @@ class PDFGenerator:
              '',
              f"{float(salaire_data.get('prime_femme_foyer', 0)):,.2f}".replace(',', ' '),
              ''],
+            # ⭐ LIGNE CONGÉ DÉDIÉE (visible à la fin)
+            ['📅 Congés pris ce mois',
+             '',
+             f"{salaire_data.get('jours_conges', 0):.1f} jours",
+             '(Payé sur 30j)',
+             ''],
         ]
         
         salaire_table = Table(salaire_detail_data, colWidths=[6*cm, 3.5*cm, 2.5*cm, 3*cm, 3*cm])
