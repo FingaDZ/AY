@@ -95,8 +95,8 @@ def update_consommation(
     if not conge:
         raise HTTPException(status_code=404, detail="Enregistrement congé non trouvé")
     
-    # Sauvegarder l'ancienne valeur
-    old_jours_pris = conge.jours_conges_pris
+    # Sauvegarder l'ancienne valeur (convertir Decimal en float pour JSON)
+    old_jours_pris = float(conge.jours_conges_pris or 0)
     
     # v3.5.3: VALIDATION STRICTE avec support décimales
     jours_pris = float(update.jours_pris)
