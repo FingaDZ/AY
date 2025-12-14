@@ -3567,6 +3567,12 @@ class PDFGenerator:
                  f"{float(emp_info.get('salaire_base', 0)):,.2f}".replace(',', ' '),
                  f"{sal_data.get('jours_travailles', 0)}/{sal_data.get('jours_ouvrables', 26)} j",
                  f"{float(sal_data.get('salaire_base_proratis', 0)):,.2f}".replace(',', ' '), ''],
+                # ⭐ LIGNE CONGÉS v3.5.3
+                ['Congés pris ce mois',
+                 '',
+                 f"{sal_data.get('jours_conges', 0):.1f} j",
+                 '(Payé)',
+                 ''],
                 ['Heures supplémentaires (1.33h/j × 150%)', '', '',
                  f"{float(sal_data.get('heures_supplementaires', 0)):,.2f}".replace(',', ' '), ''],
                 ['Indemnité de Nuisance (IN)', f"{float(emp_info.get('salaire_base', 0)):,.2f}".replace(',', ' '), '5%',
