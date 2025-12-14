@@ -991,13 +991,19 @@ class PDFGenerator:
              '',
              f"{float(salaire_data.get('prime_femme_foyer', 0)):,.2f}".replace(',', ' '),
              ''],
-            # ⭐ LIGNE CONGÉ DÉDIÉE (visible à la fin)
-            ['📅 Congés pris ce mois',
+            # ⭐ LIGNE CONGÉ DÉDIÉE - TOUJOURS AFFICHÉE
+            ['CONGES PRIS CE MOIS',
              '',
-             f"{salaire_data.get('jours_conges', 0):.1f} jours",
-             '(Payé sur 30j)',
+             f"{salaire_data.get('jours_conges', 0):.2f} j",
+             'INFO',
              ''],
         ]
+        
+        # DEBUG: Log pour vérifier la présence de jours_conges
+        import logging
+        logger = logging.getLogger(__name__)
+        logger.info(f"[PDF DEBUG] jours_conges dans salaire_data: {salaire_data.get('jours_conges', 'ABSENT')}")
+        logger.info(f"[PDF DEBUG] Nombre de lignes dans tableau: {len(salaire_detail_data)}")
         
         salaire_table = Table(salaire_detail_data, colWidths=[6*cm, 3.5*cm, 2.5*cm, 3*cm, 3*cm])
         
