@@ -8,8 +8,8 @@ import os
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 from sqlalchemy import text
-from database import engine, SessionLocal
-from models import Base, Camion
+from database import engine, SessionLocal, Base
+from models import Camion
 
 def migrate_v3_6_0():
     """Migration v3.6.0: Création table camions et ajout camion_id à missions"""
