@@ -57,9 +57,12 @@ const Camions = () => {
     }
 
     try {
+      // Nettoyer les données : convertir chaînes vides en null pour les dates
       const data = {
         ...formData,
-        immatriculation: formData.immatriculation.toUpperCase()
+        immatriculation: formData.immatriculation.toUpperCase(),
+        date_acquisition: formData.date_acquisition || null,
+        date_revision: formData.date_revision || null
       };
 
       if (editingId) {
