@@ -17,11 +17,12 @@ from schemas import (
 )
 from services.pdf_generator import PDFGenerator
 from services.logging_service import log_action, clean_data_for_logging, ActionType
+from middleware.auth import require_gestionnaire  # ⭐ v3.6.0: Permissions
 
 router = APIRouter(prefix="/avances", tags=["Avances"])
 
 @router.post("/", response_model=AvanceResponse, status_code=201)
-def create_avance(avance: AvanceCreate, db: Session = Depends(get_db)):
+def create_avance(avance: AvanceCreate, db: Session = Depends(get_db), _: None = Depends(require_gestionnaire)):
     """Créer une nouvelle avance"""
     
     # Vérifier que l'employé existe
@@ -153,7 +154,8 @@ def get_avance(avance_id: int, db: Session = Depends(get_db)):
 def update_avance(
     avance_id: int,
     avance_update: AvanceUpdate,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    _: None = Depends(require_gestionnaire)
 ):
     """Mettre à jour une avance avec validation de la limite 70%"""
     
@@ -218,7 +220,7 @@ def update_avance(
     return avance
 
 @router.delete("/{avance_id}", status_code=204)
-def delete_avance(avance_id: int, db: Session = Depends(get_db)):
+def delete_avance(avance_id: int, db: Session = Depends(get_db), _: None = Depends(require_gestionnaire)):
     """Supprimer une avance"""
     
     avance = db.query(Avance).filter(Avance.id == avance_id).first()

@@ -18,11 +18,12 @@ from schemas import (
 )
 from services.pdf_generator import PDFGenerator
 from services.logging_service import log_action, clean_data_for_logging, ActionType
+from middleware.auth import require_gestionnaire  # ⭐ v3.6.0: Permissions
 
 router = APIRouter(prefix="/credits", tags=["Crédits"])
 
 @router.post("/", response_model=CreditResponse, status_code=201)
-def create_credit(credit: CreditCreate, db: Session = Depends(get_db)):
+def create_credit(credit: CreditCreate, db: Session = Depends(get_db), _: None = Depends(require_gestionnaire)):
     """Créer un nouveau crédit"""
     
     # Vérifier que l'employé existe
@@ -234,7 +235,8 @@ def get_echeancier_credit(credit_id: int, db: Session = Depends(get_db)):
 def update_credit(
     credit_id: int,
     credit_update: CreditUpdate,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    _: None = Depends(require_gestionnaire)
 ):
     """Mettre à jour un crédit (nombre de mensualités)"""
     
@@ -266,7 +268,8 @@ def update_credit(
 def create_prorogation(
     credit_id: int,
     prorogation: ProrogationCreditCreate,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    _: None = Depends(require_gestionnaire)
 ):
     """Créer une prorogation (report de mensualité)"""
     
@@ -290,7 +293,8 @@ def enregistrer_retenue(
     credit_id: int,
     mois: int = Query(..., ge=1, le=12),
     annee: int = Query(..., ge=2000),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    _: None = Depends(require_gestionnaire)
 ):
     """Enregistrer une retenue mensuelle pour un crédit"""
     
@@ -360,7 +364,7 @@ def enregistrer_retenue(
     }
 
 @router.delete("/{credit_id}", status_code=204)
-def delete_credit(credit_id: int, db: Session = Depends(get_db)):
+def delete_credit(credit_id: int, db: Session = Depends(get_db), _: None = Depends(require_gestionnaire)):
     """Supprimer un crédit"""
     
     credit = db.query(Credit).filter(Credit.id == credit_id).first()

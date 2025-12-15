@@ -19,6 +19,7 @@ from schemas import (
 )
 from services.pdf_generator import PDFGenerator
 from services.logging_service import log_action, clean_data_for_logging, ActionType
+from middleware.auth import require_gestionnaire, require_admin  # ⭐ v3.6.0: Permissions
 
 router = APIRouter(prefix="/missions", tags=["Missions"])
 pdf_generator = PDFGenerator()
@@ -40,7 +41,7 @@ def get_tarif_km(db: Session) -> Decimal:
 from services.mission_service import MissionService
 
 @router.post("/", response_model=MissionResponse, status_code=201)
-def create_mission(mission: MissionCreate, db: Session = Depends(get_db)):
+def create_mission(mission: MissionCreate, db: Session = Depends(get_db), _: None = Depends(require_gestionnaire)):
     """Créer une nouvelle mission"""
     service = MissionService(db)
     db_mission = service.create_mission(mission)
@@ -63,6 +64,7 @@ def create_mission(mission: MissionCreate, db: Session = Depends(get_db)):
 def update_mission(
     mission_id: int,
     mission: MissionCreate,
+    _: None = Depends(require_gestionnaire),
     db: Session = Depends(get_db)
 ):
     """Modifier une mission existante"""
@@ -83,7 +85,8 @@ def update_mission(
 @router.delete("/{mission_id}", status_code=204)
 def delete_mission(
     mission_id: int,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    _: None = Depends(require_gestionnaire)
 ):
     """Supprimer une mission"""
     
@@ -405,7 +408,7 @@ def get_mission(mission_id: int, db: Session = Depends(get_db)):
     return mission
 
 @router.delete("/{mission_id}", status_code=204)
-def delete_mission(mission_id: int, db: Session = Depends(get_db)):
+def delete_mission(mission_id: int, db: Session = Depends(get_db), _: None = Depends(require_gestionnaire)):
     """Supprimer une mission"""
     
     mission = db.query(Mission).filter(Mission.id == mission_id).first()
@@ -440,7 +443,8 @@ def get_tarif_km_param(db: Session = Depends(get_db)):
 @router.put("/parametres/tarif-km", response_model=ParametreResponse)
 def update_tarif_km(
     param_update: ParametreUpdate,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    _: None = Depends(require_admin)  # ⭐ v3.6.0: Admin only
 ):
     """Mettre à jour le tarif kilométrique"""
     

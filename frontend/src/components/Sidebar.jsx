@@ -27,7 +27,7 @@ import { useAuth } from '../contexts/AuthContext';
 const Sidebar = ({ isOpen, onClose }) => {
     const location = useLocation();
     const navigate = useNavigate();
-    const { isAdmin } = useAuth();
+    const { user, isAdmin, isGestionnaire } = useAuth();
 
     const handleLogout = () => {
         // Clear any stored authentication data
@@ -43,28 +43,30 @@ const Sidebar = ({ isOpen, onClose }) => {
     };
 
     const allLinks = [
-        { to: '/', label: 'Dashboard', icon: LayoutDashboard, public: true },
-        { to: '/missions', label: 'Missions', icon: Clock, public: true },
-        { to: '/clients', label: 'Clients', icon: Building2, public: true },
-        { to: '/camions', label: 'Camions', icon: Truck, public: false },
-        { to: '/employes', label: 'Employés', icon: Users, public: false },
-        { to: '/postes', label: 'Postes', icon: Briefcase, public: false },
-        { to: '/pointages', label: 'Pointages', icon: ClipboardList, public: false },
-        { to: '/pointages/import-preview', label: 'Import Pointages', icon: Eye, public: false },
-        { to: '/avances', label: 'Avances', icon: DollarSign, public: false },
-        { to: '/credits', label: 'Crédits', icon: FileText, public: false },
-        { to: '/conges', label: 'Congés', icon: Calendar, public: false },
-        { to: '/salaires/traitement', label: 'Traitement Salaires', icon: Calculator, public: false }, // NOUVEAU v3.0
-        // { to: '/salaires/edition', label: 'Edition Salaires', icon: Calculator, public: false }, // DÉSACTIVÉ
-        // { to: '/salaires', label: 'Salaires (Ancien)', icon: Download, public: false }, // DÉSACTIVÉ
-        { to: '/parametres/salaires', label: 'Paramètres Salaires', icon: DollarSign, public: false },
-        { to: '/logs', label: 'Logs', icon: ScrollText, public: false },
-        { to: '/parametres', label: 'Paramètres Généraux', icon: SettingsIcon, public: false },
-        { to: '/utilisateurs', label: 'Utilisateurs', icon: UserCog, public: false },
-        { to: '/database-config', label: 'Base de données', icon: Database, public: false },
+        { to: '/', label: 'Dashboard', icon: LayoutDashboard, roles: ['Admin', 'Gestionnaire', 'Utilisateur'] },
+        { to: '/missions', label: 'Missions', icon: Clock, roles: ['Admin', 'Gestionnaire', 'Utilisateur'] },
+        { to: '/clients', label: 'Clients', icon: Building2, roles: ['Admin', 'Gestionnaire'] },
+        { to: '/camions', label: 'Camions', icon: Truck, roles: ['Admin', 'Gestionnaire'] },
+        { to: '/employes', label: 'Employés', icon: Users, roles: ['Admin'] },
+        { to: '/postes', label: 'Postes', icon: Briefcase, roles: ['Admin'] },
+        { to: '/pointages', label: 'Pointages', icon: ClipboardList, roles: ['Admin'] },
+        { to: '/pointages/import-preview', label: 'Import Pointages', icon: Eye, roles: ['Admin'] },
+        { to: '/avances', label: 'Avances', icon: DollarSign, roles: ['Admin', 'Gestionnaire'] },
+        { to: '/credits', label: 'Crédits', icon: FileText, roles: ['Admin', 'Gestionnaire'] },
+        { to: '/conges', label: 'Congés', icon: Calendar, roles: ['Admin'] },
+        { to: '/salaires/traitement', label: 'Traitement Salaires', icon: Calculator, roles: ['Admin'] },
+        { to: '/parametres/salaires', label: 'Paramètres Salaires', icon: DollarSign, roles: ['Admin'] },
+        { to: '/logs', label: 'Logs', icon: ScrollText, roles: ['Admin'] },
+        { to: '/parametres', label: 'Paramètres Généraux', icon: SettingsIcon, roles: ['Admin'] },
+        { to: '/utilisateurs', label: 'Utilisateurs', icon: UserCog, roles: ['Admin'] },
+        { to: '/database-config', label: 'Base de données', icon: Database, roles: ['Admin'] },
     ];
 
-    const links = allLinks.filter(link => link.public || isAdmin());
+    // Filter links based on user role
+    const links = allLinks.filter(link => {
+        if (!user || !user.role) return false;
+        return link.roles.includes(user.role);
+    });
 
     return (
         <>

@@ -6,6 +6,7 @@ import enum
 
 class UserRole(str, enum.Enum):
     admin = "Admin"
+    gestionnaire = "Gestionnaire"  # ⭐ v3.6.0: Rôle intermédiaire
     utilisateur = "Utilisateur"
 
 

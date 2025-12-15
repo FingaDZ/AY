@@ -15,11 +15,12 @@ from schemas import (
 from services.pdf_generator import PDFGenerator
 from models import Parametres
 from services.logging_service import log_action, clean_data_for_logging, ActionType
+from middleware.auth import require_gestionnaire  # ⭐ v3.6.0: Permissions
 
 router = APIRouter(prefix="/clients", tags=["Clients"])
 
 @router.post("/", response_model=ClientResponse, status_code=201)
-def create_client(client: ClientCreate, db: Session = Depends(get_db)):
+def create_client(client: ClientCreate, db: Session = Depends(get_db), _: None = Depends(require_gestionnaire)):
     """Créer un nouveau client"""
     
     db_client = Client(**client.model_dump())
@@ -77,7 +78,8 @@ def get_client(client_id: int, db: Session = Depends(get_db)):
 def update_client(
     client_id: int,
     client_update: ClientUpdate,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    _: None = Depends(require_gestionnaire)
 ):
     """Mettre à jour un client"""
     
@@ -106,7 +108,7 @@ def update_client(
     return client
 
 @router.delete("/{client_id}", status_code=204)
-def delete_client(client_id: int, db: Session = Depends(get_db)):
+def delete_client(client_id: int, db: Session = Depends(get_db), _: None = Depends(require_gestionnaire)):
     """Supprimer un client"""
     from models.mission_client_detail import MissionClientDetail
     

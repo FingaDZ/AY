@@ -137,13 +137,17 @@ function UtilisateursPage() {
       title: 'Rôle',
       dataIndex: 'role',
       key: 'role',
-      render: (role) => (
-        <Tag color={role === 'Admin' ? 'red' : 'blue'}>
-          {role}
-        </Tag>
-      ),
+      render: (role) => {
+        const colorMap = {
+          'Admin': 'red',
+          'Gestionnaire': 'orange',
+          'Utilisateur': 'blue'
+        };
+        return <Tag color={colorMap[role] || 'blue'}>{role}</Tag>;
+      },
       filters: [
         { text: 'Admin', value: 'Admin' },
+        { text: 'Gestionnaire', value: 'Gestionnaire' },
         { text: 'Utilisateur', value: 'Utilisateur' },
       ],
       onFilter: (value, record) => record.role === value,
@@ -301,6 +305,9 @@ function UtilisateursPage() {
               <Select placeholder="Sélectionner un rôle">
                 <Option value="Admin">
                   <Tag color="red">Admin</Tag> - Accès complet
+                </Option>
+                <Option value="Gestionnaire">
+                  <Tag color="orange">Gestionnaire</Tag> - Missions, Clients, Avances, Crédits
                 </Option>
                 <Option value="Utilisateur">
                   <Tag color="blue">Utilisateur</Tag> - Gestion missions uniquement

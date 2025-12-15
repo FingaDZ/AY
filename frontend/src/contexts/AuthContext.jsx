@@ -50,11 +50,21 @@ export const AuthProvider = ({ children }) => {
     return user && user.role === 'Admin';
   };
 
+  const isGestionnaire = () => {
+    return user && (user.role === 'Admin' || user.role === 'Gestionnaire');
+  };
+
+  const isUtilisateur = () => {
+    return user && user.role === 'Utilisateur';
+  };
+
   const value = {
     user,
     login,
     logout,
     isAdmin,
+    isGestionnaire,
+    isUtilisateur,
     loading
   };
 

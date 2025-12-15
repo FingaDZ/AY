@@ -69,3 +69,18 @@ async def require_auth(
     Vérifie simplement que l'utilisateur est authentifié (admin ou utilisateur)
     """
     return current_user
+
+
+async def require_gestionnaire(
+    current_user: User = Depends(get_current_user)
+) -> User:
+    """
+    ⭐ v3.6.0: Vérifie que l'utilisateur est Admin ou Gestionnaire
+    Accès: missions, clients, avances, crédits
+    """
+    if current_user.role not in ["Admin", "Gestionnaire"]:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Accès refusé. Droits gestionnaire requis."
+        )
+    return current_user
