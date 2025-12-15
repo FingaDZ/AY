@@ -125,18 +125,18 @@ function ParametresSalaires() {
                 layout="vertical"
                 onFinish={handleSave}
             >
-                {/* INDEMNITÉS */}
+                {/* 📊 INDEMNITÉS - v3.6.0 Phase 5: Réorganisation */}
                 <Card
-                    title="Indemités (%)"
-                    style={{ marginBottom: 16 }}
+                    title={<span>📊 <strong>INDEMNITÉS</strong></span>}
+                    style={{ marginBottom: 16, borderColor: '#1890ff' }}
                     extra={
-                        <Text type="secondary">Appliquées sur le salaire de base</Text>
+                        <Text type="secondary">Pourcentages appliqués sur le salaire de base</Text>
                     }
                 >
                     <Row gutter={16}>
                         <Col span={8}>
                             <Form.Item
-                                label="IN - Indemité de Nuisance (%)"
+                                label={<strong>IN - Indemnité de Nuisance (%)</strong>}
                                 name="taux_in"
                                 rules={[
                                     { required: true, message: 'Requis' },
@@ -154,7 +154,7 @@ function ParametresSalaires() {
                         </Col>
                         <Col span={8}>
                             <Form.Item
-                                label="IFSP - Service Permanent (%)"
+                                label={<strong>IFSP - Indemnité Service Permanent (%)</strong>}
                                 name="taux_ifsp"
                                 rules={[
                                     { required: true, message: 'Requis' },
@@ -172,7 +172,7 @@ function ParametresSalaires() {
                         </Col>
                         <Col span={8}>
                             <Form.Item
-                                label="IEP - Expérience Prof. (% par an)"
+                                label={<strong>IEP - Indemnité Expérience Prof. (% par an)</strong>}
                                 name="taux_iep_par_an"
                                 rules={[
                                     { required: true, message: 'Requis' },
@@ -190,11 +190,18 @@ function ParametresSalaires() {
                             </Form.Item>
                         </Col>
                     </Row>
+                </Card>
 
+                {/* 💰 PRIMES - v3.6.0 Phase 5 */}
+                <Card
+                    title={<span>💰 <strong>PRIMES</strong></span>}
+                    style={{ marginBottom: 16, borderColor: '#52c41a' }}
+                >
+                    <Divider orientation="left">Prime d'Encouragement (% sur base)</Divider>
                     <Row gutter={16}>
                         <Col span={12}>
                             <Form.Item
-                                label="Prime d'Encouragement (%)"
+                                label={<strong>Taux Prime d'Encouragement (%)</strong>}
                                 name="taux_prime_encouragement"
                                 rules={[
                                     { required: true, message: 'Requis' },
@@ -212,7 +219,7 @@ function ParametresSalaires() {
                         </Col>
                         <Col span={12}>
                             <Form.Item
-                                label="Ancienneté minimum pour Prime Encouragement (années)"
+                                label={<strong>Ancienneté minimum (années)</strong>}
                                 name="anciennete_min_encouragement"
                                 rules={[
                                     { required: true, message: 'Requis' },
@@ -227,14 +234,13 @@ function ParametresSalaires() {
                             </Form.Item>
                         </Col>
                     </Row>
-                </Card>
 
-                {/* PRIMES FIXES */}
-                <Card title="Primes Fixes (DA)" style={{ marginBottom: 16 }}>
+                    <Divider orientation="left">Primes Fixes (DA)</Divider>
+
                     <Row gutter={16}>
                         <Col span={8}>
                             <Form.Item
-                                label="Prime Chauffeur (par jour)"
+                                label={<strong>Prime Chauffeur (par jour)</strong>}
                                 name="prime_chauffeur_jour"
                                 rules={[
                                     { required: true, message: 'Requis' },
@@ -251,7 +257,7 @@ function ParametresSalaires() {
                         </Col>
                         <Col span={8}>
                             <Form.Item
-                                label="Prime Nuit Sécurité (mensuelle)"
+                                label={<strong>Prime Nuit Sécurité (mensuelle)</strong>}
                                 name="prime_nuit_securite"
                                 rules={[
                                     { required: true, message: 'Requis' },
@@ -268,7 +274,7 @@ function ParametresSalaires() {
                         </Col>
                         <Col span={8}>
                             <Form.Item
-                                label="Prime Femme au Foyer"
+                                label={<strong>Prime Femme au Foyer</strong>}
                                 name="prime_femme_foyer"
                                 rules={[
                                     { required: true, message: 'Requis' },
@@ -288,7 +294,7 @@ function ParametresSalaires() {
                     <Row gutter={16}>
                         <Col span={12}>
                             <Form.Item
-                                label="Panier (par jour)"
+                                label={<strong>Panier (par jour)</strong>}
                                 name="panier_jour"
                                 rules={[
                                     { required: true, message: 'Requis' },
@@ -305,7 +311,7 @@ function ParametresSalaires() {
                         </Col>
                         <Col span={12}>
                             <Form.Item
-                                label="Transport (par jour)"
+                                label={<strong>Prime Transport (par jour)</strong>}
                                 name="transport_jour"
                                 rules={[
                                     { required: true, message: 'Requis' },
@@ -323,12 +329,15 @@ function ParametresSalaires() {
                     </Row>
                 </Card>
 
-                {/* RETENUES */}
-                <Card title="Retenues" style={{ marginBottom: 16 }}>
+                {/* 💳 RETENUES - v3.6.0 Phase 5 */}
+                <Card 
+                    title={<span>💳 <strong>RETENUES</strong></span>}
+                    style={{ marginBottom: 16, borderColor: '#ff4d4f' }}
+                >
                     <Row gutter={16}>
                         <Col span={12}>
                             <Form.Item
-                                label="Taux Sécurité Sociale (%)"
+                                label={<strong>Taux Sécurité Sociale (%)</strong>}
                                 name="taux_securite_sociale"
                                 rules={[
                                     { required: true, message: 'Requis' },
@@ -347,12 +356,16 @@ function ParametresSalaires() {
                     </Row>
                 </Card>
 
-                {/* OPTIONS DE CALCUL */}
-                <Card title="Options de Calcul" style={{ marginBottom: 16 }}>
+                {/* ⚙️ PARAMÈTRES CALCUL - v3.6.0 Phase 5 */}
+                <Card 
+                    title={<span>⚙️ <strong>PARAMÈTRES DE CALCUL</strong></span>}
+                    style={{ marginBottom: 16, borderColor: '#722ed1' }}
+                >
+                    <Divider orientation="left">Congés</Divider>
                     <Row gutter={16}>
-                        <Col span={8}>
+                        <Col span={12}>
                             <Form.Item
-                                label="Mode de Calcul des Congés"
+                                label={<strong>Mode de Calcul des Congés</strong>}
                                 name="mode_calcul_conges"
                                 rules={[{ required: true, message: 'Requis' }]}
                                 tooltip="Complet = Salaire complet même avec congés | Proratiser = 2 parts séparées | Hybride = Base 26j"
@@ -364,9 +377,9 @@ function ParametresSalaires() {
                                 </Select>
                             </Form.Item>
                         </Col>
-                        <Col span={8}>
+                        <Col span={12}>
                             <Form.Item
-                                label="Jours Ouvrables par Mois"
+                                label={<strong>Jours Ouvrables par Mois (Base)</strong>}
                                 name="jours_ouvrables_base"
                                 rules={[
                                     { required: true, message: 'Requis' },
@@ -383,12 +396,11 @@ function ParametresSalaires() {
                         </Col>
                     </Row>
 
-                    <Divider />
-
+                    <Divider orientation="left">Options Avancées</Divider>
                     <Row gutter={16}>
                         <Col span={12}>
                             <Form.Item
-                                label="Calculer Heures Supplémentaires"
+                                label={<strong>Calculer Heures Supplémentaires</strong>}
                                 name="calculer_heures_supp"
                                 valuePropName="checked"
                                 tooltip="Si désactivé, les heures supplémentaires ne seront pas calculées"
@@ -398,7 +410,7 @@ function ParametresSalaires() {
                         </Col>
                         <Col span={12}>
                             <Form.Item
-                                label="IRG Proratiser selon Jours Travaillés"
+                                label={<strong>IRG Proratiser selon Jours Travaillés</strong>}
                                 name="irg_proratise"
                                 valuePropName="checked"
                                 tooltip="Recommandé : Adapter l'IRG au nombre de jours réellement travaillés"

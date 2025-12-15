@@ -242,13 +242,13 @@ const CongesList = () => {
             title: 'Acquis',
             dataIndex: 'jours_conges_acquis',
             key: 'jours_conges_acquis',
-            render: (val) => <span className="text-green-600">{val} j</span>
+            render: (val) => <span className="text-green-600">{Number(val).toFixed(2)} j</span>  // ⭐ v3.6.0 Phase 5
         },
         {
             title: 'Pris',
             dataIndex: 'jours_conges_pris',
             key: 'jours_conges_pris',
-            render: (val) => <span className="text-orange-500">{val} j</span>
+            render: (val) => <span className="text-orange-500">{Number(val).toFixed(2)} j</span>  // ⭐ v3.6.0
         },
         {
             title: 'Solde',
@@ -256,7 +256,7 @@ const CongesList = () => {
             key: 'jours_conges_restants',
             render: (val) => (
                 <Tag color={val >= 0 ? 'green' : 'red'}>
-                    {val} j
+                    {Number(val).toFixed(2)} j
                 </Tag>
             )
         }

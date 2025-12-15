@@ -75,9 +75,9 @@ def list_conges(
             annee=c.annee,
             mois=c.mois,
             jours_travailles=c.jours_travailles,
-            jours_conges_acquis=int(c.jours_conges_acquis or 0),
-            jours_conges_pris=int(c.jours_conges_pris or 0),
-            jours_conges_restants=int(c.jours_conges_restants or 0)
+            jours_conges_acquis=float(c.jours_conges_acquis or 0),  # ⭐ v3.6.0 Phase 5: Décimal
+            jours_conges_pris=float(c.jours_conges_pris or 0),  # ⭐ v3.6.0
+            jours_conges_restants=float(c.jours_conges_restants or 0)  # ⭐ v3.6.0
         ))
         
     return results
