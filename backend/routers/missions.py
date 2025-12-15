@@ -4,6 +4,8 @@ from sqlalchemy.orm import Session
 from sqlalchemy import func
 from typing import Optional, List
 from decimal import Decimal
+import zipfile
+from io import BytesIO
 
 from database import get_db
 from models import Mission, Employe, Client, Parametre
@@ -175,6 +177,100 @@ def generate_client_ordre_mission_pdf(
         media_type='application/pdf',
         headers={
             'Content-Disposition': f'attachment; filename="ordre_mission_{mission_id}_client_{client_detail.client_id}.pdf"'
+        }
+    )
+
+@router.get("/{mission_id}/ordres-mission/pdf-zip")
+def generate_all_ordres_mission_zip(
+    mission_id: int,
+    db: Session = Depends(get_db)
+):
+    """
+    ⭐ v3.6.0: Générer un fichier ZIP contenant un ordre de mission PDF pour chaque client de la mission
+    """
+    from models import MissionClientDetail, LogisticsType
+    from models.camion import Camion
+    
+    # Récupérer la mission
+    mission = db.query(Mission).filter(Mission.id == mission_id).first()
+    if not mission:
+        raise HTTPException(status_code=404, detail="Mission non trouvée")
+    
+    # Récupérer le chauffeur
+    chauffeur = db.query(Employe).filter(Employe.id == mission.chauffeur_id).first()
+    if not chauffeur:
+        raise HTTPException(status_code=404, detail="Chauffeur non trouvé")
+    
+    # Récupérer le camion si assigné
+    camion = None
+    if mission.camion_id:
+        camion = db.query(Camion).filter(Camion.id == mission.camion_id).first()
+    
+    # Récupérer tous les détails clients pour cette mission
+    client_details = db.query(MissionClientDetail).filter(
+        MissionClientDetail.mission_id == mission_id
+    ).all()
+    
+    if not client_details:
+        raise HTTPException(status_code=404, detail="Aucun client trouvé pour cette mission")
+    
+    # Créer un buffer pour le ZIP
+    zip_buffer = BytesIO()
+    
+    with zipfile.ZipFile(zip_buffer, 'w', zipfile.ZIP_DEFLATED) as zip_file:
+        for client_detail in client_details:
+            # Récupérer le client
+            client = db.query(Client).filter(Client.id == client_detail.client_id).first()
+            if not client:
+                continue
+            
+            # Préparer les données logistiques pour ce client
+            logistics_data = []
+            for movement in client_detail.logistics_movements:
+                logistics_type = db.query(LogisticsType).filter(
+                    LogisticsType.id == movement.logistics_type_id
+                ).first()
+                
+                logistics_data.append({
+                    'type_name': logistics_type.name if logistics_type else 'Inconnu',
+                    'quantity_out': movement.quantity_out,
+                    'quantity_in': movement.quantity_in
+                })
+            
+            # Préparer les données pour le PDF de ce client
+            mission_data = {
+                'id': mission.id,
+                'date_mission': str(mission.date_mission),
+                'chauffeur_nom': chauffeur.nom,
+                'chauffeur_prenom': chauffeur.prenom,
+                'client_nom': client.nom,
+                'client_prenom': client.prenom,
+                'distance': float(client_detail.distance_km) if client_detail.distance_km else float(mission.distance),
+                'prime_calculee': float(mission.prime_calculee),
+                'montant_encaisse': float(client_detail.montant_encaisse),
+                'observations': client_detail.observations or '',
+                'logistics': logistics_data,
+                # Camion
+                'camion_marque': camion.marque if camion else None,
+                'camion_modele': camion.modele if camion else None,
+                'camion_immatriculation': camion.immatriculation if camion else None
+            }
+            
+            # Générer le PDF pour ce client
+            pdf_buffer = pdf_generator.generate_ordre_mission_enhanced(mission_data)
+            
+            # Ajouter le PDF au ZIP
+            filename = f"ordre_mission_{mission_id:05d}_{client.nom}_{client.prenom}.pdf"
+            zip_file.writestr(filename, pdf_buffer.getvalue())
+    
+    # Repositionner le buffer au début
+    zip_buffer.seek(0)
+    
+    return StreamingResponse(
+        zip_buffer,
+        media_type='application/zip',
+        headers={
+            'Content-Disposition': f'attachment; filename="ordres_mission_{mission_id:05d}.zip"'
         }
     )
 
@@ -477,6 +573,7 @@ def generate_ordre_mission_pdf(
             'camion_immatriculation': camion.immatriculation if camion else None
         }
         
+        print(f"DEBUG: Mission data camion - marque: {mission_data['camion_marque']}, modele: {mission_data['camion_modele']}, immat: {mission_data['camion_immatriculation']}")
         print("DEBUG: Calling PDF generator")
         
         # 6. Générer le PDF

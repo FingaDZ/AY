@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
-import { Table, Button, DatePicker, Select, message, Modal, Form, InputNumber, Space, Popconfirm, Card } from 'antd';
-import { PlusOutlined, EditOutlined, DeleteOutlined, PrinterOutlined, FilterOutlined } from '@ant-design/icons';
+import { Table, Button, DatePicker, Select, message, Modal, Form, InputNumber, Space, Popconfirm, Card, Dropdown } from 'antd';
+import { PlusOutlined, EditOutlined, DeleteOutlined, PrinterOutlined, FilterOutlined, DownOutlined } from '@ant-design/icons';
 import { missionService, employeService, clientService } from '../../services';
 import MissionFormEnhanced from '../../components/MissionFormEnhanced';
 import dayjs from 'dayjs';
@@ -111,6 +111,23 @@ function MissionsList() {
     }
   };
 
+  const handleDownloadOrdresMissionZip = async (missionId) => {
+    try {
+      const response = await missionService.getOrdresMissionZip(missionId);
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', `ordres_mission_${missionId}.zip`);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+      message.success('Ordres de mission téléchargés (ZIP)');
+    } catch (error) {
+      message.error('Erreur lors du téléchargement du ZIP');
+    }
+  };
+
   const handleDownloadRapport = async () => {
     try {
       const response = await missionService.getRapportPdf(filters);
@@ -169,34 +186,59 @@ function MissionsList() {
     {
       title: 'Actions',
       key: 'actions',
-      render: (_, record) => (
-        <Space>
-          <Button
-            type="link"
-            icon={<EditOutlined />}
-            onClick={() => handleEdit(record)}
-          >
-            Modifier
-          </Button>
-          <Popconfirm
-            title="Êtes-vous sûr de vouloir supprimer cette mission ?"
-            onConfirm={() => handleDelete(record.id)}
-            okText="Oui"
-            cancelText="Non"
-          >
-            <Button type="link" danger icon={<DeleteOutlined />}>
-              Supprimer
+      render: (_, record) => {
+        const hasMultipleClients = record.client_details && record.client_details.length > 1;
+        
+        const menuItems = [
+          {
+            key: 'edit',
+            icon: <EditOutlined />,
+            label: 'Modifier',
+            onClick: () => handleEdit(record),
+          },
+          {
+            key: 'delete',
+            icon: <DeleteOutlined />,
+            label: 'Supprimer',
+            danger: true,
+            onClick: () => {
+              Modal.confirm({
+                title: 'Êtes-vous sûr de vouloir supprimer cette mission ?',
+                onOk: () => handleDelete(record.id),
+                okText: 'Oui',
+                cancelText: 'Non',
+              });
+            },
+          },
+          {
+            type: 'divider',
+          },
+          {
+            key: 'pdf-simple',
+            icon: <PrinterOutlined />,
+            label: 'PDF Simple',
+            onClick: () => handleDownloadOrdreMission(record.id),
+          },
+        ];
+
+        // Ajouter l'option ZIP pour les missions multi-clients
+        if (hasMultipleClients) {
+          menuItems.push({
+            key: 'pdf-zip',
+            icon: <PrinterOutlined />,
+            label: `ZIP Multi-clients (${record.client_details.length})`,
+            onClick: () => handleDownloadOrdresMissionZip(record.id),
+          });
+        }
+
+        return (
+          <Dropdown menu={{ items: menuItems }} trigger={['click']}>
+            <Button type="link">
+              Actions <DownOutlined />
             </Button>
-          </Popconfirm>
-          <Button
-            type="link"
-            icon={<PrinterOutlined />}
-            onClick={() => handleDownloadOrdreMission(record.id)}
-          >
-            Ordre
-          </Button>
-        </Space>
-      ),
+          </Dropdown>
+        );
+      },
     },
   ];
 
