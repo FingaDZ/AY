@@ -12,7 +12,7 @@ from schemas import (
     CamionCreate, CamionUpdate, CamionResponse, CamionList
 )
 from services.logging_service import log_action
-from middleware.auth import get_current_user
+from middleware import require_auth, require_admin
 
 router = APIRouter(prefix="/camions", tags=["Camions"])
 
@@ -22,8 +22,7 @@ def get_camions(
     actif: Optional[bool] = Query(None, description="Filtrer par statut actif/inactif"),
     skip: int = Query(0, ge=0),
     limit: int = Query(100, ge=1, le=1000),
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    db: Session = Depends(get_db)
 ):
     """Récupérer la liste des camions avec filtres optionnels"""
     
@@ -66,8 +65,7 @@ def get_camions(
 @router.get("/{camion_id}", response_model=CamionResponse)
 def get_camion(
     camion_id: int,
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    db: Session = Depends(get_db)
 ):
     """Récupérer un camion par son ID"""
     
@@ -87,9 +85,9 @@ def get_camion(
 @router.post("", response_model=CamionResponse, status_code=201)
 def create_camion(
     camion: CamionCreate,
+    request: Request,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
-    request: Request = None
+    current_user: User = Depends(require_admin)
 ):
     """Créer un nouveau camion"""
     
@@ -142,9 +140,9 @@ def create_camion(
 def update_camion(
     camion_id: int,
     camion_update: CamionUpdate,
+    request: Request,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
-    request: Request = None
+    current_user: User = Depends(require_admin)
 ):
     """Mettre à jour un camion"""
     
@@ -200,9 +198,9 @@ def update_camion(
 @router.delete("/{camion_id}", status_code=204)
 def delete_camion(
     camion_id: int,
+    request: Request,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
-    request: Request = None
+    current_user: User = Depends(require_admin)
 ):
     """Supprimer un camion (ou le désactiver si des missions existent)"""
     
@@ -262,8 +260,7 @@ def get_camion_missions(
     mois: Optional[int] = Query(None, ge=1, le=12),
     skip: int = Query(0, ge=0),
     limit: int = Query(100, ge=1, le=1000),
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    db: Session = Depends(get_db)
 ):
     """Récupérer les missions d'un camion avec filtres optionnels"""
     
