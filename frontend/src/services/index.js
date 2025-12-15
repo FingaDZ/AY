@@ -103,8 +103,8 @@ export const missionService = {
   delete: (id) => api.delete(`/missions/${id}`),
   getTotauxChauffeur: (params = {}) => api.get('/missions/totaux-chauffeur', { params }),
   getOrdreMissionPdf: (id) => api.get(`/missions/${id}/ordre-mission/pdf`, { responseType: 'blob' }),
-  // ⭐ v3.6.0: Télécharger ZIP avec un PDF par client
-  getOrdresMissionZip: (id) => api.get(`/missions/${id}/ordres-mission/pdf-zip`, { responseType: 'blob' }),
+  // ⭐ v3.6.0: Télécharger PDF multi-pages (un ordre par client)
+  getOrdresMissionMulti: (id) => api.get(`/missions/${id}/ordres-mission/pdf-multi`, { responseType: 'blob' }),
   getRapportPdf: (params = {}) => api.post('/missions/rapport/pdf', null, { params, responseType: 'blob' }),
   getPrimesMensuelles: (params) => api.get('/missions/primes-mensuelles', { params }),
   getTarifKm: () => api.get('/missions/parametres/tarif-km'),

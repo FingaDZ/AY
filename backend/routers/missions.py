@@ -4,7 +4,6 @@ from sqlalchemy.orm import Session
 from sqlalchemy import func
 from typing import Optional, List
 from decimal import Decimal
-import zipfile
 from io import BytesIO
 
 from database import get_db
@@ -180,13 +179,13 @@ def generate_client_ordre_mission_pdf(
         }
     )
 
-@router.get("/{mission_id}/ordres-mission/pdf-zip")
-def generate_all_ordres_mission_zip(
+@router.get("/{mission_id}/ordres-mission/pdf-multi")
+def generate_all_ordres_mission_pdf(
     mission_id: int,
     db: Session = Depends(get_db)
 ):
     """
-    ⭐ v3.6.0: Générer un fichier ZIP contenant un ordre de mission PDF pour chaque client de la mission
+    ⭐ v3.6.0: Générer un seul fichier PDF contenant un ordre de mission par client (multi-pages)
     """
     from models import MissionClientDetail, LogisticsType
     from models.camion import Camion
@@ -205,6 +204,9 @@ def generate_all_ordres_mission_zip(
     camion = None
     if mission.camion_id:
         camion = db.query(Camion).filter(Camion.id == mission.camion_id).first()
+        print(f"DEBUG: Camion trouvé: {camion.marque} {camion.modele} - {camion.immatriculation}")
+    else:
+        print(f"DEBUG: Pas de camion_id pour cette mission (camion_id={mission.camion_id})")
     
     # Récupérer tous les détails clients pour cette mission
     client_details = db.query(MissionClientDetail).filter(
@@ -214,63 +216,58 @@ def generate_all_ordres_mission_zip(
     if not client_details:
         raise HTTPException(status_code=404, detail="Aucun client trouvé pour cette mission")
     
-    # Créer un buffer pour le ZIP
-    zip_buffer = BytesIO()
+    # Préparer les données de tous les clients
+    all_clients_data = []
     
-    with zipfile.ZipFile(zip_buffer, 'w', zipfile.ZIP_DEFLATED) as zip_file:
-        for client_detail in client_details:
-            # Récupérer le client
-            client = db.query(Client).filter(Client.id == client_detail.client_id).first()
-            if not client:
-                continue
+    for client_detail in client_details:
+        # Récupérer le client
+        client = db.query(Client).filter(Client.id == client_detail.client_id).first()
+        if not client:
+            continue
+        
+        # Préparer les données logistiques pour ce client
+        logistics_data = []
+        for movement in client_detail.logistics_movements:
+            logistics_type = db.query(LogisticsType).filter(
+                LogisticsType.id == movement.logistics_type_id
+            ).first()
             
-            # Préparer les données logistiques pour ce client
-            logistics_data = []
-            for movement in client_detail.logistics_movements:
-                logistics_type = db.query(LogisticsType).filter(
-                    LogisticsType.id == movement.logistics_type_id
-                ).first()
-                
-                logistics_data.append({
-                    'type_name': logistics_type.name if logistics_type else 'Inconnu',
-                    'quantity_out': movement.quantity_out,
-                    'quantity_in': movement.quantity_in
-                })
-            
-            # Préparer les données pour le PDF de ce client
-            mission_data = {
-                'id': mission.id,
-                'date_mission': str(mission.date_mission),
-                'chauffeur_nom': chauffeur.nom,
-                'chauffeur_prenom': chauffeur.prenom,
-                'client_nom': client.nom,
-                'client_prenom': client.prenom,
-                'distance': float(client_detail.distance_km) if client_detail.distance_km else float(mission.distance),
-                'prime_calculee': float(mission.prime_calculee),
-                'montant_encaisse': float(client_detail.montant_encaisse),
-                'observations': client_detail.observations or '',
-                'logistics': logistics_data,
-                # Camion
-                'camion_marque': camion.marque if camion else None,
-                'camion_modele': camion.modele if camion else None,
-                'camion_immatriculation': camion.immatriculation if camion else None
-            }
-            
-            # Générer le PDF pour ce client
-            pdf_buffer = pdf_generator.generate_ordre_mission_enhanced(mission_data)
-            
-            # Ajouter le PDF au ZIP
-            filename = f"ordre_mission_{mission_id:05d}_{client.nom}_{client.prenom}.pdf"
-            zip_file.writestr(filename, pdf_buffer.getvalue())
+            logistics_data.append({
+                'type_name': logistics_type.name if logistics_type else 'Inconnu',
+                'quantity_out': movement.quantity_out,
+                'quantity_in': movement.quantity_in
+            })
+        
+        # Préparer les données pour le PDF de ce client
+        mission_data = {
+            'id': mission.id,
+            'date_mission': str(mission.date_mission),
+            'chauffeur_nom': chauffeur.nom,
+            'chauffeur_prenom': chauffeur.prenom,
+            'client_nom': client.nom,
+            'client_prenom': client.prenom,
+            'distance': float(client_detail.distance_km) if client_detail.distance_km else float(mission.distance),
+            'prime_calculee': float(mission.prime_calculee),
+            'montant_encaisse': float(client_detail.montant_encaisse) if client_detail.montant_encaisse else 0,
+            'observations': client_detail.observations or '',
+            'logistics': logistics_data,
+            # Camion
+            'camion_marque': camion.marque if camion else None,
+            'camion_modele': camion.modele if camion else None,
+            'camion_immatriculation': camion.immatriculation if camion else None
+        }
+        
+        print(f"DEBUG: Client {client.nom} - camion_immat: {mission_data['camion_immatriculation']}")
+        all_clients_data.append(mission_data)
     
-    # Repositionner le buffer au début
-    zip_buffer.seek(0)
+    # Générer le PDF multi-pages (un ordre par client)
+    pdf_buffer = pdf_generator.generate_ordres_mission_multi_clients(all_clients_data)
     
     return StreamingResponse(
-        zip_buffer,
-        media_type='application/zip',
+        pdf_buffer,
+        media_type='application/pdf',
         headers={
-            'Content-Disposition': f'attachment; filename="ordres_mission_{mission_id:05d}.zip"'
+            'Content-Disposition': f'attachment; filename="ordres_mission_{mission_id:05d}.pdf"'
         }
     )
 

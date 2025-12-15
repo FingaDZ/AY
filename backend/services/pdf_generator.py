@@ -465,6 +465,177 @@ class PDFGenerator:
         
         return buffer
     
+    def generate_ordres_mission_multi_clients(self, clients_data: List[Dict]) -> BytesIO:
+        """
+        ⭐ v3.6.0: Générer un seul PDF avec plusieurs ordres de mission (un par client, chacun sur sa propre page)
+        
+        Args:
+            clients_data: Liste de dictionnaires contenant les données de chaque client
+        
+        Returns:
+            BytesIO: Buffer contenant le PDF multi-pages
+        """
+        buffer = BytesIO()
+        doc = SimpleDocTemplate(buffer, pagesize=A5, topMargin=1*cm, bottomMargin=1*cm, 
+                                leftMargin=1*cm, rightMargin=1*cm)
+        
+        story = []
+        
+        for idx, mission_data in enumerate(clients_data):
+            # Ajouter un saut de page entre chaque ordre (sauf pour le premier)
+            if idx > 0:
+                story.append(PageBreak())
+            
+            # En-tête avec numéro d'ordre
+            ordre_num = self._generate_ordre_numero(mission_data['id'], mission_data['date_mission'])
+            
+            header_data = [
+                ['ORDRE DE MISSION', f'N° {ordre_num}']
+            ]
+            
+            header_table = Table(header_data, colWidths=[8*cm, 4.8*cm])
+            header_table.setStyle(TableStyle([
+                ('FONTNAME', (0, 0), (0, 0), 'Helvetica-Bold'),
+                ('FONTNAME', (1, 0), (1, 0), 'Helvetica-Bold'),
+                ('FONTSIZE', (0, 0), (0, 0), 14),
+                ('FONTSIZE', (1, 0), (1, 0), 10),
+                ('ALIGN', (0, 0), (0, 0), 'LEFT'),
+                ('ALIGN', (1, 0), (1, 0), 'RIGHT'),
+                ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
+            ]))
+            story.append(header_table)
+            story.append(Spacer(1, 0.3*cm))
+            
+            # Date
+            date_str = datetime.strptime(mission_data['date_mission'], '%Y-%m-%d').strftime('%d/%m/%Y')
+            date_para = Paragraph(f"<b>Date:</b> {date_str}", self.styles['CustomBody'])
+            story.append(date_para)
+            story.append(Spacer(1, 0.4*cm))
+            
+            # Informations principales
+            info_data = [
+                ['CHAUFFEUR', f"{mission_data['chauffeur_prenom']} {mission_data['chauffeur_nom']}"],
+                ['CLIENT', f"{mission_data['client_prenom']} {mission_data['client_nom']}"],
+            ]
+            
+            # ⭐ v3.6.0: Afficher le camion si présent
+            if mission_data.get('camion_immatriculation'):
+                camion_info = f"{mission_data.get('camion_marque', '')} {mission_data.get('camion_modele', '')} - {mission_data['camion_immatriculation']}"
+                info_data.append(['CAMION', camion_info])
+            
+            if mission_data.get('montant_encaisse', 0) > 0:
+                info_data.append(['Espèce', f"{mission_data['montant_encaisse']:.2f} DA"])
+            
+            info_table = Table(info_data, colWidths=[3.5*cm, 9.3*cm])
+            info_table.setStyle(TableStyle([
+                ('FONTNAME', (0, 0), (0, -1), 'Helvetica-Bold'),
+                ('FONTNAME', (1, 0), (1, -1), 'Helvetica'),
+                ('FONTSIZE', (0, 0), (-1, -1), 9),
+                ('GRID', (0, 0), (-1, -1), 0.5, colors.black),
+                ('PADDING', (0, 0), (-1, -1), 5),
+                ('ALIGN', (0, 0), (0, -1), 'LEFT'),
+                ('ALIGN', (1, 0), (1, -1), 'LEFT'),
+                ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
+            ]))
+            story.append(info_table)
+            story.append(Spacer(1, 0.4*cm))
+            
+            # Montant versé (case pour inscription manuelle)
+            montant_title = Paragraph("<b>MONTANT VERSÉ</b>", self.styles['CustomBody'])
+            story.append(montant_title)
+            story.append(Spacer(1, 0.2*cm))
+            
+            montant_data = [['']]
+            montant_table = Table(montant_data, colWidths=[12.8*cm], rowHeights=[1.8*cm])
+            montant_table.setStyle(TableStyle([
+                ('GRID', (0, 0), (-1, -1), 0.5, colors.black),
+                ('VALIGN', (0, 0), (-1, -1), 'TOP'),
+            ]))
+            story.append(montant_table)
+            story.append(Spacer(1, 0.4*cm))
+            
+            # Logistique (si présente)
+            if mission_data.get('logistics') and len(mission_data['logistics']) > 0:
+                logistics_title = Paragraph("<b>LOGISTIQUE</b>", self.styles['CustomBody'])
+                story.append(logistics_title)
+                story.append(Spacer(1, 0.2*cm))
+                
+                logistics_data = [['Type', 'Prises', 'Retournées', 'Solde']]
+                for log in mission_data['logistics']:
+                    q_out = log.get('quantity_out', 0)
+                    q_in = log.get('quantity_in', 0)
+                    solde = q_out - q_in
+                    logistics_data.append([
+                        log['type_name'],
+                        str(q_out),
+                        str(q_in),
+                        str(solde)
+                    ])
+                
+                logistics_table = Table(logistics_data, colWidths=[5.3*cm, 2.5*cm, 2.5*cm, 2.5*cm])
+                logistics_table.setStyle(TableStyle([
+                    ('BACKGROUND', (0, 0), (-1, 0), colors.lightgrey),
+                    ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+                    ('FONTSIZE', (0, 0), (-1, -1), 8),
+                    ('GRID', (0, 0), (-1, -1), 0.5, colors.black),
+                    ('PADDING', (0, 0), (-1, -1), 4),
+                    ('ALIGN', (0, 0), (0, -1), 'LEFT'),
+                    ('ALIGN', (1, 0), (-1, -1), 'CENTER'),
+                    ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
+                ]))
+                story.append(logistics_table)
+                story.append(Spacer(1, 0.4*cm))
+            
+            # Observations
+            obs_title = Paragraph("<b>OBSERVATIONS (Retours, Casse, Détérioration...)</b>", self.styles['CustomBody'])
+            story.append(obs_title)
+            story.append(Spacer(1, 0.2*cm))
+            
+            obs_content = mission_data.get('observations', '')
+            if not obs_content:
+                obs_data = [['']]
+                obs_table = Table(obs_data, colWidths=[12.8*cm], rowHeights=[2.5*cm])
+                obs_table.setStyle(TableStyle([
+                    ('GRID', (0, 0), (-1, -1), 0.5, colors.black),
+                    ('VALIGN', (0, 0), (-1, -1), 'TOP'),
+                ]))
+                story.append(obs_table)
+            else:
+                obs_para = Paragraph(obs_content, self.styles['CustomBody'])
+                obs_data = [[obs_para]]
+                obs_table = Table(obs_data, colWidths=[12.8*cm])
+                obs_table.setStyle(TableStyle([
+                    ('GRID', (0, 0), (-1, -1), 0.5, colors.black),
+                    ('PADDING', (0, 0), (-1, -1), 5),
+                    ('VALIGN', (0, 0), (-1, -1), 'TOP'),
+                ]))
+                story.append(obs_table)
+                
+            story.append(Spacer(1, 0.4*cm))
+            
+            # Signatures
+            signatures = [
+                ['Signature chauffeur', 'Signature client', 'Signature responsable'],
+                ['', '', ''],
+                ['', '', ''],
+            ]
+            
+            sig_table = Table(signatures, colWidths=[4.27*cm, 4.27*cm, 4.26*cm])
+            sig_table.setStyle(TableStyle([
+                ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+                ('FONTSIZE', (0, 0), (-1, 0), 7),
+                ('BOTTOMPADDING', (0, 1), (-1, 2), 0.8*cm),
+                ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+                ('VALIGN', (0, 0), (-1, -1), 'TOP'),
+            ]))
+            story.append(sig_table)
+        
+        # Générer le PDF avec footer automatique sur chaque page
+        doc.build(story, onFirstPage=self._add_page_footer, onLaterPages=self._add_page_footer)
+        buffer.seek(0)
+        
+        return buffer
+    
     def generate_rapport_missions(self, missions: List[Dict], filters: Dict = None) -> BytesIO:
         """
         Générer un rapport PDF des missions filtrées

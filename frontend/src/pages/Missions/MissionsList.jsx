@@ -111,20 +111,20 @@ function MissionsList() {
     }
   };
 
-  const handleDownloadOrdresMissionZip = async (missionId) => {
+  const handleDownloadOrdresMissionMulti = async (missionId) => {
     try {
-      const response = await missionService.getOrdresMissionZip(missionId);
+      const response = await missionService.getOrdresMissionMulti(missionId);
       const url = window.URL.createObjectURL(new Blob([response.data]));
       const link = document.createElement('a');
       link.href = url;
-      link.setAttribute('download', `ordres_mission_${missionId}.zip`);
+      link.setAttribute('download', `ordres_mission_${missionId}.pdf`);
       document.body.appendChild(link);
       link.click();
       link.remove();
       window.URL.revokeObjectURL(url);
-      message.success('Ordres de mission téléchargés (ZIP)');
+      message.success('Ordres de mission téléchargés (PDF multi-pages)');
     } catch (error) {
-      message.error('Erreur lors du téléchargement du ZIP');
+      message.error('Erreur lors du téléchargement');
     }
   };
 
@@ -221,13 +221,13 @@ function MissionsList() {
           },
         ];
 
-        // Ajouter l'option ZIP pour les missions multi-clients
+        // Ajouter l'option PDF multi-pages pour les missions multi-clients
         if (hasMultipleClients) {
           menuItems.push({
-            key: 'pdf-zip',
+            key: 'pdf-multi',
             icon: <PrinterOutlined />,
-            label: `ZIP Multi-clients (${record.client_details.length})`,
-            onClick: () => handleDownloadOrdresMissionZip(record.id),
+            label: `PDF Multi-clients (${record.client_details.length})`,
+            onClick: () => handleDownloadOrdresMissionMulti(record.id),
           });
         }
 
