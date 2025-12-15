@@ -18,6 +18,7 @@ import {
     LogOut,
     Eye,
     Building2,
+    Truck,
     Calculator // Added Calculator icon
 } from 'lucide-react';
 
@@ -45,6 +46,7 @@ const Sidebar = ({ isOpen, onClose }) => {
         { to: '/', label: 'Dashboard', icon: LayoutDashboard, public: true },
         { to: '/missions', label: 'Missions', icon: Clock, public: true },
         { to: '/clients', label: 'Clients', icon: Building2, public: true },
+        { to: '/camions', label: 'Camions', icon: Truck, public: false },
         { to: '/employes', label: 'Employés', icon: Users, public: false },
         { to: '/postes', label: 'Postes', icon: Briefcase, public: false },
         { to: '/pointages', label: 'Pointages', icon: ClipboardList, public: false },

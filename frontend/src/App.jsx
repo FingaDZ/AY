@@ -8,6 +8,7 @@ import EmployeForm from './pages/Employes/EmployeForm';
 import PostesList from './pages/Postes/PostesList';
 import GrillePointage from './pages/Pointages/GrillePointage';
 import ClientsList from './pages/Clients/ClientsList';
+import Camions from './pages/Camions/Camions';
 import MissionsList from './pages/Missions/MissionsList';
 import AvancesList from './pages/Avances/AvancesList';
 import CreditsList from './pages/Credits/CreditsList';
@@ -93,6 +94,13 @@ function AppRoutes() {
 
               {/* Clients - Accessible à tous */}
               <Route path="/clients" element={<ClientsList />} />
+
+              {/* Camions - ADMIN ONLY */}
+              <Route path="/camions" element={
+                <ProtectedAdminRoute>
+                  <Camions />
+                </ProtectedAdminRoute>
+              } />
 
               {/* Avances - ADMIN ONLY */}
               <Route path="/avances" element={
