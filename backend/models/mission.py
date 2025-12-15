@@ -10,6 +10,7 @@ class Mission(Base):
     date_mission = Column(Date, nullable=False, index=True)
     chauffeur_id = Column(Integer, ForeignKey("employes.id", ondelete="CASCADE"), nullable=False)
     client_id = Column(Integer, ForeignKey("clients.id", ondelete="RESTRICT"), nullable=False)
+    camion_id = Column(Integer, ForeignKey("camions.id", ondelete="RESTRICT"), nullable=True)  # ⭐ v3.6.0: Camion utilisé
     distance = Column(Numeric(10, 2), nullable=False)  # Distance récupérée du client
     tarif_km = Column(Numeric(10, 2), nullable=False)  # Tarif kilométrique au moment de la mission
     prime_calculee = Column(Numeric(12, 2), nullable=False)  # Distance × Tarif/km
@@ -17,6 +18,7 @@ class Mission(Base):
     # Relations
     chauffeur = relationship("Employe", back_populates="missions")
     client = relationship("Client")
+    camion = relationship("Camion", back_populates="missions")  # ⭐ v3.6.0: Relation camion
     client_details = relationship("MissionClientDetail", back_populates="mission", cascade="all, delete-orphan")
     
     def __repr__(self):

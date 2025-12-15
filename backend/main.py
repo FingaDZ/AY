@@ -12,6 +12,7 @@ from routers import (
     employes,
     pointages,
     clients,
+    camions,
     missions,
     avances,
     credits,
@@ -69,6 +70,7 @@ app.mount("/static", StaticFiles(directory=static_dir), name="static")
 app.include_router(employes.router, prefix="/api")
 app.include_router(pointages.router, prefix="/api")
 app.include_router(clients.router, prefix="/api")
+app.include_router(camions.router, prefix="/api")
 app.include_router(missions.router, prefix="/api")
 app.include_router(avances.router, prefix="/api")
 app.include_router(credits.router, prefix="/api")

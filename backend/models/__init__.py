@@ -24,6 +24,7 @@ from .mission_client_detail import MissionClientDetail, MissionLogisticsMovement
 from .parametres_salaire import ParametresSalaire
 from .irg_bareme import IRGBareme
 from .report_avance_credit import ReportAvanceCredit
+from .camion import Camion
 
 __all__ = [
     "Employe",
@@ -59,4 +60,5 @@ __all__ = [
     "ParametresSalaire",
     "IRGBareme",
     "ReportAvanceCredit",
+    "Camion",
 ]

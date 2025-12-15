@@ -22,6 +22,13 @@ from .client import (
     ClientResponse,
     ClientListResponse,
 )
+from .camion import (
+    CamionBase,
+    CamionCreate,
+    CamionUpdate,
+    CamionResponse,
+    CamionList,
+)
 from .mission import (
     MissionBase,
     MissionCreate,
@@ -117,6 +124,11 @@ __all__ = [
     "ClientUpdate",
     "ClientResponse",
     "ClientListResponse",
+    "CamionBase",
+    "CamionCreate",
+    "CamionUpdate",
+    "CamionResponse",
+    "CamionList",
     "MissionBase",
     "MissionCreate",
     "MissionResponse",
