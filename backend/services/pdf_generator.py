@@ -345,10 +345,13 @@ class PDFGenerator:
             ['CLIENT', f"{mission_data['client_prenom']} {mission_data['client_nom']}"],
         ]
         
-        # ⭐ v3.6.0: Afficher le camion si présent
-        if mission_data.get('camion_immatriculation'):
-            camion_info = f"{mission_data.get('camion_marque', '')} {mission_data.get('camion_modele', '')} - {mission_data['camion_immatriculation']}"
-            info_data.append(['CAMION', camion_info])
+        # ⭐ v3.6.0: Afficher le camion TOUJOURS juste après CLIENT
+        camion_immat = mission_data.get('camion_immatriculation')
+        if camion_immat:
+            camion_marque = mission_data.get('camion_marque') or ''
+            camion_modele = mission_data.get('camion_modele') or ''
+            camion_info = f"{camion_marque} {camion_modele} - {camion_immat}".strip()
+            info_data.insert(2, ['CAMION', camion_info])  # Insérer à l'index 2 (après CLIENT)
         
         if mission_data.get('montant_encaisse', 0) > 0:
             info_data.append(['Espèce', f"{mission_data['montant_encaisse']:.2f} DA"])
@@ -518,10 +521,13 @@ class PDFGenerator:
                 ['CLIENT', f"{mission_data['client_prenom']} {mission_data['client_nom']}"],
             ]
             
-            # ⭐ v3.6.0: Afficher le camion si présent
-            if mission_data.get('camion_immatriculation'):
-                camion_info = f"{mission_data.get('camion_marque', '')} {mission_data.get('camion_modele', '')} - {mission_data['camion_immatriculation']}"
-                info_data.append(['CAMION', camion_info])
+            # ⭐ v3.6.0: Afficher le camion TOUJOURS juste après CLIENT
+            camion_immat = mission_data.get('camion_immatriculation')
+            if camion_immat:
+                camion_marque = mission_data.get('camion_marque') or ''
+                camion_modele = mission_data.get('camion_modele') or ''
+                camion_info = f"{camion_marque} {camion_modele} - {camion_immat}".strip()
+                info_data.insert(2, ['CAMION', camion_info])  # Insérer à l'index 2 (après CLIENT)
             
             if mission_data.get('montant_encaisse', 0) > 0:
                 info_data.append(['Espèce', f"{mission_data['montant_encaisse']:.2f} DA"])

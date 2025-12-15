@@ -223,7 +223,20 @@ const MissionFormEnhanced = ({ visible, onCancel, onSuccess, editingMission, emp
                                     {...restField}
                                     label="Client"
                                     name={[name, 'client_id']}
-                                    rules={[{ required: true, message: 'Client requis' }]}
+                                    rules={[
+                                        { required: true, message: 'Client requis' },
+                                        {
+                                            validator: (_, value) => {
+                                                if (!value) return Promise.resolve();
+                                                const allClients = form.getFieldValue('clients') || [];
+                                                const duplicates = allClients.filter(c => c && c.client_id === value);
+                                                if (duplicates.length > 1) {
+                                                    return Promise.reject('Ce client est déjà sélectionné dans cette mission');
+                                                }
+                                                return Promise.resolve();
+                                            }
+                                        }
+                                    ]}
                                 >
                                     <Select 
                                         placeholder="Sélectionner un client"
