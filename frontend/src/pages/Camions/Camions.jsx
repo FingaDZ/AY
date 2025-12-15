@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import axios from 'axios';
+import api from '../../services/api';
 import { toast } from 'react-hot-toast';
 import { Truck, Plus, Edit2, Trash2, X, Check, AlertCircle, Calendar, Box } from 'lucide-react';
 
@@ -31,7 +31,7 @@ const Camions = () => {
     setLoading(true);
     try {
       const params = filter !== 'all' ? { actif: filter === 'actif' } : {};
-      const response = await axios.get('/api/camions', { params });
+      const response = await api.get('/camions', { params });
       
       setCamions(response.data.camions);
       setStats({
@@ -63,10 +63,10 @@ const Camions = () => {
       };
 
       if (editingId) {
-        await axios.put(`/api/camions/${editingId}`, data);
+        await api.put(`/camions/${editingId}`, data);
         toast.success('Camion modifié avec succès');
       } else {
-        await axios.post('/api/camions', data);
+        await api.post('/camions', data);
         toast.success('Camion créé avec succès');
       }
 
@@ -100,7 +100,7 @@ const Camions = () => {
     }
 
     try {
-      await axios.delete(`/api/camions/${id}`);
+      await api.delete(`/camions/${id}`);
       toast.success('Camion supprimé');
       fetchCamions();
     } catch (error) {
