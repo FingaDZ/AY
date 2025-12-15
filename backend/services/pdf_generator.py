@@ -135,7 +135,7 @@ class PDFGenerator:
         return elements
     
     def _create_footer(self) -> Paragraph:
-        """Créer le footer 'Powered by AIRBAND HR'"""
+        """Créer le footer 'Powered by AIRBAND HR' (deprecated - utiliser _add_page_footer à la place)"""
         footer_style = ParagraphStyle(
             name='PoweredBy',
             parent=self.styles['Normal'],
@@ -144,6 +144,15 @@ class PDFGenerator:
             alignment=TA_CENTER
         )
         return Paragraph("Powered by AIRBAND HR", footer_style)
+    
+    def _add_page_footer(self, canvas, doc):
+        """Ajouter le footer 'Powered by AIRBAND HR' en bas de chaque page"""
+        canvas.saveState()
+        canvas.setFont('Helvetica', 8)
+        canvas.setFillColor(colors.grey)
+        # Centrer le texte en bas de la page (0.5cm du bas)
+        canvas.drawCentredString(doc.pagesize[0] / 2, 0.5*cm, "Powered by AIRBAND HR")
+        canvas.restoreState()
     
     def _generate_ordre_numero(self, mission_id: int, date_mission: str) -> str:
         """
@@ -270,12 +279,8 @@ class PDFGenerator:
         ]))
         story.append(sig_table)
         
-        # Footer
-        story.append(Spacer(1, 0.5*cm))
-        story.append(self._create_footer())
-        
-        # Générer le PDF
-        doc.build(story)
+        # Générer le PDF avec footer automatique sur chaque page
+        doc.build(story, onFirstPage=self._add_page_footer, onLaterPages=self._add_page_footer)
         buffer.seek(0)
         
         return buffer
@@ -454,12 +459,8 @@ class PDFGenerator:
         ]))
         story.append(sig_table)
         
-        # Footer
-        story.append(Spacer(1, 0.3*cm))
-        story.append(self._create_footer())
-        
-        # Générer le PDF
-        doc.build(story)
+        # Générer le PDF avec footer automatique sur chaque page
+        doc.build(story, onFirstPage=self._add_page_footer, onLaterPages=self._add_page_footer)
         buffer.seek(0)
         
         return buffer
