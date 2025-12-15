@@ -131,6 +131,7 @@ const LogsPage = () => {
             case 'CREATE': return 'green';
             case 'UPDATE': return 'blue';
             case 'DELETE': return 'red';
+            case 'LOGIN': return 'cyan';  // ⭐ v3.6.0 Phase 4
             default: return 'default';
         }
     };
@@ -140,6 +141,7 @@ const LogsPage = () => {
             case 'CREATE': return 'Création';
             case 'UPDATE': return 'Modification';
             case 'DELETE': return 'Suppression';
+            case 'LOGIN': return '🔐 Connexion';  // ⭐ v3.6.0 Phase 4
             default: return action;
         }
     };
@@ -245,6 +247,7 @@ const LogsPage = () => {
                             <Option value="CREATE">Création</Option>
                             <Option value="UPDATE">Modification</Option>
                             <Option value="DELETE">Suppression</Option>
+                            <Option value="LOGIN">🔐 Connexion</Option>
                         </Select>
 
                         <Select

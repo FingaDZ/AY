@@ -1,12 +1,13 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, Request
 from sqlalchemy.orm import Session
 from typing import List
 from pydantic import BaseModel, EmailStr
 from passlib.context import CryptContext
 
 from database import get_db
-from models import User, UserRole
+from models import User, UserRole, ActionType
 from middleware import require_admin
+from services.logging_service import log_action
 
 # Configuration pour le hashing des mots de passe
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
@@ -173,7 +174,7 @@ class LoginResponse(BaseModel):
 
 
 @router.post("/login", response_model=LoginResponse)
-def login(credentials: LoginRequest, db: Session = Depends(get_db)):
+def login(credentials: LoginRequest, request: Request, db: Session = Depends(get_db)):
     """Connexion simple (authentification basique)"""
     user = db.query(User).filter(User.email == credentials.email).first()
     
@@ -199,6 +200,22 @@ def login(credentials: LoginRequest, db: Session = Depends(get_db)):
     from datetime import datetime
     user.derniere_connexion = datetime.now()
     db.commit()
+    
+    # ⭐ v3.6.0 Phase 4: Logger la connexion réussie
+    try:
+        user_agent = request.headers.get("user-agent", "Unknown")
+        log_action(
+            db=db,
+            module_name="utilisateurs",
+            action_type=ActionType.LOGIN,
+            record_id=user.id,
+            description=f"Connexion réussie - User-Agent: {user_agent}",
+            user=user,
+            request=request
+        )
+    except Exception as e:
+        # Ne pas bloquer la connexion si le log échoue
+        print(f"Erreur lors du logging de la connexion: {e}")
     
     return {
         "user": user.to_dict(),

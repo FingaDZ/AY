@@ -8,6 +8,7 @@ class ActionType(enum.Enum):
     CREATE = "CREATE"
     UPDATE = "UPDATE"
     DELETE = "DELETE"
+    LOGIN = "LOGIN"  # ⭐ v3.6.0 Phase 4: Logs connexions
 
 
 class Logging(Base):
