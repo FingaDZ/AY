@@ -45,12 +45,14 @@ class MissionClientDetailResponse(MissionClientDetailBase):
 class MissionCreate(BaseModel):
     date_mission: date
     chauffeur_id: int
+    camion_id: Optional[int] = None  # ⭐ v3.6.0: Camion assigné à la mission
     # Legacy field for backward compatibility, optional if clients list is provided
     client_id: Optional[int] = None 
     clients: list[MissionClientDetailCreate] = []
 
 class MissionResponse(MissionBase):
     id: int
+    camion_id: Optional[int] = None  # ⭐ v3.6.0: Camion assigné
     distance: Decimal
     tarif_km: Decimal
     prime_calculee: Decimal

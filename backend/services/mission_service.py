@@ -68,6 +68,7 @@ class MissionService:
             date_mission=mission_in.date_mission,
             chauffeur_id=mission_in.chauffeur_id,
             client_id=main_client_id,
+            camion_id=mission_in.camion_id,  # ⭐ v3.6.0: Camion assigné
             distance=distance,
             tarif_km=tarif_km,
             prime_calculee=prime_calculee
@@ -120,6 +121,7 @@ class MissionService:
         # Update basic fields
         db_mission.date_mission = mission_in.date_mission
         db_mission.chauffeur_id = mission_in.chauffeur_id
+        db_mission.camion_id = mission_in.camion_id  # ⭐ v3.6.0: Camion assigné
         
         # Update Main Client (Legacy)
         main_client_id = mission_in.client_id
