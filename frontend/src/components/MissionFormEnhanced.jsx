@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Form, DatePicker, Select, Button, Card, InputNumber, Input, Space, Divider, message } from 'antd';
-import { PlusOutlined, MinusCircleOutlined } from '@ant-design/icons';
+import { Form, DatePicker, Select, Button, Card, InputNumber, Input, Space, Divider, message, Alert } from 'antd';
+import { PlusOutlined, MinusCircleOutlined, TruckOutlined, CalculatorOutlined } from '@ant-design/icons';
 import api from '../services/api';
 import dayjs from 'dayjs';
 
@@ -10,10 +10,13 @@ const { TextArea } = Input;
 const MissionFormEnhanced = ({ visible, onCancel, onSuccess, editingMission, employes, clients }) => {
     const [form] = Form.useForm();
     const [logisticsTypes, setLogisticsTypes] = useState([]);
+    const [camions, setCamions] = useState([]);
     const [loading, setLoading] = useState(false);
+    const [calculPreview, setCalculPreview] = useState(null);
 
     useEffect(() => {
         fetchLogisticsTypes();
+        fetchCamions();
     }, []);
 
     useEffect(() => {
@@ -21,8 +24,10 @@ const MissionFormEnhanced = ({ visible, onCancel, onSuccess, editingMission, emp
             form.setFieldsValue({
                 date_mission: dayjs(editingMission.date_mission),
                 chauffeur_id: editingMission.chauffeur_id,
+                camion_id: editingMission.camion_id || null, // ⭐ v3.6.0: Camion
                 clients: editingMission.client_details?.map(detail => ({
                     client_id: detail.client_id,
+                    distance_km: detail.distance_km || null, // ⭐ v3.6.0: Distance
                     montant_encaisse: detail.montant_encaisse,
                     statut_versement: detail.statut_versement,
                     observations: detail.observations,
@@ -47,12 +52,47 @@ const MissionFormEnhanced = ({ visible, onCancel, onSuccess, editingMission, emp
         }
     };
 
+    const fetchCamions = async () => {
+        try {
+            const response = await api.get('/camions', { params: { actif: true } });
+            setCamions(response.data.camions || []);
+        } catch (error) {
+            console.error('Erreur camions:', error);
+        }
+    };
+
+    // ⭐ v3.6.0: Prévisualisation calcul km multi-clients
+    const handleValuesChange = (changedValues, allValues) => {
+        if (allValues.clients && allValues.clients.length > 0) {
+            const clientsAvecKm = allValues.clients.filter(c => c.distance_km && c.distance_km > 0);
+            
+            if (clientsAvecKm.length > 0) {
+                const kmMax = Math.max(...clientsAvecKm.map(c => parseFloat(c.distance_km || 0)));
+                const nbClients = clientsAvecKm.length;
+                const kmSupp = 10; // Valeur par défaut, idéalement récupéré depuis params
+                const kmAdditionnels = (nbClients - 1) * kmSupp;
+                const kmTotal = kmMax + kmAdditionnels;
+                
+                setCalculPreview({
+                    kmMax,
+                    nbClients,
+                    kmSupp,
+                    kmAdditionnels,
+                    kmTotal
+                });
+            } else {
+                setCalculPreview(null);
+            }
+        }
+    };
+
     const handleSubmit = async (values) => {
         try {
             setLoading(true);
             const missionData = {
                 date_mission: values.date_mission.format('YYYY-MM-DD'),
                 chauffeur_id: values.chauffeur_id,
+                camion_id: values.camion_id || null, // ⭐ v3.6.0: Camion utilisé
                 client_id: values.clients?.[0]?.client_id || null, // Legacy support
                 clients: values.clients || []
             };
@@ -81,6 +121,7 @@ const MissionFormEnhanced = ({ visible, onCancel, onSuccess, editingMission, emp
             form={form}
             layout="vertical"
             onFinish={handleSubmit}
+            onValuesChange={handleValuesChange}
             initialValues={{
                 date_mission: dayjs(),
                 clients: [{ logistics: [] }]
@@ -110,7 +151,52 @@ const MissionFormEnhanced = ({ visible, onCancel, onSuccess, editingMission, emp
                 </Select>
             </Form.Item>
 
+            {/* ⭐ v3.6.0: Sélection Camion */}
+            <Form.Item
+                label={
+                    <span>
+                        <TruckOutlined style={{ marginRight: 8 }} />
+                        Camion (optionnel)
+                    </span>
+                }
+                name="camion_id"
+            >
+                <Select placeholder="Sélectionner un camion" allowClear>
+                    {camions.map(camion => (
+                        <Option key={camion.id} value={camion.id}>
+                            {camion.marque} {camion.modele} - {camion.immatriculation}
+                            {camion.capacite_charge && ` (${camion.capacite_charge} kg)`}
+                        </Option>
+                    ))}
+                </Select>
+            </Form.Item>
+
             <Divider>Clients et Logistique</Divider>
+
+            {/* ⭐ v3.6.0: Prévisualisation calcul */}
+            {calculPreview && (
+                <Alert
+                    message={
+                        <span>
+                            <CalculatorOutlined style={{ marginRight: 8 }} />
+                            <strong>Calcul Kilométrage Multi-Clients</strong>
+                        </span>
+                    }
+                    description={
+                        <div>
+                            <div>🚗 <strong>km max:</strong> {calculPreview.kmMax} km</div>
+                            <div>👥 <strong>Nb clients:</strong> {calculPreview.nbClients}</div>
+                            <div>➕ <strong>km additionnels:</strong> {calculPreview.nbClients - 1} × {calculPreview.kmSupp} km = {calculPreview.kmAdditionnels} km</div>
+                            <div style={{ marginTop: 8, fontSize: '16px', fontWeight: 'bold', color: '#1890ff' }}>
+                                ✅ <strong>TOTAL:</strong> {calculPreview.kmTotal} km
+                            </div>
+                        </div>
+                    }
+                    type="info"
+                    showIcon
+                    style={{ marginBottom: 16 }}
+                />
+            )}
 
             <Form.List name="clients">
                 {(fields, { add, remove }) => (
@@ -143,6 +229,21 @@ const MissionFormEnhanced = ({ visible, onCancel, onSuccess, editingMission, emp
                                             </Option>
                                         ))}
                                     </Select>
+                                </Form.Item>
+
+                                {/* ⭐ v3.6.0: Distance kilométrique pour calcul multi-clients */}
+                                <Form.Item
+                                    {...restField}
+                                    label="Distance (km) pour ce client"
+                                    name={[name, 'distance_km']}
+                                    tooltip="Distance du trajet vers ce client. Le calcul utilisera la distance maximale + km supplémentaires."
+                                >
+                                    <InputNumber
+                                        style={{ width: '100%' }}
+                                        min={0}
+                                        step={0.1}
+                                        placeholder="Ex: 25.5"
+                                    />
                                 </Form.Item>
 
                                 {/* Logistics Section */}
