@@ -33,6 +33,9 @@ class ParametresSalaire(Base):
     activer_irg_proratise = Column(Boolean, default=True, nullable=False, comment="Proratiser IRG selon jours travaillés")
     mode_calcul_conges = Column(String(20), default='proratise', nullable=False, comment="Mode calcul congés: complet|proratise|hybride")
     
+    # Missions multi-clients
+    km_supplementaire_par_client = Column(Integer, default=10, nullable=False, comment="Kilomètres supplémentaires par client additionnel")
+    
     # Métadonnées
     date_modification = Column(DateTime, default=datetime.now, onupdate=datetime.now, nullable=False)
     
@@ -53,4 +56,5 @@ class ParametresSalaire(Base):
             'activer_heures_supp': self.activer_heures_supp,
             'activer_irg_proratise': self.activer_irg_proratise,
             'mode_calcul_conges': self.mode_calcul_conges,
+            'km_supplementaire_par_client': self.km_supplementaire_par_client,
         }

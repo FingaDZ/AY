@@ -9,6 +9,9 @@ class MissionClientDetail(Base):
     mission_id = Column(Integer, ForeignKey("missions.id", ondelete="CASCADE"), nullable=False)
     client_id = Column(Integer, ForeignKey("clients.id"), nullable=False)
     
+    # v3.6.0: Distance kilométrique pour calcul multi-clients
+    distance_km = Column(Numeric(10, 2), nullable=True, comment="Distance en km pour ce client")
+    
     montant_encaisse = Column(Numeric(10, 2), default=0.0)
     statut_versement = Column(String(20), default="EN_ATTENTE") # EN_ATTENTE, VERSE, VALIDE
     observations = Column(Text, nullable=True)
