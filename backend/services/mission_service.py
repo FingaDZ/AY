@@ -3,6 +3,7 @@ from fastapi import HTTPException
 from models import Mission, MissionClientDetail, MissionLogisticsMovement, Client, Employe, Parametre
 from schemas.mission import MissionCreate, MissionClientDetailCreate
 from decimal import Decimal
+from services.mission_km_calculator import calculer_km_mission_multi_clients
 
 class MissionService:
     def __init__(self, db: Session):
@@ -38,12 +39,29 @@ class MissionService:
         if not main_client:
             raise HTTPException(status_code=404, detail="Client principal non trouvé")
 
-        # 3. Calculate Prime (Legacy Logic - based on main client for now)
-        # In a multi-client scenario, we might want to sum distances, but for now let's stick to the main client's distance
-        # or maybe the user enters a total distance? The current model takes distance from Client.
+        # 3. ⭐ v3.6.0: Calcul Prime Multi-Clients
         tarif_km = main_client.tarif_km
-        distance = main_client.distance
-        prime_calculee = distance * tarif_km
+        
+        # Si clients avec distance_km renseignée => calcul multi-clients
+        if mission_in.clients and any(c.distance_km for c in mission_in.clients):
+            clients_km = [
+                {"client_id": c.client_id, "distance_km": float(c.distance_km or 0)}
+                for c in mission_in.clients
+                if c.distance_km
+            ]
+            
+            resultat = calculer_km_mission_multi_clients(
+                clients_km=clients_km,
+                tarif_km=tarif_km,
+                db=self.db
+            )
+            
+            distance = Decimal(str(resultat["distance_calculee"]))
+            prime_calculee = Decimal(str(resultat["prime_calculee"]))
+        else:
+            # Ancien système: distance du client principal
+            distance = main_client.distance
+            prime_calculee = distance * tarif_km
 
         # 4. Create Mission
         db_mission = Mission(
@@ -77,6 +95,7 @@ class MissionService:
         db_detail = MissionClientDetail(
             mission_id=mission_id,
             client_id=detail_in.client_id,
+            distance_km=detail_in.distance_km,  # ⭐ v3.6.0: Distance pour calcul
             montant_encaisse=detail_in.montant_encaisse,
             statut_versement=detail_in.statut_versement,
             observations=detail_in.observations
@@ -111,9 +130,28 @@ class MissionService:
             client = self.db.query(Client).filter(Client.id == main_client_id).first()
             if client:
                 db_mission.client_id = main_client_id
-                db_mission.distance = client.distance
                 db_mission.tarif_km = client.tarif_km
-                db_mission.prime_calculee = client.distance * client.tarif_km
+                
+                # ⭐ v3.6.0: Recalcul avec multi-clients si applicable
+                if mission_in.clients and any(c.distance_km for c in mission_in.clients):
+                    clients_km = [
+                        {"client_id": c.client_id, "distance_km": float(c.distance_km or 0)}
+                        for c in mission_in.clients
+                        if c.distance_km
+                    ]
+                    
+                    resultat = calculer_km_mission_multi_clients(
+                        clients_km=clients_km,
+                        tarif_km=client.tarif_km,
+                        db=self.db
+                    )
+                    
+                    db_mission.distance = Decimal(str(resultat["distance_calculee"]))
+                    db_mission.prime_calculee = Decimal(str(resultat["prime_calculee"]))
+                else:
+                    # Ancien système
+                    db_mission.distance = client.distance
+                    db_mission.prime_calculee = client.distance * client.tarif_km
 
         # Update Details: Full Replace Strategy for simplicity
         # Delete existing details

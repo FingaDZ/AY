@@ -25,6 +25,7 @@ class MissionLogisticsMovementResponse(MissionLogisticsMovementBase):
 
 class MissionClientDetailBase(BaseModel):
     client_id: int
+    distance_km: Optional[Decimal] = None  # ⭐ v3.6.0: Distance pour calcul multi-clients
     montant_encaisse: Decimal = Decimal('0.00')
     statut_versement: str = "EN_ATTENTE"
     observations: Optional[str] = None
@@ -34,6 +35,7 @@ class MissionClientDetailCreate(MissionClientDetailBase):
 
 class MissionClientDetailResponse(MissionClientDetailBase):
     id: int
+    distance_km: Optional[Decimal] = None  # ⭐ v3.6.0: Distance pour calcul multi-clients
     client_name: Optional[str] = None
     logistics_movements: list[MissionLogisticsMovementResponse] = []
 
