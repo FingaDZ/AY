@@ -64,7 +64,8 @@ const MissionFormEnhanced = ({ visible, onCancel, onSuccess, editingMission, emp
     // ⭐ v3.6.0: Prévisualisation calcul km multi-clients
     const handleValuesChange = (changedValues, allValues) => {
         if (allValues.clients && allValues.clients.length > 0) {
-            const clientsAvecKm = allValues.clients.filter(c => c.distance_km && c.distance_km > 0);
+            // Filtrer clients avec distance_km valide (vérifier que l'objet existe)
+            const clientsAvecKm = allValues.clients.filter(c => c && c.distance_km && c.distance_km > 0);
             
             if (clientsAvecKm.length > 0) {
                 const kmMax = Math.max(...clientsAvecKm.map(c => parseFloat(c.distance_km || 0)));
@@ -83,6 +84,8 @@ const MissionFormEnhanced = ({ visible, onCancel, onSuccess, editingMission, emp
             } else {
                 setCalculPreview(null);
             }
+        } else {
+            setCalculPreview(null);
         }
     };
 
@@ -222,7 +225,21 @@ const MissionFormEnhanced = ({ visible, onCancel, onSuccess, editingMission, emp
                                     name={[name, 'client_id']}
                                     rules={[{ required: true, message: 'Client requis' }]}
                                 >
-                                    <Select placeholder="Sélectionner un client">
+                                    <Select 
+                                        placeholder="Sélectionner un client"
+                                        onChange={(clientId) => {
+                                            // ⭐ v3.6.0: Pré-remplir automatiquement la distance du client
+                                            const selectedClient = clients.find(c => c.id === clientId);
+                                            if (selectedClient && selectedClient.distance) {
+                                                const currentClients = form.getFieldValue('clients') || [];
+                                                currentClients[name] = {
+                                                    ...currentClients[name],
+                                                    distance_km: parseFloat(selectedClient.distance)
+                                                };
+                                                form.setFieldsValue({ clients: currentClients });
+                                            }
+                                        }}
+                                    >
                                         {clients.map(cli => (
                                             <Option key={cli.id} value={cli.id}>
                                                 {cli.prenom} {cli.nom} ({cli.distance} km)
@@ -231,18 +248,18 @@ const MissionFormEnhanced = ({ visible, onCancel, onSuccess, editingMission, emp
                                     </Select>
                                 </Form.Item>
 
-                                {/* ⭐ v3.6.0: Distance kilométrique pour calcul multi-clients */}
+                                {/* ⭐ v3.6.0: Distance kilométrique (pré-remplie automatiquement) */}
                                 <Form.Item
                                     {...restField}
-                                    label="Distance (km) pour ce client"
+                                    label="Distance (km)"
                                     name={[name, 'distance_km']}
-                                    tooltip="Distance du trajet vers ce client. Le calcul utilisera la distance maximale + km supplémentaires."
+                                    tooltip="Distance automatiquement récupérée du client. Vous pouvez la modifier si nécessaire."
                                 >
                                     <InputNumber
                                         style={{ width: '100%' }}
                                         min={0}
                                         step={0.1}
-                                        placeholder="Ex: 25.5"
+                                        placeholder="Sélectionnez un client..."
                                     />
                                 </Form.Item>
 

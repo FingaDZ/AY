@@ -131,6 +131,12 @@ def generate_client_ordre_mission_pdf(
     if not chauffeur or not client:
         raise HTTPException(status_code=404, detail="Données manquantes")
     
+    # ⭐ v3.6.0: Récupérer le camion si assigné
+    camion = None
+    if mission.camion_id:
+        from models.camion import Camion
+        camion = db.query(Camion).filter(Camion.id == mission.camion_id).first()
+    
     # Prepare logistics data
     logistics_data = []
     for movement in client_detail.logistics_movements:
@@ -155,7 +161,11 @@ def generate_client_ordre_mission_pdf(
         'prime_calculee': float(mission.prime_calculee),
         'montant_encaisse': float(client_detail.montant_encaisse),
         'observations': client_detail.observations or '',
-        'logistics': logistics_data
+        'logistics': logistics_data,
+        # ⭐ v3.6.0: Camion
+        'camion_marque': camion.marque if camion else None,
+        'camion_modele': camion.modele if camion else None,
+        'camion_immatriculation': camion.immatriculation if camion else None
     }
     
     pdf_buffer = pdf_generator.generate_ordre_mission_enhanced(mission_data)
@@ -379,7 +389,7 @@ def generate_ordre_mission_pdf(
         
         print(f"DEBUG: Mission found: {mission.id}")
         
-        # 2. Récupérer chauffeur et client
+        # 2. Récupérer chauffeur, client et camion (v3.6.0)
         chauffeur = db.query(Employe).filter(Employe.id == mission.chauffeur_id).first()
         client = db.query(Client).filter(Client.id == mission.client_id).first()
         
@@ -388,6 +398,14 @@ def generate_ordre_mission_pdf(
             raise HTTPException(status_code=404, detail="Données manquantes")
         
         print(f"DEBUG: Chauffeur: {chauffeur.nom}, Client: {client.nom}")
+        
+        # ⭐ v3.6.0: Récupérer le camion si assigné
+        camion = None
+        if mission.camion_id:
+            from models.camion import Camion
+            camion = db.query(Camion).filter(Camion.id == mission.camion_id).first()
+            if camion:
+                print(f"DEBUG: Camion: {camion.marque} {camion.modele} - {camion.immatriculation}")
         
         # 3. Récupérer les données logistiques via requêtes directes
         from models.mission_client_detail import MissionClientDetail, MissionLogisticsMovement
@@ -440,7 +458,7 @@ def generate_ordre_mission_pdf(
         observations_str = "\n".join(observations_list)
         
         
-        # 5. Préparer les données pour le PDF
+        # 5. Préparer les données pour le PDF (⭐ v3.6.0: ajout camion)
         mission_data = {
             'id': mission.id,
             'date_mission': str(mission.date_mission),
@@ -452,7 +470,11 @@ def generate_ordre_mission_pdf(
             'prime_calculee': float(mission.prime_calculee),
             'montant_encaisse': montant_encaisse_total,
             'observations': observations_str,
-            'logistics': logistics
+            'logistics': logistics,
+            # ⭐ v3.6.0: Camion
+            'camion_marque': camion.marque if camion else None,
+            'camion_modele': camion.modele if camion else None,
+            'camion_immatriculation': camion.immatriculation if camion else None
         }
         
         print("DEBUG: Calling PDF generator")
