@@ -1,0 +1,27 @@
+# Ignore node_modules et fichiers de build
+node_modules/
+dist/
+build/
+
+# Ignore fichiers de config locaux
+.env
+.env.local
+.env.*.local
+
+# Ignore fichiers système
+.DS_Store
+Thumbs.db
+
+# Ignore logs
+*.log
+npm-debug.log*
+
+# Ignore fichiers de test
+coverage/
+.nyc_output/
+
+# Ignore fichiers IDE
+.vscode/
+.idea/
+*.swp
+*.swo

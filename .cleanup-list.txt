@@ -1,0 +1,88 @@
+# Fichiers à supprimer lors du nettoyage du projet
+
+## Scripts de test et debug
+analyze_excel.py
+check_salaires_table.sh
+clean_and_update.sh
+clean_deploy_server.sh
+create_db_dump.py
+create_gestionnaire_user.py
+create_test_user.py
+debug_edition_salaires.sh
+debug_salary_engine.py
+deploy_fix_pointages.sh
+deploy_v1.3.0.sh
+deploy_v3_server.sh
+diagnose_edition_salaires.sh
+dump_and_restore_db.py
+fix_db_schema.py
+fix_frontend_build.sh
+fix_schema_salaires.py
+fresh_install_server.sh
+import_employes_from_excel.py
+legacy_salaire_calculator.py
+migrate_server_v3.5.0.sh
+patch_edition_salaires.sh
+reproduce_500.py
+restore_to_mariadb.py
+restore_via_app_server.py
+setup_dual_access.sh
+setup_new_server.sh
+sync_postes_travail.py
+test_api_conges_rapide.py
+test_bulletin_conges.py
+test_certificates_api.py
+test_modifications_v3.5.0.ps1
+test_pdf_generation.py
+update_salaires_from_excel.py
+verify_conges_bulletin.sh
+verify_db_schema.py
+
+## Documentation obsolète (garder seulement README.md et guides déploiement)
+0
+AMELIORATIONS_V3.5.1_RESUME.md
+ANALYSE_LOGIQUE_CONGES_V3.5.3.md
+ANALYSE_PROJET.md
+ATTENDANCE_FRONTEND_GUIDE.md
+ATTENDANCE_INTEGRATION.md
+BUSINESS_RULES.md
+CHANGELOG_V3.5.2.md
+COMPLETION_REPORT_V3.5.0.md
+CONGES_NOUVELLES_REGLES_V3.5.1.md
+CORRECTIFS_CALCUL_AUTO_CONGES_V3.5.3.md
+CORRECTIF_AFFICHAGE_CONGES_BULLETINS_V3.5.3.md
+CORRECTIF_FINAL_AFFICHAGE_CONGES_V3.5.3.md
+DEPLOIEMENT_CORRECTIFS_V3.5.3.md
+DEPLOIEMENT_RAPIDE_V3.5.1.md
+DEPLOIEMENT_V3.5.2.md
+DEPLOIEMENT_V3.6.0-ALPHA.md
+DEPLOYMENT_STEPS.md
+DEPLOYMENT_V3.5.0.md
+GITHUB_UPDATE_SUMMARY.md
+MODIFICATIONS_PDF_RESUME.md
+OU_EST_LA_LIGNE_CONGES.md
+PLAN_V3.5.2.md
+QUICK_DEPLOY.md
+RAPPORT_FINAL_V3.5.2.md
+RAPPORT_V3.5.3.md
+README_GITHUB.md
+README_V3.5.0_DEPLOY.txt
+RECAPITULATIF_VISUEL_V3.5.1.md
+SESSION_RAPPORT.md
+STATUS_V3.5.2.md
+STATUT_FINAL_V3.5.0.md
+TRAITEMENT_SALAIRES_ARCHITECTURE.md
+VERIFICATION_COMPLETE_V3.5.0.txt
+
+## Fichiers Excel de test
+attendance_report (10).xlsx
+attendance_report (7).xlsx
+employees.xlsx
+
+## Autres
+test.db
+package-lock.json
+
+## Dossiers temporaires
+temp_attendance/
+files/ (vérifier contenu avant suppression)

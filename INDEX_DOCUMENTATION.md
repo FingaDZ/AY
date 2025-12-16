@@ -1,113 +1,147 @@
-# 📚 INDEX DOCUMENTATION v3.5.1
+# 📚 INDEX DOCUMENTATION v3.6.0
 
-**Version AY HR** : 3.5.1  
-**Date de release** : 12 décembre 2025  
+**Version AY HR** : 3.6.0  
+**Date de release** : 16 décembre 2025  
 **Status** : ✅ Production Ready
 
 ---
 
 ## 🎯 Documents par Besoin
 
-### 🚀 **Je veux déployer maintenant**
-→ **[DEPLOIEMENT_RAPIDE_V3.5.1.md](DEPLOIEMENT_RAPIDE_V3.5.1.md)**
-- ⏱️ Durée : 10-15 minutes
-- 📋 Checklist complète
-- 🐛 Troubleshooting
-- 🔄 Procédure rollback
+### 🚀 **Je veux déployer l'application**
 
-### 📖 **Je veux comprendre les changements**
-→ **[AMELIORATIONS_V3.5.1_RESUME.md](AMELIORATIONS_V3.5.1_RESUME.md)**
-- 🎯 3 améliorations expliquées
-- 📊 Statistiques commits
-- 🧪 Plan de tests
-- 📋 Checklist validation
+#### **Sur Ubuntu/Debian (Recommandé)**
+→ **[install-ubuntu.sh](install-ubuntu.sh)** + **[DEPLOYMENT_LINUX.md](DEPLOYMENT_LINUX.md)**
+- ⏱️ Installation automatique en 10 minutes
+- 🐧 Ubuntu 22.04/24.04 LTS
+- 🔧 Configuration interactive
+- 📦 Python 3.11 + Node.js 20 + MySQL
+- 🎯 Services systemd + Nginx
 
-### 📊 **Je veux une vue d'ensemble visuelle**
-→ **[RECAPITULATIF_VISUEL_V3.5.1.md](RECAPITULATIF_VISUEL_V3.5.1.md)**
-- 📈 Diagrammes flux
-- 🎨 Représentations ASCII
-- 📋 Matrices de tests
-- 🔑 Points clés
+#### **Sur Windows**
+→ **[INSTALL_WINDOWS.md](INSTALL_WINDOWS.md)**
+- 🪟 Windows 10/11
+- 📋 Guide pas-à-pas détaillé
+- 🔧 Service NSSM ou Task Scheduler
+- 🌐 Nginx pour Windows
+- 🐛 Troubleshooting complet
 
-### 📅 **Je veux tout savoir sur les congés**
-→ **[CONGES_NOUVELLES_REGLES_V3.5.1.md](CONGES_NOUVELLES_REGLES_V3.5.1.md)**
-- 📊 Anciennes vs nouvelles règles
-- 🔧 Implémentation technique
-- 📋 Exemples de calcul
-- 🗄️ Migration SQL
+#### **Avec Docker (Multi-plateforme)**
+→ **[INSTALL_DOCKER.md](INSTALL_DOCKER.md)** + Scripts: [docker-start.sh](docker-start.sh) / [docker-start.ps1](docker-start.ps1)
+- 🐳 Docker Compose
+- ⚡ Quick start en 5 minutes
+- 🔄 MySQL + Backend + Frontend
+- 📦 Volumes persistants
+- 🔒 Configuration SSL/TLS
+
+### 📖 **Je veux comprendre les fonctionnalités**
+→ **[README.md](README.md)**
+- 🎯 Vue d'ensemble v3.6.0
+- 📊 Gestion Camions
+- 🚗 Calcul Km Multi-Clients
+- 👥 Rôle Gestionnaire
+- 📝 Logs Connexions
+- 📅 Congés Décimal
+- 🛠️ Technologies utilisées
+
+### 📅 **Je veux planifier les évolutions**
+→ **[PLAN_V3.6.0.md](PLAN_V3.6.0.md)**
+- 📋 Roadmap complète
+- 🎯 5 phases d'implémentation
+- ✅ Status de chaque phase
+- 🔮 Fonctionnalités futures
+
+### 📝 **Je veux voir l'historique des changements**
+→ **[CHANGELOG.md](CHANGELOG.md)**
+- 📅 Versions de 3.5.0 à 3.6.0
+- 🐛 Corrections de bugs
+- ✨ Nouvelles fonctionnalités
+- 🔒 Améliorations sécurité
 
 ---
 
 ## 📂 Structure Documentation
 
 ```
-Documentation v3.5.1/
+Documentation v3.6.0/
 │
 ├── 📄 INDEX_DOCUMENTATION.md              ← CE FICHIER
+├── 📄 README.md                           ← Vue d'ensemble
+├── 📄 CHANGELOG.md                        ← Historique versions
+├── 📄 PLAN_V3.6.0.md                      ← Roadmap
 │
-├── 🚀 DEPLOIEMENT/
-│   └── DEPLOIEMENT_RAPIDE_V3.5.1.md      ← Guide ops
+├── 🚀 INSTALLATION/
+│   ├── install-ubuntu.sh                  ← Script auto Ubuntu
+│   ├── INSTALL_WINDOWS.md                 ← Guide Windows
+│   ├── INSTALL_DOCKER.md                  ← Guide Docker
+│   ├── docker-start.sh                    ← Quick start Linux/Mac
+│   ├── docker-start.ps1                   ← Quick start Windows
+│   ├── DEPLOYMENT_LINUX.md                ← Détails Linux
+│   └── DEPLOYMENT_WINDOWS.md              ← Détails Windows
 │
-├── 📖 FONCTIONNEL/
-│   ├── AMELIORATIONS_V3.5.1_RESUME.md    ← Résumé exécutif
-│   ├── RECAPITULATIF_VISUEL_V3.5.1.md    ← Diagrammes
-│   └── CONGES_NOUVELLES_REGLES_V3.5.1.md ← Détails congés
-│
-└── 📚 RÉFÉRENCE/
-    ├── README.md                          ← Vue générale
-    ├── CHANGELOG.md                       ← Historique versions
-    └── GITHUB_UPDATE_SUMMARY.md           ← Résumés GitHub
+└── 🛠️ CONFIGURATION/
+    ├── docker-compose.yml                 ← Orchestration Docker
+    ├── .env.docker                        ← Template config Docker
+    └── ecosystem.config.js                ← PM2 config
 ```
 
 ---
 
 ## 🎯 Guide par Rôle
 
-### 👨‍💼 **Chef de Projet / Product Owner**
-1. Lire : [AMELIORATIONS_V3.5.1_RESUME.md](AMELIORATIONS_V3.5.1_RESUME.md)
-2. Voir : [RECAPITULATIF_VISUEL_V3.5.1.md](RECAPITULATIF_VISUEL_V3.5.1.md)
-3. Valider : Tests fonctionnels section 2
+### 👨‍💼 **DevOps / Administrateur Système**
+1. **Installation rapide** : Utiliser [install-ubuntu.sh](install-ubuntu.sh) sur serveur Linux
+2. **Installation Windows** : Suivre [INSTALL_WINDOWS.md](INSTALL_WINDOWS.md) pas-à-pas
+3. **Conteneurisation** : Lancer [docker-start.sh](docker-start.sh) ou [docker-start.ps1](docker-start.ps1)
+4. **Configuration** : Adapter les fichiers .env selon l'environnement
+5. **Monitoring** : Consulter les logs (systemd/NSSM/Docker)
 
-### 👨‍💻 **Développeur / Tech Lead**
-1. Lire : [CONGES_NOUVELLES_REGLES_V3.5.1.md](CONGES_NOUVELLES_REGLES_V3.5.1.md)
-2. Comprendre : Implémentation technique sections
-3. Tester : Exemples code fournis
-4. Review : Commits 6b2612b → f5c3e73
+### 👨‍💻 **Développeur Backend**
+1. **Vue d'ensemble** : Lire [README.md](README.md) section "Architecture Backend"
+2. **Environnement local** : Suivre [INSTALL_DOCKER.md](INSTALL_DOCKER.md) pour dev
+3. **Roadmap** : Consulter [PLAN_V3.6.0.md](PLAN_V3.6.0.md) pour les prochaines features
+4. **Changements** : Lire [CHANGELOG.md](CHANGELOG.md) pour l'historique
 
-### 🛠️ **Ops / SysAdmin**
-1. **PRIORITÉ** : [DEPLOIEMENT_RAPIDE_V3.5.1.md](DEPLOIEMENT_RAPIDE_V3.5.1.md)
-2. Préparer : Backup base de données
-3. Exécuter : Commandes copier-coller
-4. Valider : Checklist complète
-5. Monitorer : Logs première journée
+### 🎨 **Développeur Frontend**
+1. **Setup local** : Installation Docker recommandée
+2. **Documentation** : [README.md](README.md) section "Architecture Frontend"
+3. **Composants** : Voir le code dans `frontend/src/`
 
-### 👤 **Utilisateur Final / RH**
-1. Lire : Section "Impact Utilisateurs" dans [AMELIORATIONS_V3.5.1_RESUME.md](AMELIORATIONS_V3.5.1_RESUME.md)
-2. Comprendre : Workflow dans [RECAPITULATIF_VISUEL_V3.5.1.md](RECAPITULATIF_VISUEL_V3.5.1.md)
-3. Formation : Exemples de calcul dans [CONGES_NOUVELLES_REGLES_V3.5.1.md](CONGES_NOUVELLES_REGLES_V3.5.1.md)
+### � **Utilisateur Final / RH**
+1. **Formation** : Consulter [README.md](README.md) pour les nouvelles fonctionnalités
+2. **Support** : Contacter l'administrateur système pour assistance
+3. **Accès** : Utiliser les credentials fournis par l'admin
 
 ---
 
-## 🔑 Points Clés par Document
+## 🔑 Points Clés v3.6.0
 
-### DEPLOIEMENT_RAPIDE_V3.5.1.md
+### ✨ Nouvelles Fonctionnalités
 ```
-✅ Commandes copier-coller
-✅ Checklist validation
-✅ Tests fonctionnels (3)
-✅ Résolution problèmes
-✅ Procédure rollback
-✅ Monitoring post-deploy
+✅ Gestion complète des camions
+✅ Calcul kilométrique multi-clients
+✅ Rôle Gestionnaire (3 tiers)
+✅ Logs de connexions avec IP
+✅ Congés en format décimal
+✅ Interface paramètres réorganisée
 ```
 
-### AMELIORATIONS_V3.5.1_RESUME.md
+### 🚀 Installation Simplifiée
 ```
-📌 Blocage congés > acquis
-📌 Notification avant bulletins
-📌 Versions corrigées
-📊 Statistiques commits
-🧪 Plan de tests (3 scénarios)
-📋 Checklist validation prod
+✅ Script Ubuntu automatique (10 étapes)
+✅ Guide Windows complet (NSSM/Task Scheduler)
+✅ Docker Compose multi-plateforme
+✅ Quick start en 5-15 minutes
+✅ Configuration interactive
+```
+
+### 🔒 Sécurité et Performance
+```
+✅ Validation rôles améliorée
+✅ Permissions granulaires
+✅ Logs d'audit connexions
+✅ Healthchecks Docker
+✅ Multi-workers uvicorn
 ```
 
 ### RECAPITULATIF_VISUEL_V3.5.1.md
