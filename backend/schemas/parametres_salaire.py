@@ -29,6 +29,9 @@ class ParametresSalaireBase(BaseModel):
     mode_calcul_conges: str = Field(default="complet", description="Mode congés: complet|proratise|hybride")
     jours_ouvrables_base: int = Field(default=30, ge=1, le=31, description="Jours ouvrables/mois")  # v3.5.3: 30 jours au lieu de 26
     irg_proratise: bool = Field(default=True, description="Proratiser IRG")
+    
+    # v3.6.0: Kilomètres multi-clients
+    km_supplementaire_par_client: int = Field(default=10, ge=0, description="Km supplémentaires par client additionnel")
 
 
 class ParametresSalaireCreate(ParametresSalaireBase):

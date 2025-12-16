@@ -76,8 +76,9 @@ def create_user(user_data: UserCreate, db: Session = Depends(get_db), current_us
             detail=f"Un utilisateur avec l'email {user_data.email} existe déjà"
         )
     
-    # Valider le rôle
-    if user_data.role not in [UserRole.admin.value, UserRole.utilisateur.value]:
+    # Valider le rôle - v3.6.0: Ajouter Gestionnaire
+    valid_roles = [UserRole.admin.value, UserRole.gestionnaire.value, UserRole.utilisateur.value]
+    if user_data.role not in valid_roles:
         raise HTTPException(status_code=400, detail="Rôle invalide")
     
     # Créer l'utilisateur
@@ -131,7 +132,8 @@ def update_user(user_id: int, user_data: UserUpdate, db: Session = Depends(get_d
     if user_data.password:
         user.password_hash = hash_password(user_data.password)
     if user_data.role:
-        if user_data.role not in ['Admin', 'Utilisateur']:
+        # v3.6.0: Ajouter Gestionnaire
+        if user_data.role not in ['Admin', 'Gestionnaire', 'Utilisateur']:
             raise HTTPException(status_code=400, detail="Rôle invalide")
         user.role = user_data.role
     if user_data.actif is not None:

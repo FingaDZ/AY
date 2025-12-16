@@ -1,10 +1,88 @@
 import { useState, useEffect } from 'react';
-import { Card, Typography, Form, Input, Button, message, Spin, Divider } from 'antd';
-import { SaveOutlined, ReloadOutlined } from '@ant-design/icons';
+import { Card, Typography, Form, Input, InputNumber, Button, message, Spin, Divider, Alert } from 'antd';
+import { SaveOutlined, ReloadOutlined, CarOutlined } from '@ant-design/icons';
 import parametresService from '../../services/parametres';
+import { parametresSalaireService } from '../../services';
 import LogisticsTypesManager from '../../components/LogisticsTypesManager';
 
 const { Title, Text } = Typography;
+
+// ⭐ v3.6.0: Composant pour les paramètres Missions
+function MissionsParametres() {
+  const [kmSupp, setKmSupp] = useState(10);
+  const [loading, setLoading] = useState(false);
+  const [fetching, setFetching] = useState(true);
+
+  useEffect(() => {
+    fetchParams();
+  }, []);
+
+  const fetchParams = async () => {
+    try {
+      setFetching(true);
+      const response = await parametresSalaireService.getParametres();
+      setKmSupp(response.data?.km_supplementaire_par_client || 10);
+    } catch (error) {
+      console.error('Erreur chargement paramètres missions:', error);
+    } finally {
+      setFetching(false);
+    }
+  };
+
+  const handleSave = async () => {
+    try {
+      setLoading(true);
+      await parametresSalaireService.updateParametres({ km_supplementaire_par_client: kmSupp });
+      message.success('Km supplémentaire mis à jour');
+    } catch (error) {
+      console.error('Erreur sauvegarde:', error);
+      message.error('Erreur lors de la sauvegarde');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <Card 
+      title={<span><CarOutlined /> Paramètres Missions</span>}
+      style={{ marginTop: 32 }}
+      loading={fetching}
+    >
+      <Alert
+        message="Calcul kilométrage multi-clients"
+        description="Ce paramètre définit le nombre de km ajoutés pour chaque client supplémentaire dans une mission multi-clients."
+        type="info"
+        showIcon
+        style={{ marginBottom: 16 }}
+      />
+      <Form layout="inline">
+        <Form.Item label={<strong>Km supplémentaires par client</strong>}>
+          <InputNumber
+            min={0}
+            max={100}
+            value={kmSupp}
+            onChange={setKmSupp}
+            addonAfter="km"
+            style={{ width: 150 }}
+          />
+        </Form.Item>
+        <Form.Item>
+          <Button
+            type="primary"
+            icon={<SaveOutlined />}
+            onClick={handleSave}
+            loading={loading}
+          >
+            Sauvegarder
+          </Button>
+        </Form.Item>
+      </Form>
+      <Text type="secondary" style={{ display: 'block', marginTop: 8 }}>
+        Exemple: 3 clients (50km, 60km, 80km) → 80 + (2 × {kmSupp}) = {80 + (2 * kmSupp)} km total
+      </Text>
+    </Card>
+  );
+}
 
 function ParametresPage() {
   const [form] = Form.useForm();
@@ -182,6 +260,9 @@ function ParametresPage() {
           </Form.Item>
         </Form>
       </Card>
+
+      {/* ⭐ v3.6.0: Paramètres Missions */}
+      <MissionsParametres />
 
       {/* Logistics Types Section */}
       <div style={{ marginTop: 32 }}>
