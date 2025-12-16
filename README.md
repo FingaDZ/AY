@@ -1,55 +1,51 @@
-# AY HR System v3.5.3
+# AY HR System v3.6.0
 
-## 🎉 Nouveautés Version 3.5.3 (Décembre 2025)
+## 🎉 Nouveautés Version 3.6.0 (Décembre 2025)
 
-### 📊 **MODIFICATIONS CALCULS**
-- **Congés** : Retour aux décimales avec max 2.5j/mois (formule: jours/30*2.5)
-- **Salaires** : Base 30 jours au lieu de 26 (30000 DA pour 30 jours)
-- **Bulletin PDF** : Ligne congés masquée
+### 🚗 **GESTION CAMIONS**
+- Nouveau module de gestion du parc camions (Marque, Modèle, Immatriculation)
+- Association camion → mission
+- Affichage camion dans PDF ordre de mission
 
-## 🎉 Nouveautés Version 3.5.2 (Décembre 2025)
+### 📊 **CALCUL KILOMÉTRAGE MULTI-CLIENTS**
+- Algorithme intelligent: km_max + (nb_clients - 1) × km_supplementaire
+- Paramètre configurable dans Paramètres Généraux (défaut: 10 km)
+- PDF multi-pages pour missions multi-clients
 
-### 🎨 **AMÉLIORATIONS UX/UI**
-- **Page Congés** : Groupement par employé + totaux + popup détails périodes
-- **Page Employés** : Couleurs contrats (rouge=expiré, orange<30j)
-- **Page Pointages** : Validation dates hors contrat avec popup
-- **Page Logs** : Colonnes complètes (Utilisateur, ID Enregistrement)
+### 👤 **NOUVEAU RÔLE GESTIONNAIRE**
+- 3 niveaux d'accès: Admin > Gestionnaire > Utilisateur
+- Gestionnaire: Accès Missions, Clients, Camions, Avances, Crédits
+- Sidebar dynamique selon le rôle
+- Interface utilisateurs avec tags colorés (Admin=rouge, Gestionnaire=orange, Utilisateur=bleu)
 
-### 📊 **AUDIT & TRAÇABILITÉ**
-- **Logs complets** : Pointages, Congés, Salaires
-- **Données enrichies** : user_email et record_id partout
-- **Conformité** : Traçabilité totale des opérations
+### 📝 **LOGS CONNEXIONS**
+- Nouveau type d'action LOGIN pour tracer les connexions
+- Capture IP et User-Agent
+- Icône 🔐 dans la page des logs
+- Filtre par type d'action incluant Connexion
 
-## 🎉 Nouveautés Version 3.5.1 (Décembre 2025)
+### 🔢 **CONGÉS DÉCIMAUX**
+- Retour à l'affichage décimal (ex: 2.50 jours)
+- API retourne float au lieu de int
+- Affichage .toFixed(2) dans le tableau
 
-### 🐛 **Corrections Critiques**
-- **Pointages Fix** : Correction sauvegarde manuelle - ne plus écraser les jours NULL
-- **Backend** : API retourne seulement les jours avec valeur (pas NULL)
-- **Frontend** : N'envoie que les jours modifiés lors de la sauvegarde
-- **Logs** : Ajout logs de debug pour tracer les mises à jour
-
-### 📅 **NOUVELLES RÈGLES CONGÉS**
-- **8 jours travaillés = 1 jour de congé** (plus de 2.5j/30j)
-  - 8-15 jours → 1 jour
-  - 16-23 jours → 2 jours
-  - 24-30+ jours → 3 jours
-- **Nouveaux employés** : minimum 15 jours pour 1 jour
-- **Plus de décimales** : valeurs entières uniquement
-- **Exclusion critique** : Congés pris exclus du calcul des droits
-
-### 🔒 **AMÉLIORATIONS SÉCURITÉ & UX** (Nouvelle)
-- ⛔ **Blocage strict** : Impossible de saisir congés pris > acquis
-- 🔔 **Notification intelligente** : Alerte avant génération bulletins si congés non saisis
-- 🔀 **Redirection automatique** : Vers page Congés si validation requise
-- ✅ **Versions alignées** : Backend, Frontend, UI affichent tous v3.5.1
-
-### 📚 **Documentation Complète**
-- `INDEX_DOCUMENTATION.md` : Navigation rapide
-- `DEPLOIEMENT_RAPIDE_V3.5.1.md` : Guide ops
-- `AMELIORATIONS_V3.5.1_RESUME.md` : Résumé exécutif
-- `CONGES_NOUVELLES_REGLES_V3.5.1.md` : Détails techniques
+### 🎨 **UI PARAMÈTRES SALAIRES**
+- Réorganisation en sections visuelles avec icônes
+  - 📊 INDEMNITÉS (IN, IFSP, IEP)
+  - 💰 PRIMES (Encouragement, Chauffeur, Nuit, etc.)
+  - 💳 RETENUES (Sécurité Sociale)
+  - ⚙️ PARAMÈTRES CALCUL (Congés, Options)
+- Labels en gras, bordures colorées par section
 
 ## 📋 Historique des Versions
+
+### v3.6.0 - 16 décembre 2025
+- 🚗 **GESTION CAMIONS** : Nouveau module + intégration missions + PDF
+- 📊 **MULTI-CLIENTS** : Calcul km intelligent avec paramètre configurable
+- 👤 **RÔLE GESTIONNAIRE** : Permissions granulaires + sidebar dynamique
+- 📝 **LOGS CONNEXIONS** : Traçabilité complète avec IP/User-Agent
+- 🔢 **CONGÉS** : Affichage décimal + formule 30j×2.5j
+- 🎨 **UI** : Paramètres Salaires réorganisés en sections
 
 ### v3.5.3 - 13 décembre 2025
 - 📊 **MODIFICATIONS CALCULS**
