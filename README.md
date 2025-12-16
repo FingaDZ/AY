@@ -1,5 +1,29 @@
 # AY HR System v3.6.0
 
+## 🚀 Installation Rapide
+
+### 🐧 Ubuntu/Debian (Recommandé)
+```bash
+# Installation automatique en 10 minutes
+sudo bash install-ubuntu.sh
+```
+Guide complet: [DEPLOYMENT_LINUX.md](DEPLOYMENT_LINUX.md)
+
+### 🪟 Windows
+Suivre le guide pas-à-pas: [INSTALL_WINDOWS.md](INSTALL_WINDOWS.md)
+
+### 🐳 Docker (Multi-plateforme)
+```bash
+# Linux/Mac
+bash docker-start.sh
+
+# Windows
+.\docker-start.ps1
+```
+Guide complet: [INSTALL_DOCKER.md](INSTALL_DOCKER.md)
+
+---
+
 ## 🎉 Nouveautés Version 3.6.0 (Décembre 2025)
 
 ### 🚗 **GESTION CAMIONS**
