@@ -316,14 +316,9 @@ const CongesList = () => {
             title: 'Acquis',
             dataIndex: 'jours_conges_acquis',
             key: 'jours_conges_acquis',
-            render: (val) => <span className="text-green-600">{Number(val).toFixed(2)} j</span>  // ⭐ v3.6.0 Phase 5
+            render: (val) => <span className="text-green-600">{Number(val).toFixed(2)} j</span>
         },
-        {
-            title: 'Pris',
-            dataIndex: 'jours_conges_pris',
-            key: 'jours_conges_pris',
-            render: (val) => <span className="text-orange-500">{Number(val).toFixed(2)} j</span>  // ⭐ v3.6.0
-        },
+        // v3.7.0: Colonne "Pris" supprimée (obsolète - voir deductions_conges table)
         {
             title: 'Solde Cumulé',
             dataIndex: 'jours_conges_restants',
