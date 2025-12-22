@@ -172,13 +172,15 @@ def update_consommation(
     current_user: User = Depends(get_current_user)
 ):
     """
-    Mettre à jour la consommation de congés avec répartition intelligente
+    Mettre à jour la consommation de congés avec répartition intelligente TOTALE
     
-    LOGIQUE v3.6.1:
-    - Si jours_pris saisis dépasse l'acquis de cette période
-    - Le système répartit automatiquement sur les périodes antérieures
-    - Déduction du plus ancien au plus récent
+    LOGIQUE v3.6.1 CORRIGÉE:
+    - jours_pris = TOTAL GLOBAL que l'employé doit prendre (pas un ajout!)
+    - Le système réinitialise toutes les périodes puis répartit ce total
+    - Répartition automatique: du plus ancien au plus récent
     - Validation: ne jamais dépasser l'acquis de chaque période
+    
+    ATTENTION: Cette saisie REMPLACE toutes les saisies précédentes!
     """
     conge = db.query(Conge).filter(Conge.id == conge_id).first()
     if not conge:
@@ -200,13 +202,16 @@ def update_consommation(
     if annee_deduction < 2000 or annee_deduction > 2100:
         raise HTTPException(status_code=400, detail="Année de déduction invalide")
     
-    # ⭐ NOUVEAU v3.6.1: Répartition intelligente
-    # Réinitialiser d'abord les jours_pris de toutes les périodes de cet employé
-    # (pour permettre un nouveau calcul propre)
+    # ⭐ CORRECTION v3.6.1 hotfix7: Répartition intelligente TOTALE
+    # jours_pris = TOTAL global voulu (pas un ajout!)
+    # Sauvegarder le total actuel pour information
     periodes_employe = db.query(Conge).filter(
         Conge.employe_id == conge.employe_id
     ).all()
     
+    total_actuel = sum(float(p.jours_conges_pris or 0) for p in periodes_employe)
+    
+    # Réinitialiser toutes les périodes à 0 (nouvelle répartition complète)
     for p in periodes_employe:
         p.jours_conges_pris = 0.0
     
@@ -276,6 +281,9 @@ def update_consommation(
     return {
         "message": "Consommation mise à jour avec répartition intelligente",
         "conge_id": conge.id,
+        "ancien_total": total_actuel,
+        "nouveau_total": jours_pris,
+        "difference": jours_pris - total_actuel,
         "repartition": repartition,
         "details": messages_repartition
     }

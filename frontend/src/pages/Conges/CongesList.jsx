@@ -131,19 +131,27 @@ const CongesList = () => {
             });
             
             // Afficher message avec détails de répartition
-            if (response.data.repartition && response.data.repartition.length > 1) {
+            const ancienTotal = response.data.ancien_total || 0;
+            const nouveauTotal = response.data.nouveau_total || 0;
+            const difference = response.data.difference || 0;
+            
+            if (response.data.repartition && response.data.repartition.length > 0) {
                 const details = response.data.details.join('\n');
+                const diffText = difference >= 0 ? `+${difference.toFixed(2)}j` : `${difference.toFixed(2)}j`;
                 message.success(
                     <div>
                         <strong>✅ Répartition automatique effectuée!</strong>
-                        <pre style={{fontSize: '11px', marginTop: '8px', whiteSpace: 'pre-wrap'}}>
+                        <div style={{fontSize: '12px', marginTop: '8px', marginBottom: '8px'}}>
+                            Ancien total: {ancienTotal.toFixed(2)}j → Nouveau total: {nouveauTotal.toFixed(2)}j ({diffText})
+                        </div>
+                        <pre style={{fontSize: '11px', whiteSpace: 'pre-wrap', backgroundColor: '#f0f0f0', padding: '8px', borderRadius: '4px'}}>
                             {details}
                         </pre>
                     </div>,
-                    8
+                    10
                 );
             } else {
-                message.success("Consommation mise à jour");
+                message.success(`Consommation mise à jour: ${nouveauTotal.toFixed(2)}j`);
             }
             
             setIsModalVisible(false);
@@ -385,14 +393,17 @@ const CongesList = () => {
                 width={650}
             >
                 <Form form={form} layout="vertical">
-                    <div className="mb-4 p-3 bg-green-50 rounded border border-green-200">
-                        <p className="text-sm font-semibold text-green-700 mb-2">
-                            🤖 Répartition Intelligente Activée
+                    <div className="mb-4 p-3 bg-blue-50 rounded border border-blue-200">
+                        <p className="text-sm font-semibold text-blue-700 mb-2">
+                            ⚠️ MODE: TOTAL GLOBAL (pas un ajout!)
                         </p>
-                        <p className="text-xs text-green-600">
-                            Si vous saisissez plus de jours que le solde disponible pour cette période, 
-                            le système <strong>répartira automatiquement</strong> sur les périodes antérieures 
-                            (du plus ancien au plus récent). Exemple: 5j demandés = 2.5j (oct) + 2.42j (nov) + 0.08j (déc).
+                        <p className="text-xs text-blue-600 mb-2">
+                            Saisissez le <strong>nombre TOTAL de jours</strong> que l'employé doit avoir pris au total.
+                            Cette valeur <strong>remplace toutes les saisies précédentes</strong>.
+                        </p>
+                        <p className="text-xs text-blue-600">
+                            Le système répartira automatiquement sur les périodes disponibles 
+                            (du plus ancien au plus récent). Exemple: 5j total = 2.5j (oct) + 2.42j (nov) + 0.08j (déc).
                         </p>
                     </div>
                     
@@ -401,10 +412,11 @@ const CongesList = () => {
                     </p>
                     <Form.Item
                         name="jours_pris"
-                        label="Jours Pris"
-                        rules={[{ required: true, message: 'Veuillez saisir une valeur' }]}
+                        label="TOTAL de jours à prendre (remplace les saisies précédentes)"
+                        rules={[{ required: true, message: 'Veuillez saisir le total global' }]}
+                        extra="Saisissez le total cumulé que l'employé doit avoir pris, pas un ajout"
                     >
-                        <InputNumber min={0} max={30} step={0.5} style={{ width: '100%' }} />
+                        <InputNumber min={0} max={100} step={0.5} style={{ width: '100%' }} placeholder="Ex: 5.0 (total global)" />
                     </Form.Item>
                     
                     <div className="mb-4 p-3 bg-blue-50 rounded border border-blue-200">

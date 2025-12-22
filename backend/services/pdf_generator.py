@@ -1079,12 +1079,12 @@ class PDFGenerator:
              f"{salaire_data.get('jours_travailles', 0)}/{salaire_data.get('jours_ouvrables', 26)} j",
              f"{float(salaire_data.get('salaire_base_proratis', 0)):,.2f}".replace(',', ' '),
              ''],
-            # ⭐ RÉACTIVÉ: Affichage congés pris ce mois
+            # ⭐ RÉACTIVÉ: Affichage congés pris ce mois (v3.6.1 hotfix7: affichage amélioré)
             ['Jours de congé pris ce mois',
-             '',
-             f"{salaire_data.get('jours_conges', 0):.1f} j" if salaire_data.get('jours_conges', 0) > 0 else '0 j',
-             'Payé',
-             ''],
+             f"{float(salaire_data.get('jours_conges', 0)):.2f} j",  # Colonne BASE: nombre de jours
+             '',  # Colonne TAUX: vide
+             'Payé',  # Colonne GAIN
+             ''],  # Colonne RETENUE
             # Heures supplémentaires
             ['Heures supplémentaires (1.33h/j × 150%)',
              '',
@@ -3750,12 +3750,12 @@ class PDFGenerator:
                  f"{float(emp_info.get('salaire_base', 0)):,.2f}".replace(',', ' '),
                  f"{sal_data.get('jours_travailles', 0)}/{sal_data.get('jours_ouvrables', 26)} j",
                  f"{float(sal_data.get('salaire_base_proratis', 0)):,.2f}".replace(',', ' '), ''],
-                # ⭐ LIGNE CONGÉS v3.5.3
+                # ⭐ LIGNE CONGÉS v3.6.1 hotfix7: affichage cohérent
                 ['Congés pris ce mois',
-                 '',
-                 f"{sal_data.get('jours_conges', 0):.1f} j",
-                 '(Payé)',
-                 ''],
+                 f"{float(sal_data.get('jours_conges', 0)):.2f} j",  # Colonne BASE
+                 '',  # Colonne TAUX
+                 'Payé',  # Colonne GAIN
+                 ''],  # Colonne RETENUE
                 ['Heures supplémentaires (1.33h/j × 150%)', '', '',
                  f"{float(sal_data.get('heures_supplementaires', 0)):,.2f}".replace(',', ' '), ''],
                 ['Indemnité de Nuisance (IN)', f"{float(emp_info.get('salaire_base', 0)):,.2f}".replace(',', ' '), '5%',
