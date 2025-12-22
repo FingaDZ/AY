@@ -376,3 +376,4 @@ class SalaireCalculator:
             return part_travail + part_conges
         
         return Decimal(0)
+
