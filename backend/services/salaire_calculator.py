@@ -63,15 +63,31 @@ class SalaireCalculator:
         totaux = pointage.calculer_totaux()
         jours_travailles = totaux["total_travailles"]  # Tr + Fe
         
-        # ⭐ NOUVEAU v3.5.3: Récupérer les congés RÉELS depuis la table conges
+        # ⭐ CORRECTION v3.6.1: Récupérer les congés dont le mois_deduction correspond au bulletin
+        # Si mois_deduction est NULL, on utilise le mois d'acquisition (comportement par défaut)
         from models import Conge
-        conge_record = self.db.query(Conge).filter(
-            Conge.employe_id == employe_id,
-            Conge.annee == annee,
-            Conge.mois == mois
-        ).first()
+        from sqlalchemy import or_, and_
         
-        jours_conges = float(conge_record.jours_conges_pris or 0) if conge_record else 0
+        # Récupérer TOUS les congés dont la déduction pointe vers ce mois
+        conges_a_deduire = self.db.query(Conge).filter(
+            Conge.employe_id == employe_id,
+            or_(
+                # Cas 1: mois_deduction est défini et correspond au mois du bulletin
+                and_(
+                    Conge.mois_deduction == mois,
+                    Conge.annee_deduction == annee
+                ),
+                # Cas 2: mois_deduction est NULL, on utilise le mois d'acquisition (ancien comportement)
+                and_(
+                    Conge.mois_deduction.is_(None),
+                    Conge.mois == mois,
+                    Conge.annee == annee
+                )
+            )
+        ).all()
+        
+        # Somme de tous les jours de congés à déduire de CE bulletin
+        jours_conges = sum(float(c.jours_conges_pris or 0) for c in conges_a_deduire)
         
         # Nombre de jours ouvrables du mois
         jours_ouvrables = self.params.jours_ouvrables_base
