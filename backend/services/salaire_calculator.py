@@ -63,31 +63,18 @@ class SalaireCalculator:
         totaux = pointage.calculer_totaux()
         jours_travailles = totaux["total_travailles"]  # Tr + Fe
         
-        # ⭐ CORRECTION v3.6.1: Récupérer les congés dont le mois_deduction correspond au bulletin
-        # Si mois_deduction est NULL, on utilise le mois d'acquisition (comportement par défaut)
-        from models import Conge
-        from sqlalchemy import or_, and_
+        # ⭐ NOUVELLE LOGIQUE v3.7.0: Récupérer les déductions de congés pour ce mois/année
+        # On interroge la table deductions_conges au lieu de conges.jours_conges_pris
+        from models import DeductionConge
         
-        # Récupérer TOUS les congés dont la déduction pointe vers ce mois
-        conges_a_deduire = self.db.query(Conge).filter(
-            Conge.employe_id == employe_id,
-            or_(
-                # Cas 1: mois_deduction est défini et correspond au mois du bulletin
-                and_(
-                    Conge.mois_deduction == mois,
-                    Conge.annee_deduction == annee
-                ),
-                # Cas 2: mois_deduction est NULL, on utilise le mois d'acquisition (ancien comportement)
-                and_(
-                    Conge.mois_deduction.is_(None),
-                    Conge.mois == mois,
-                    Conge.annee == annee
-                )
-            )
+        deductions = self.db.query(DeductionConge).filter(
+            DeductionConge.employe_id == employe_id,
+            DeductionConge.mois_deduction == mois,
+            DeductionConge.annee_deduction == annee
         ).all()
         
-        # Somme de tous les jours de congés à déduire de CE bulletin
-        jours_conges = sum(float(c.jours_conges_pris or 0) for c in conges_a_deduire)
+        # Somme de toutes les déductions pour CE bulletin
+        jours_conges = sum(float(d.jours_deduits or 0) for d in deductions)
         
         # Nombre de jours ouvrables du mois
         jours_ouvrables = self.params.jours_ouvrables_base

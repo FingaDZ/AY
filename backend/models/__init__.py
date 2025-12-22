@@ -5,6 +5,7 @@ from .mission import Mission, Parametre
 from .avance import Avance
 from .credit import Credit, RetenueCredit, ProrogationCredit, StatutCredit
 from .conge import Conge
+from .deduction_conge import DeductionConge
 from .attendance_mapping import (
     AttendanceEmployeeMapping,
     AttendanceSyncLog,

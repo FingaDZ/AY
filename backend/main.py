@@ -24,6 +24,7 @@ from routers import (
     logs,
     postes_travail,
     conges,
+    deductions_conges,  # v3.7.0: Nouvelle architecture déductions
     attendance_integration,
     incomplete_logs,
     logistics_types,
@@ -84,6 +85,7 @@ app.include_router(database_config.router, prefix="/api")
 app.include_router(logs.router, prefix="/api")
 app.include_router(postes_travail.router, prefix="/api")
 app.include_router(conges.router, prefix="/api")
+app.include_router(deductions_conges.router, prefix="/api")  # v3.7.0: Déductions congés
 app.include_router(attendance_integration.router, prefix="/api")
 app.include_router(incomplete_logs.router, prefix="/api")
 app.include_router(logistics_types.router, prefix="/api")

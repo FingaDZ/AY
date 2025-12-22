@@ -290,26 +290,79 @@ def update_consommation(
 
 @router.get("/synthese/{employe_id}")
 def get_synthese_conges(employe_id: int, db: Session = Depends(get_db)):
-    """Obtenir la synthèse des congés pour un employé (Total Acquis, Total Pris, Solde)"""
+    """
+    Obtenir la synthèse des congés pour un employé v3.7.0
+    
+    NOUVELLE ARCHITECTURE:
+    - Total Acquis: SUM(conges.jours_conges_acquis)
+    - Total Déduit: SUM(deductions_conges.jours_deduits)
+    - Solde: Total Acquis - Total Déduit
+    - Périodes: Liste détaillée avec solde cumulé
+    """
+    from models import DeductionConge
+    from sqlalchemy import or_, and_
     
     employe = db.query(Employe).filter(Employe.id == employe_id).first()
     if not employe:
         raise HTTPException(status_code=404, detail="Employé non trouvé")
-        
-    stats = db.query(
-        func.sum(Conge.jours_conges_acquis).label("total_acquis"),
-        func.sum(Conge.jours_conges_pris).label("total_pris")
-    ).filter(Conge.employe_id == employe_id).first()
     
-    total_acquis = float(stats.total_acquis or 0)
-    total_pris = float(stats.total_pris or 0)
-    solde = total_acquis - total_pris
+    # Total acquis (somme des congés acquis)
+    total_acquis = db.query(func.sum(Conge.jours_conges_acquis)).filter(
+        Conge.employe_id == employe_id
+    ).scalar() or 0
+    
+    # Total déduit (nouvelle table deductions_conges)
+    total_deduit = db.query(func.sum(DeductionConge.jours_deduits)).filter(
+        DeductionConge.employe_id == employe_id
+    ).scalar() or 0
+    
+    solde = float(total_acquis) - float(total_deduit)
+    
+    # Récupérer le détail des périodes avec solde cumulé
+    periodes = db.query(Conge).filter(
+        Conge.employe_id == employe_id
+    ).order_by(Conge.annee.asc(), Conge.mois.asc()).all()
+    
+    periodes_detail = []
+    solde_cumule = 0
+    
+    for periode in periodes:
+        # Acquis jusqu'à cette période
+        acquis_jusque = db.query(func.sum(Conge.jours_conges_acquis)).filter(
+            Conge.employe_id == employe_id,
+            or_(
+                Conge.annee < periode.annee,
+                and_(Conge.annee == periode.annee, Conge.mois <= periode.mois)
+            )
+        ).scalar() or 0
+        
+        # Déduit jusqu'à cette période (TOTAL global, pas par période)
+        deduit_jusque = db.query(func.sum(DeductionConge.jours_deduits)).filter(
+            DeductionConge.employe_id == employe_id
+        ).scalar() or 0
+        
+        solde_cumule = float(acquis_jusque) - float(deduit_jusque)
+        
+        # Déductions liées à cette période d'acquisition
+        deductions = db.query(DeductionConge).filter(
+            DeductionConge.employe_id == employe_id
+        ).all()
+        
+        periodes_detail.append({
+            "mois": periode.mois,
+            "annee": periode.annee,
+            "jours_travailles": periode.jours_travailles,
+            "jours_acquis": float(periode.jours_conges_acquis or 0),
+            "solde_cumule": round(solde_cumule, 2),
+            "nb_deductions": len(deductions)
+        })
     
     return {
         "employe": f"{employe.prenom} {employe.nom}",
-        "total_acquis": round(total_acquis, 2),
-        "total_pris": round(total_pris, 2),
-        "solde": round(solde, 2)
+        "total_acquis": round(float(total_acquis), 2),
+        "total_deduit": round(float(total_deduit), 2),
+        "solde": round(solde, 2),
+        "periodes": periodes_detail
     }
 
 @router.get("/verifier-saisie/{annee}/{mois}")
