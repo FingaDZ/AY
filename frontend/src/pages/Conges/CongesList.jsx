@@ -104,14 +104,13 @@ const CongesList = () => {
         return Object.values(grouped);
     };
 
-    const handleEdit = (employe, periodes) => {
-        // Trouver la dernière période pour édition
-        const lastPeriode = periodes[periodes.length - 1];
-        setCurrentConge(lastPeriode);
+    const handleEdit = (periode) => {
+        // Ouvrir la modal de saisie pour cette période spécifique
+        setCurrentConge(periode);
         form.setFieldsValue({
-            jours_pris: lastPeriode.jours_conges_pris,
-            mois_deduction: lastPeriode.mois_deduction || lastPeriode.mois,
-            annee_deduction: lastPeriode.annee_deduction || lastPeriode.annee
+            jours_pris: periode.jours_conges_pris,
+            mois_deduction: periode.mois_deduction || periode.mois,
+            annee_deduction: periode.annee_deduction || periode.annee
         });
         setIsModalVisible(true);
     };
@@ -222,7 +221,11 @@ const CongesList = () => {
                         type="primary"
                         size="small"
                         icon={<EditOutlined />}
-                        onClick={() => handleEdit(record, record.periodes)}
+                        onClick={() => {
+                            // Ouvrir modal pour la dernière période de cet employé
+                            const lastPeriode = record.periodes[record.periodes.length - 1];
+                            handleEdit(lastPeriode);
+                        }}
                     >
                         Éditer
                     </Button>
@@ -262,6 +265,20 @@ const CongesList = () => {
                 <Tag color={val >= 0 ? 'green' : 'red'}>
                     {Number(val).toFixed(2)} j
                 </Tag>
+            )
+        },
+        {
+            title: 'Actions',
+            key: 'actions',
+            width: 100,
+            render: (text, record) => (
+                <Button
+                    type="primary"
+                    size="small"
+                    onClick={() => handleEdit(record)}
+                >
+                    Saisie
+                </Button>
             )
         }
     ];
