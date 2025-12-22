@@ -25,6 +25,7 @@ const CongesList = () => {
     const [detailsEmployeId, setDetailsEmployeId] = useState(null);
     const [detailsPeriodes, setDetailsPeriodes] = useState([]);
     const [deductions, setDeductions] = useState([]);
+    const [detailsSynthese, setDetailsSynthese] = useState(null);  // v3.7.0: Synthèse pour modal
 
     // Stats globales
     const [synthese, setSynthese] = useState(null);
@@ -159,11 +160,20 @@ const CongesList = () => {
         setDeductionModalVisible(true);
     };
 
-    const handleShowDetails = (employe) => {
+    const handleShowDetails = async (employe) => {
         setDetailsEmploye(employe.employe_nom);
         setDetailsEmployeId(employe.employe_id);
         setDetailsPeriodes(employe.periodes);
         fetchDeductions(employe.employe_id);  // v3.7.0: Charger déductions
+        
+        // v3.7.0: Charger synthèse pour afficher le vrai solde
+        try {
+            const response = await api.get(`/conges/synthese/${employe.employe_id}`);
+            setDetailsSynthese(response.data);
+        } catch (error) {
+            console.error('Erreur chargement synthèse détails:', error);
+        }
+        
         setDetailsModalVisible(true);
     };
 
@@ -519,15 +529,15 @@ const CongesList = () => {
             >
                 <Descriptions bordered column={3} style={{ marginBottom: 16 }}>
                     <Descriptions.Item label="Total Acquis">
-                        <Tag color="blue">{detailsPeriodes.reduce((sum, p) => sum + (p.jours_conges_acquis || 0), 0).toFixed(2)}j</Tag>
+                        <Tag color="blue">{detailsSynthese ? detailsSynthese.total_acquis.toFixed(2) : detailsPeriodes.reduce((sum, p) => sum + (p.jours_conges_acquis || 0), 0).toFixed(2)}j</Tag>
                     </Descriptions.Item>
-                    <Descriptions.Item label="Solde Cumulé">
-                        <Tag color={detailsPeriodes.length > 0 && detailsPeriodes[detailsPeriodes.length - 1].jours_conges_restants >= 0 ? 'green' : 'red'}>
-                            {detailsPeriodes.length > 0 ? detailsPeriodes[detailsPeriodes.length - 1].jours_conges_restants.toFixed(2) : 0}j
+                    <Descriptions.Item label="Solde Réel">
+                        <Tag color={detailsSynthese && detailsSynthese.solde >= 0 ? 'green' : 'red'}>
+                            {detailsSynthese ? detailsSynthese.solde.toFixed(2) : '...'}j
                         </Tag>
                     </Descriptions.Item>
-                    <Descriptions.Item label="Déductions">
-                        <Tag color="orange">{deductions.length}</Tag>
+                    <Descriptions.Item label="Total Déduit">
+                        <Tag color="orange">{detailsSynthese ? detailsSynthese.total_deduit.toFixed(2) : deductions.reduce((sum, d) => sum + (d.jours_deduits || 0), 0).toFixed(2)}j</Tag>
                     </Descriptions.Item>
                 </Descriptions>
 
