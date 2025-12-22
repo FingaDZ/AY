@@ -108,9 +108,6 @@ def update_client(
         user=current_user,
         request=request
     )
-        description=f"Modification client #{client_id}",
-        new_data=clean_data_for_logging(client)
-    )
     
     db.commit()
     db.refresh(client)
