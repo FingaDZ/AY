@@ -109,7 +109,9 @@ const CongesList = () => {
         const lastPeriode = periodes[periodes.length - 1];
         setCurrentConge(lastPeriode);
         form.setFieldsValue({
-            jours_pris: lastPeriode.jours_conges_pris
+            jours_pris: lastPeriode.jours_conges_pris,
+            mois_deduction: lastPeriode.mois_deduction || lastPeriode.mois,
+            annee_deduction: lastPeriode.annee_deduction || lastPeriode.annee
         });
         setIsModalVisible(true);
     };
@@ -124,7 +126,9 @@ const CongesList = () => {
         try {
             const values = await form.validateFields();
             await api.put(`/conges/${currentConge.id}/consommation`, {
-                jours_pris: values.jours_pris
+                jours_pris: values.jours_pris,
+                mois_deduction: values.mois_deduction,
+                annee_deduction: values.annee_deduction
             });
             message.success("Consommation mise à jour");
             setIsModalVisible(false);
@@ -355,8 +359,55 @@ const CongesList = () => {
                         label="Jours Pris"
                         rules={[{ required: true, message: 'Veuillez saisir une valeur' }]}
                     >
-                        <InputNumber min={0} max={30} style={{ width: '100%' }} />
+                        <InputNumber min={0} max={30} step={0.5} style={{ width: '100%' }} />
                     </Form.Item>
+                    
+                    <div className="mb-4 p-3 bg-blue-50 rounded border border-blue-200">
+                        <p className="text-sm font-semibold text-blue-700 mb-2">📅 Affectation sur le bulletin de paie</p>
+                        <p className="text-xs text-blue-600 mb-3">
+                            Par défaut, les jours seront déduits du bulletin du mois d'acquisition. 
+                            Vous pouvez choisir un autre mois si nécessaire.
+                        </p>
+                        
+                        <Row gutter={16}>
+                            <Col span={12}>
+                                <Form.Item
+                                    name="mois_deduction"
+                                    label="Mois de déduction"
+                                    rules={[{ required: true, message: 'Requis' }]}
+                                >
+                                    <Select placeholder="Sélectionnez un mois">
+                                        <Option value={1}>Janvier</Option>
+                                        <Option value={2}>Février</Option>
+                                        <Option value={3}>Mars</Option>
+                                        <Option value={4}>Avril</Option>
+                                        <Option value={5}>Mai</Option>
+                                        <Option value={6}>Juin</Option>
+                                        <Option value={7}>Juillet</Option>
+                                        <Option value={8}>Août</Option>
+                                        <Option value={9}>Septembre</Option>
+                                        <Option value={10}>Octobre</Option>
+                                        <Option value={11}>Novembre</Option>
+                                        <Option value={12}>Décembre</Option>
+                                    </Select>
+                                </Form.Item>
+                            </Col>
+                            <Col span={12}>
+                                <Form.Item
+                                    name="annee_deduction"
+                                    label="Année de déduction"
+                                    rules={[{ required: true, message: 'Requis' }]}
+                                >
+                                    <InputNumber 
+                                        min={2020} 
+                                        max={2100} 
+                                        style={{ width: '100%' }} 
+                                        placeholder="2025"
+                                    />
+                                </Form.Item>
+                            </Col>
+                        </Row>
+                    </div>
                 </Form>
             </Modal>
 
