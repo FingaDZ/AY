@@ -14,6 +14,81 @@ from middleware.auth import get_current_user
 
 router = APIRouter(prefix="/conges", tags=["Congés"])
 
+def repartir_conges_intelligemment(
+    db: Session,
+    employe_id: int,
+    jours_a_prendre: float,
+    mois_deduction: int,
+    annee_deduction: int
+) -> List[dict]:
+    """
+    Répartir intelligemment les jours de congé à prendre sur les périodes disponibles.
+    
+    Logique:
+    1. Récupère toutes les périodes avec solde disponible (acquis > pris)
+    2. Trie par ancienneté (année, mois croissant)
+    3. Déduit d'abord des mois les plus anciens
+    4. Ne dépasse jamais les jours acquis de chaque période
+    
+    Args:
+        db: Session SQLAlchemy
+        employe_id: ID de l'employé
+        jours_a_prendre: Nombre total de jours à prendre
+        mois_deduction: Mois de déduction sur bulletin
+        annee_deduction: Année de déduction sur bulletin
+        
+    Returns:
+        Liste de dicts: [{'conge_id': int, 'jours_a_deduire': float, 'periode': str}, ...]
+        
+    Raises:
+        HTTPException: Si solde insuffisant
+    """
+    # Récupérer toutes les périodes avec leurs soldes disponibles
+    periodes = db.query(Conge).filter(
+        Conge.employe_id == employe_id
+    ).order_by(Conge.annee.asc(), Conge.mois.asc()).all()
+    
+    repartition = []
+    reste_a_prendre = jours_a_prendre
+    
+    for periode in periodes:
+        if reste_a_prendre <= 0:
+            break
+            
+        # Calcul du disponible pour cette période
+        acquis = float(periode.jours_conges_acquis or 0)
+        pris = float(periode.jours_conges_pris or 0)
+        disponible = acquis - pris
+        
+        if disponible <= 0:
+            continue  # Période déjà consommée
+        
+        # Prendre le minimum entre ce qui reste à prendre et ce qui est disponible
+        a_deduire = min(reste_a_prendre, disponible)
+        
+        repartition.append({
+            'conge_id': periode.id,
+            'periode': f"{periode.mois}/{periode.annee}",
+            'acquis': acquis,
+            'pris_avant': pris,
+            'jours_a_deduire': a_deduire,
+            'nouveau_pris': pris + a_deduire,
+            'mois_deduction': mois_deduction,
+            'annee_deduction': annee_deduction
+        })
+        
+        reste_a_prendre -= a_deduire
+    
+    # Vérifier si on a pu tout répartir
+    if reste_a_prendre > 0.01:  # Tolérance 0.01j pour erreurs d'arrondi
+        total_disponible = sum(r['jours_a_deduire'] for r in repartition)
+        raise HTTPException(
+            status_code=400,
+            detail=f"Solde insuffisant! Demande: {jours_a_prendre:.2f}j, Disponible: {total_disponible:.2f}j, Manque: {reste_a_prendre:.2f}j"
+        )
+    
+    return repartition
+
 # Schemas locaux pour éviter les dépendances circulaires ou complexes
 class CongeUpdate(BaseModel):
     jours_pris: float  # v3.5.3: Décimales supportées
@@ -96,7 +171,15 @@ def update_consommation(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
-    """Mettre à jour la consommation de congés pour un mois donné"""
+    """
+    Mettre à jour la consommation de congés avec répartition intelligente
+    
+    LOGIQUE v3.6.1:
+    - Si jours_pris saisis dépasse l'acquis de cette période
+    - Le système répartit automatiquement sur les périodes antérieures
+    - Déduction du plus ancien au plus récent
+    - Validation: ne jamais dépasser l'acquis de chaque période
+    """
     conge = db.query(Conge).filter(Conge.id == conge_id).first()
     if not conge:
         raise HTTPException(status_code=404, detail="Enregistrement congé non trouvé")
@@ -107,75 +190,95 @@ def update_consommation(
     # v3.5.3: VALIDATION STRICTE avec support décimales
     jours_pris = float(update.jours_pris)
     
-    # Calculer le total acquis pour cet employé
-    stats = db.query(
-        func.sum(Conge.jours_conges_acquis).label("total_acquis")
-    ).filter(Conge.employe_id == conge.employe_id).first()
+    # Mois et année de déduction (par défaut: mois d'acquisition)
+    mois_deduction = update.mois_deduction or conge.mois
+    annee_deduction = update.annee_deduction or conge.annee
     
-    total_acquis = float(stats.total_acquis or 0)
+    # Validation mois/année
+    if not (1 <= mois_deduction <= 12):
+        raise HTTPException(status_code=400, detail="Mois de déduction invalide (doit être entre 1 et 12)")
+    if annee_deduction < 2000 or annee_deduction > 2100:
+        raise HTTPException(status_code=400, detail="Année de déduction invalide")
     
-    # Calculer total pris (sans compter ce mois)
-    total_pris_autres = db.query(
-        func.sum(Conge.jours_conges_pris)
-    ).filter(
-        Conge.employe_id == conge.employe_id,
-        Conge.id != conge_id
-    ).scalar() or 0
+    # ⭐ NOUVEAU v3.6.1: Répartition intelligente
+    # Réinitialiser d'abord les jours_pris de toutes les périodes de cet employé
+    # (pour permettre un nouveau calcul propre)
+    periodes_employe = db.query(Conge).filter(
+        Conge.employe_id == conge.employe_id
+    ).all()
     
-    total_pris_prevu = float(total_pris_autres) + jours_pris
+    for p in periodes_employe:
+        p.jours_conges_pris = 0.0
     
-    # BLOCAGE: Interdire de prendre plus que l'acquis
-    if total_pris_prevu > total_acquis:
-        raise HTTPException(
-            status_code=400,
-            detail=f"INTERDIT: Congés pris ({total_pris_prevu:.2f}j) > Congés acquis ({total_acquis:.2f}j). Solde insuffisant!"
+    # Appliquer la répartition intelligente
+    try:
+        repartition = repartir_conges_intelligemment(
+            db=db,
+            employe_id=conge.employe_id,
+            jours_a_prendre=jours_pris,
+            mois_deduction=mois_deduction,
+            annee_deduction=annee_deduction
         )
+    except HTTPException as e:
+        # Restaurer les anciennes valeurs en cas d'erreur
+        for p in periodes_employe:
+            db.refresh(p)
+        raise e
     
-    # Mise à jour (v3.5.3: avec décimales)
-    conge.jours_conges_pris = jours_pris
+    # Appliquer la répartition calculée
+    messages_repartition = []
+    for item in repartition:
+        periode_conge = db.query(Conge).filter(Conge.id == item['conge_id']).first()
+        if periode_conge:
+            periode_conge.jours_conges_pris = item['nouveau_pris']
+            periode_conge.mois_deduction = item['mois_deduction']
+            periode_conge.annee_deduction = item['annee_deduction']
+            messages_repartition.append(
+                f"  • {item['periode']}: {item['jours_a_deduire']:.2f}j (acquis {item['acquis']:.2f}j)"
+            )
     
-    # Mise à jour du mois/année de déduction si fournis
-    if update.mois_deduction is not None:
-        if not (1 <= update.mois_deduction <= 12):
-            raise HTTPException(status_code=400, detail="Mois de déduction invalide (doit être entre 1 et 12)")
-        conge.mois_deduction = update.mois_deduction
+    # Recalculer les soldes cumulés pour toutes les périodes
+    periodes_triees = sorted(periodes_employe, key=lambda p: (p.annee, p.mois))
+    for periode in periodes_triees:
+        stats_cumul = db.query(
+            func.sum(Conge.jours_conges_acquis).label("total_acquis"),
+            func.sum(Conge.jours_conges_pris).label("total_pris")
+        ).filter(
+            Conge.employe_id == conge.employe_id,
+            (Conge.annee < periode.annee) | ((Conge.annee == periode.annee) & (Conge.mois <= periode.mois))
+        ).first()
         
-    if update.annee_deduction is not None:
-        if update.annee_deduction < 2000 or update.annee_deduction > 2100:
-            raise HTTPException(status_code=400, detail="Année de déduction invalide")
-        conge.annee_deduction = update.annee_deduction
-    
-    # ⭐ CORRECTION v3.6.1: Recalcul du SOLDE CUMULÉ (pas juste cette période)
-    # Solde = (Total acquis depuis début) - (Total pris depuis début)
-    stats_cumul = db.query(
-        func.sum(Conge.jours_conges_acquis).label("total_acquis"),
-        func.sum(Conge.jours_conges_pris).label("total_pris")
-    ).filter(
-        Conge.employe_id == conge.employe_id,
-        (Conge.annee < conge.annee) | ((Conge.annee == conge.annee) & (Conge.mois <= conge.mois))
-    ).first()
-    
-    total_acquis_cumul = float(stats_cumul.total_acquis or 0)
-    total_pris_cumul = float(stats_cumul.total_pris or 0)
-    conge.jours_conges_restants = total_acquis_cumul - total_pris_cumul
+        total_acquis_cumul = float(stats_cumul.total_acquis or 0)
+        total_pris_cumul = float(stats_cumul.total_pris or 0)
+        periode.jours_conges_restants = total_acquis_cumul - total_pris_cumul
     
     db.commit()
     db.refresh(conge)
     
-    # Log l'action
+    # Log l'action avec détails de répartition
+    description = f"Modification consommation congés - Employé #{conge.employe_id}\n" \
+                  f"Total saisi: {jours_pris:.2f}j\n" \
+                  f"Déduction sur bulletin: {mois_deduction}/{annee_deduction}\n" \
+                  f"Répartition automatique:\n" + "\n".join(messages_repartition)
+    
     log_action(
         db=db,
         module_name="conges",
         action_type=ActionType.UPDATE,
         record_id=conge_id,
         old_data={"jours_pris": old_jours_pris},
-        new_data={"jours_pris": jours_pris},
-        description=f"Modification consommation congés {conge.mois}/{conge.annee} - Employé #{conge.employe_id}",
+        new_data={"jours_pris": jours_pris, "repartition": repartition},
+        description=description,
         user=current_user,
         request=request
     )
     
-    return {"message": "Consommation mise à jour", "conge_id": conge.id}
+    return {
+        "message": "Consommation mise à jour avec répartition intelligente",
+        "conge_id": conge.id,
+        "repartition": repartition,
+        "details": messages_repartition
+    }
 
 @router.get("/synthese/{employe_id}")
 def get_synthese_conges(employe_id: int, db: Session = Depends(get_db)):

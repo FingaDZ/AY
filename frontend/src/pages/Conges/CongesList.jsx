@@ -124,18 +124,34 @@ const CongesList = () => {
     const handleSave = async () => {
         try {
             const values = await form.validateFields();
-            await api.put(`/conges/${currentConge.id}/consommation`, {
+            const response = await api.put(`/conges/${currentConge.id}/consommation`, {
                 jours_pris: values.jours_pris,
                 mois_deduction: values.mois_deduction,
                 annee_deduction: values.annee_deduction
             });
-            message.success("Consommation mise à jour");
+            
+            // Afficher message avec détails de répartition
+            if (response.data.repartition && response.data.repartition.length > 1) {
+                const details = response.data.details.join('\n');
+                message.success(
+                    <div>
+                        <strong>✅ Répartition automatique effectuée!</strong>
+                        <pre style={{fontSize: '11px', marginTop: '8px', whiteSpace: 'pre-wrap'}}>
+                            {details}
+                        </pre>
+                    </div>,
+                    8
+                );
+            } else {
+                message.success("Consommation mise à jour");
+            }
+            
             setIsModalVisible(false);
             fetchConges();
             if (selectedEmploye) fetchSynthese(selectedEmploye);
         } catch (error) {
             const errorMsg = error.response?.data?.detail || "Erreur lors de la mise à jour";
-            message.error(errorMsg, 5);
+            message.error(errorMsg, 8);
             console.error('Erreur:', error);
         }
     };
@@ -366,10 +382,22 @@ const CongesList = () => {
                 open={isModalVisible}
                 onOk={handleSave}
                 onCancel={() => setIsModalVisible(false)}
+                width={650}
             >
                 <Form form={form} layout="vertical">
+                    <div className="mb-4 p-3 bg-green-50 rounded border border-green-200">
+                        <p className="text-sm font-semibold text-green-700 mb-2">
+                            🤖 Répartition Intelligente Activée
+                        </p>
+                        <p className="text-xs text-green-600">
+                            Si vous saisissez plus de jours que le solde disponible pour cette période, 
+                            le système <strong>répartira automatiquement</strong> sur les périodes antérieures 
+                            (du plus ancien au plus récent). Exemple: 5j demandés = 2.5j (oct) + 2.42j (nov) + 0.08j (déc).
+                        </p>
+                    </div>
+                    
                     <p className="mb-4 text-gray-500">
-                        Saisissez le nombre de jours de congé pris pour la période {currentConge?.mois}/{currentConge?.annee}.
+                        Période sélectionnée: <strong>{currentConge?.mois}/{currentConge?.annee}</strong>
                     </p>
                     <Form.Item
                         name="jours_pris"
