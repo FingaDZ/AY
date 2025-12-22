@@ -145,8 +145,19 @@ def update_consommation(
             raise HTTPException(status_code=400, detail="Année de déduction invalide")
         conge.annee_deduction = update.annee_deduction
     
-    # Recalcul du reste
-    conge.jours_conges_restants = float(conge.jours_conges_acquis or 0) - float(conge.jours_conges_pris or 0)
+    # ⭐ CORRECTION v3.6.1: Recalcul du SOLDE CUMULÉ (pas juste cette période)
+    # Solde = (Total acquis depuis début) - (Total pris depuis début)
+    stats_cumul = db.query(
+        func.sum(Conge.jours_conges_acquis).label("total_acquis"),
+        func.sum(Conge.jours_conges_pris).label("total_pris")
+    ).filter(
+        Conge.employe_id == conge.employe_id,
+        (Conge.annee < conge.annee) | ((Conge.annee == conge.annee) & (Conge.mois <= conge.mois))
+    ).first()
+    
+    total_acquis_cumul = float(stats_cumul.total_acquis or 0)
+    total_pris_cumul = float(stats_cumul.total_pris or 0)
+    conge.jours_conges_restants = total_acquis_cumul - total_pris_cumul
     
     db.commit()
     db.refresh(conge)

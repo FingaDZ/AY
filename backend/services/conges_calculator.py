@@ -4,6 +4,7 @@ Permet de calculer et enregistrer les congés dès qu'un pointage est créé/mod
 """
 
 from sqlalchemy.orm import Session
+from sqlalchemy import func
 from models import Conge, Pointage, Employe
 from datetime import datetime
 from typing import Optional
@@ -93,7 +94,21 @@ def calculer_et_enregistrer_conges(
         conge_existant.jours_travailles = jours_reellement_travailles
         conge_existant.jours_conges_acquis = jours_conges_acquis
         # jours_conges_pris reste inchangé (saisi manuellement par utilisateur)
-        conge_existant.jours_conges_restants = float(jours_conges_acquis) - float(conge_existant.jours_conges_pris or 0)
+        
+        # ⭐ CORRECTION v3.6.1: Calculer le SOLDE CUMULÉ (pas le solde de période)
+        # Solde = (Total acquis depuis début) - (Total pris depuis début)
+        from sqlalchemy import func
+        stats = db.query(
+            func.sum(Conge.jours_conges_acquis).label("total_acquis"),
+            func.sum(Conge.jours_conges_pris).label("total_pris")
+        ).filter(
+            Conge.employe_id == employe_id,
+            (Conge.annee < annee) | ((Conge.annee == annee) & (Conge.mois <= mois))
+        ).first()
+        
+        total_acquis = float(stats.total_acquis or 0)
+        total_pris = float(stats.total_pris or 0)
+        conge_existant.jours_conges_restants = total_acquis - total_pris
         
         print(f"[CONGES] Mise à jour conge #{conge_existant.id}")
         
@@ -101,7 +116,22 @@ def calculer_et_enregistrer_conges(
         db.refresh(conge_existant)
         return conge_existant
     else:
-        # Création
+        # Création: Calculer le solde cumulé incluant cette période
+        # Solde = (Total acquis jusqu'à ce mois) - (Total pris jusqu'à ce mois)
+        stats_creation = db.query(
+            func.sum(Conge.jours_conges_acquis).label("total_acquis"),
+            func.sum(Conge.jours_conges_pris).label("total_pris")
+        ).filter(
+            Conge.employe_id == employe_id,
+            (Conge.annee < annee) | ((Conge.annee == annee) & (Conge.mois < mois))
+        ).first()
+        
+        total_acquis_avant = float(stats_creation.total_acquis or 0)
+        total_pris_avant = float(stats_creation.total_pris or 0)
+        
+        # Solde cumulé = solde précédent + acquis ce mois - pris ce mois (0 à la création)
+        solde_cumule = total_acquis_avant + jours_conges_acquis - total_pris_avant
+        
         nouveau_conge = Conge(
             employe_id=employe_id,
             annee=annee,
@@ -109,7 +139,7 @@ def calculer_et_enregistrer_conges(
             jours_travailles=jours_reellement_travailles,
             jours_conges_acquis=jours_conges_acquis,
             jours_conges_pris=0.0,  # Initialisé à 0, sera saisi manuellement
-            jours_conges_restants=jours_conges_acquis
+            jours_conges_restants=solde_cumule
         )
         
         db.add(nouveau_conge)
