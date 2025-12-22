@@ -47,3 +47,7 @@ rapports/
 # Backup
 *.bak
 *.backup
+
+# Installer - Fichiers volumineux
+installer/package/
+installer/AY_HR_Setup_*.exe

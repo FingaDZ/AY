@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
 from sqlalchemy import func
@@ -7,7 +7,7 @@ from decimal import Decimal
 from datetime import date as date_type
 
 from database import get_db
-from models import Avance, Employe, Parametres
+from models import Avance, Employe, Parametres, User
 from schemas import (
     AvanceCreate,
     AvanceUpdate,
@@ -22,7 +22,7 @@ from middleware.auth import require_gestionnaire  # ⭐ v3.6.0: Permissions
 router = APIRouter(prefix="/avances", tags=["Avances"])
 
 @router.post("/", response_model=AvanceResponse, status_code=201)
-def create_avance(avance: AvanceCreate, db: Session = Depends(get_db), _: None = Depends(require_gestionnaire)):
+def create_avance(avance: AvanceCreate, request: Request, db: Session = Depends(get_db), current_user: User = Depends(require_gestionnaire)):
     """Créer une nouvelle avance"""
     
     # Vérifier que l'employé existe
@@ -62,8 +62,11 @@ def create_avance(avance: AvanceCreate, db: Session = Depends(get_db), _: None =
         db=db,
         module_name="avances",
         action_type=ActionType.CREATE,
+        record_id=db_avance.id,
         description=f"Création avance #{db_avance.id} pour {employe.prenom} {employe.nom} - Montant: {avance.montant} DA",
-        new_data=clean_data_for_logging(db_avance)
+        new_data=clean_data_for_logging(db_avance),
+        user=current_user,
+        request=request
     )
     
     return db_avance
@@ -154,8 +157,9 @@ def get_avance(avance_id: int, db: Session = Depends(get_db)):
 def update_avance(
     avance_id: int,
     avance_update: AvanceUpdate,
+    request: Request,
     db: Session = Depends(get_db),
-    _: None = Depends(require_gestionnaire)
+    current_user: User = Depends(require_gestionnaire)
 ):
     """Mettre à jour une avance avec validation de la limite 70%"""
     
@@ -210,8 +214,11 @@ def update_avance(
         db=db,
         module_name="avances",
         action_type=ActionType.UPDATE,
+        record_id=avance_id,
         description=f"Modification avance #{avance_id}",
-        new_data=clean_data_for_logging(avance)
+        new_data=clean_data_for_logging(avance),
+        user=current_user,
+        request=request
     )
     
     db.commit()
@@ -220,7 +227,7 @@ def update_avance(
     return avance
 
 @router.delete("/{avance_id}", status_code=204)
-def delete_avance(avance_id: int, db: Session = Depends(get_db), _: None = Depends(require_gestionnaire)):
+def delete_avance(avance_id: int, request: Request, db: Session = Depends(get_db), current_user: User = Depends(require_gestionnaire)):
     """Supprimer une avance"""
     
     avance = db.query(Avance).filter(Avance.id == avance_id).first()
@@ -233,8 +240,11 @@ def delete_avance(avance_id: int, db: Session = Depends(get_db), _: None = Depen
         db=db,
         module_name="avances",
         action_type=ActionType.DELETE,
+        record_id=avance_id,
         description=f"Suppression avance #{avance_id}",
-        old_data=clean_data_for_logging(avance)
+        old_data=clean_data_for_logging(avance),
+        user=current_user,
+        request=request
     )
     
     db.delete(avance)

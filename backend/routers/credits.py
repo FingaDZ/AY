@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
 from typing import Optional
@@ -7,7 +7,7 @@ from datetime import date
 from dateutil.relativedelta import relativedelta
 
 from database import get_db
-from models import Credit, RetenueCredit, ProrogationCredit, Employe, StatutCredit
+from models import Credit, RetenueCredit, ProrogationCredit, Employe, StatutCredit, User
 from schemas import (
     CreditCreate,
     CreditUpdate,
@@ -23,7 +23,7 @@ from middleware.auth import require_gestionnaire  # ⭐ v3.6.0: Permissions
 router = APIRouter(prefix="/credits", tags=["Crédits"])
 
 @router.post("/", response_model=CreditResponse, status_code=201)
-def create_credit(credit: CreditCreate, db: Session = Depends(get_db), _: None = Depends(require_gestionnaire)):
+def create_credit(credit: CreditCreate, request: Request, db: Session = Depends(get_db), current_user: User = Depends(require_gestionnaire)):
     """Créer un nouveau crédit"""
     
     # Vérifier que l'employé existe
@@ -34,6 +34,16 @@ def create_credit(credit: CreditCreate, db: Session = Depends(get_db), _: None =
     # Calculer la mensualité
     montant_mensualite = credit.montant_total / Decimal(credit.nombre_mensualites)
     
+    # Calculer mois/année de début (mois suivant la date d'octroi)
+    date_debut = credit.date_octroi + relativedelta(months=1)
+    mois_debut = date_debut.month
+    annee_debut = date_debut.year
+    
+    # Calculer mois/année de fin prévu
+    date_fin_prevu = date_debut + relativedelta(months=credit.nombre_mensualites - 1)
+    mois_fin_prevu = date_fin_prevu.month
+    annee_fin_prevu = date_fin_prevu.year
+    
     db_credit = Credit(
         employe_id=credit.employe_id,
         date_octroi=credit.date_octroi,
@@ -41,7 +51,11 @@ def create_credit(credit: CreditCreate, db: Session = Depends(get_db), _: None =
         nombre_mensualites=credit.nombre_mensualites,
         montant_mensualite=montant_mensualite,
         montant_retenu=Decimal(0),
-        statut=StatutCredit.EN_COURS
+        statut=StatutCredit.EN_COURS,
+        mois_debut=mois_debut,
+        annee_debut=annee_debut,
+        mois_fin_prevu=mois_fin_prevu,
+        annee_fin_prevu=annee_fin_prevu
     )
     
     db.add(db_credit)
@@ -53,8 +67,11 @@ def create_credit(credit: CreditCreate, db: Session = Depends(get_db), _: None =
         db=db,
         module_name="credits",
         action_type=ActionType.CREATE,
+        record_id=db_credit.id,
         description=f"Création crédit #{db_credit.id} pour {employe.prenom} {employe.nom} - Montant: {credit.montant_total} DA",
-        new_data=clean_data_for_logging(db_credit)
+        new_data=clean_data_for_logging(db_credit),
+        user=current_user,
+        request=request
     )
     
     return db_credit
@@ -235,8 +252,9 @@ def get_echeancier_credit(credit_id: int, db: Session = Depends(get_db)):
 def update_credit(
     credit_id: int,
     credit_update: CreditUpdate,
+    request: Request,
     db: Session = Depends(get_db),
-    _: None = Depends(require_gestionnaire)
+    current_user: User = Depends(require_gestionnaire)
 ):
     """Mettre à jour un crédit (nombre de mensualités)"""
     
@@ -255,8 +273,11 @@ def update_credit(
         db=db,
         module_name="credits",
         action_type=ActionType.UPDATE,
+        record_id=credit_id,
         description=f"Modification crédit #{credit_id}",
-        new_data=clean_data_for_logging(credit)
+        new_data=clean_data_for_logging(credit),
+        user=current_user,
+        request=request
     )
     
     db.commit()
@@ -268,8 +289,9 @@ def update_credit(
 def create_prorogation(
     credit_id: int,
     prorogation: ProrogationCreditCreate,
+    request: Request,
     db: Session = Depends(get_db),
-    _: None = Depends(require_gestionnaire)
+    current_user: User = Depends(require_gestionnaire)
 ):
     """Créer une prorogation (report de mensualité)"""
     
@@ -293,8 +315,9 @@ def enregistrer_retenue(
     credit_id: int,
     mois: int = Query(..., ge=1, le=12),
     annee: int = Query(..., ge=2000),
+    request: Request = None,
     db: Session = Depends(get_db),
-    _: None = Depends(require_gestionnaire)
+    current_user: User = Depends(require_gestionnaire)
 ):
     """Enregistrer une retenue mensuelle pour un crédit"""
     
@@ -364,7 +387,7 @@ def enregistrer_retenue(
     }
 
 @router.delete("/{credit_id}", status_code=204)
-def delete_credit(credit_id: int, db: Session = Depends(get_db), _: None = Depends(require_gestionnaire)):
+def delete_credit(credit_id: int, request: Request, db: Session = Depends(get_db), current_user: User = Depends(require_gestionnaire)):
     """Supprimer un crédit"""
     
     credit = db.query(Credit).filter(Credit.id == credit_id).first()
@@ -377,8 +400,11 @@ def delete_credit(credit_id: int, db: Session = Depends(get_db), _: None = Depen
         db=db,
         module_name="credits",
         action_type=ActionType.DELETE,
+        record_id=credit_id,
         description=f"Suppression crédit #{credit_id}",
-        old_data=clean_data_for_logging(credit)
+        old_data=clean_data_for_logging(credit),
+        user=current_user,
+        request=request
     )
     
     db.delete(credit)

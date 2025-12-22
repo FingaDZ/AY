@@ -20,6 +20,10 @@ class Conge(Base):
     type_conge = Column(String(50), nullable=True, default="ANNUEL", comment="Type: ANNUEL, MALADIE, AUTRE")
     commentaire = Column(String(500), nullable=True, comment="Commentaire ou raison")
     
+    # Mois de déduction pour bulletin de paie (peut être différent du mois d'acquisition)
+    mois_deduction = Column(Integer, nullable=True, comment="Mois où les jours de congé sont déduits du salaire (1-12)")
+    annee_deduction = Column(Integer, nullable=True, comment="Année où les jours de congé sont déduits du salaire")
+    
     date_calcul = Column(DateTime, server_default=func.now())
     derniere_mise_a_jour = Column(DateTime, server_default=func.now(), onupdate=func.now())
     

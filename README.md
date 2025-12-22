@@ -1,4 +1,4 @@
-# AY HR System v3.6.0
+# AY HR System v3.6.1
 
 ## 🚀 Installation Rapide
 
@@ -24,7 +24,36 @@ Guide complet: [INSTALL_DOCKER.md](INSTALL_DOCKER.md)
 
 ---
 
-## 🎉 Nouveautés Version 3.6.0 (Décembre 2025)
+## 🎉 Nouveautés Version 3.6.1 (Décembre 2025)
+
+### 📅 **GESTION AVANCÉE DES CONGÉS**
+- **Mois de déduction flexible**: Les congés peuvent être déduits dans un mois différent de leur acquisition
+- Nouvelles colonnes `mois_deduction` et `annee_deduction` pour une comptabilité précise
+- Intégration complète avec les bulletins de paie
+
+### 💰 **CALCULS PRÉCIS CRÉDITS & AVANCES**
+- **Échéancier automatique**: Calcul automatique des dates début/fin pour les crédits
+- Nouvelles colonnes: `mois_debut`, `annee_debut`, `mois_fin_prevu`, `annee_fin_prevu`
+- Validation renforcée des périodes de retenue
+- Contrôle strict 70% pour les avances maintenu
+
+### 🔄 **AUTO-DÉSACTIVATION CONTRATS EXPIRÉS**
+- **Service automatique**: Détection et désactivation des employés avec contrat expiré
+- 3 nouvelles routes API:
+  - `GET /employes/contrats-expires`: Lister sans désactiver
+  - `POST /employes/verifier-contrats-expires`: Désactiver automatiquement (Admin)
+  - `POST /employes/mettre-a-jour-dates-fin-contrat`: Calculer dates manquantes
+- Workflow de réactivation contrôlé (mise à jour manuelle requise)
+- Logging complet de toutes les désactivations
+
+### 🔒 **LOGGING AMÉLIORÉ**
+- Tous les logs incluent maintenant `user_id`, `user_email` et `ip_address`
+- Ajout du `record_id` pour traçabilité complète
+- Amélioration de l'audit pour Congés, Crédits, Avances, Missions, Clients
+
+---
+
+## 📋 Version 3.6.0 (Précédente)
 
 ### 🚗 **GESTION CAMIONS**
 - Nouveau module de gestion du parc camions (Marque, Modèle, Immatriculation)

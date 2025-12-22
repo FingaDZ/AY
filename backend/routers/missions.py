@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
 from sqlalchemy import func
@@ -7,7 +7,7 @@ from decimal import Decimal
 from io import BytesIO
 
 from database import get_db
-from models import Mission, Employe, Client, Parametre
+from models import Mission, Employe, Client, Parametre, User
 from schemas import (
     MissionCreate,
     MissionResponse,
@@ -41,7 +41,7 @@ def get_tarif_km(db: Session) -> Decimal:
 from services.mission_service import MissionService
 
 @router.post("/", response_model=MissionResponse, status_code=201)
-def create_mission(mission: MissionCreate, db: Session = Depends(get_db), _: None = Depends(require_gestionnaire)):
+def create_mission(mission: MissionCreate, request: Request, db: Session = Depends(get_db), current_user: User = Depends(require_gestionnaire)):
     """Créer une nouvelle mission"""
     service = MissionService(db)
     db_mission = service.create_mission(mission)
@@ -54,8 +54,11 @@ def create_mission(mission: MissionCreate, db: Session = Depends(get_db), _: Non
         db=db,
         module_name="missions",
         action_type=ActionType.CREATE,
+        record_id=db_mission.id,
         description=f"Création mission #{db_mission.id} pour {chauffeur.prenom} {chauffeur.nom} - Client: {client.nom}",
-        new_data=clean_data_for_logging(db_mission)
+        new_data=clean_data_for_logging(db_mission),
+        user=current_user,
+        request=request
     )
     
     return db_mission
@@ -64,7 +67,8 @@ def create_mission(mission: MissionCreate, db: Session = Depends(get_db), _: Non
 def update_mission(
     mission_id: int,
     mission: MissionCreate,
-    _: None = Depends(require_gestionnaire),
+    request: Request,
+    current_user: User = Depends(require_gestionnaire),
     db: Session = Depends(get_db)
 ):
     """Modifier une mission existante"""
@@ -76,8 +80,11 @@ def update_mission(
         db=db,
         module_name="missions",
         action_type=ActionType.UPDATE,
+        record_id=mission_id,
         description=f"Modification mission #{mission_id}",
-        new_data=clean_data_for_logging(db_mission)
+        new_data=clean_data_for_logging(db_mission),
+        user=current_user,
+        request=request
     )
     
     return db_mission
@@ -85,8 +92,9 @@ def update_mission(
 @router.delete("/{mission_id}", status_code=204)
 def delete_mission(
     mission_id: int,
+    request: Request,
     db: Session = Depends(get_db),
-    _: None = Depends(require_gestionnaire)
+    current_user: User = Depends(require_gestionnaire)
 ):
     """Supprimer une mission"""
     
@@ -98,6 +106,13 @@ def delete_mission(
     log_action(
         db=db,
         module_name="missions",
+        action_type=ActionType.DELETE,
+        record_id=mission_id,
+        description=f"Suppression mission #{mission_id}",
+        old_data=clean_data_for_logging(db_mission),
+        user=current_user,
+        request=request
+    )
         action_type=ActionType.DELETE,
         description=f"Suppression mission #{mission_id}",
         old_data=clean_data_for_logging(db_mission)

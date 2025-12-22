@@ -20,6 +20,12 @@ class Credit(Base):
     montant_retenu = Column(Numeric(12, 2), default=0, nullable=False)  # Cumul des retenues
     statut = Column(SQLEnum(StatutCredit), default=StatutCredit.EN_COURS, nullable=False)
     
+    # Dates de début et fin prévisionnelles
+    mois_debut = Column(Integer, nullable=True, comment="Mois de début des retenues (1-12)")
+    annee_debut = Column(Integer, nullable=True, comment="Année de début des retenues")
+    mois_fin_prevu = Column(Integer, nullable=True, comment="Mois de fin prévu des retenues (1-12)")
+    annee_fin_prevu = Column(Integer, nullable=True, comment="Année de fin prévue des retenues")
+    
     # Relations
     employe = relationship("Employe", back_populates="credits")
     retenues = relationship("RetenueCredit", back_populates="credit", cascade="all, delete-orphan")

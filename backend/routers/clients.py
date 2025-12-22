@@ -1,11 +1,11 @@
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
 from typing import Optional
 from datetime import date
 
 from database import get_db
-from models import Client
+from models import Client, User
 from schemas import (
     ClientCreate,
     ClientUpdate,
@@ -20,7 +20,7 @@ from middleware.auth import require_gestionnaire  # ⭐ v3.6.0: Permissions
 router = APIRouter(prefix="/clients", tags=["Clients"])
 
 @router.post("/", response_model=ClientResponse, status_code=201)
-def create_client(client: ClientCreate, db: Session = Depends(get_db), _: None = Depends(require_gestionnaire)):
+def create_client(client: ClientCreate, request: Request, db: Session = Depends(get_db), current_user: User = Depends(require_gestionnaire)):
     """Créer un nouveau client"""
     
     db_client = Client(**client.model_dump())
@@ -33,8 +33,11 @@ def create_client(client: ClientCreate, db: Session = Depends(get_db), _: None =
         db=db,
         module_name="clients",
         action_type=ActionType.CREATE,
+        record_id=db_client.id,
         description=f"Création client #{db_client.id} - {client.prenom} {client.nom}",
-        new_data=clean_data_for_logging(db_client)
+        new_data=clean_data_for_logging(db_client),
+        user=current_user,
+        request=request
     )
     
     return db_client
@@ -78,8 +81,9 @@ def get_client(client_id: int, db: Session = Depends(get_db)):
 def update_client(
     client_id: int,
     client_update: ClientUpdate,
+    request: Request,
     db: Session = Depends(get_db),
-    _: None = Depends(require_gestionnaire)
+    current_user: User = Depends(require_gestionnaire)
 ):
     """Mettre à jour un client"""
     
@@ -98,6 +102,12 @@ def update_client(
         db=db,
         module_name="clients",
         action_type=ActionType.UPDATE,
+        record_id=client_id,
+        description=f"Modification client #{client_id}",
+        new_data=clean_data_for_logging(client),
+        user=current_user,
+        request=request
+    )
         description=f"Modification client #{client_id}",
         new_data=clean_data_for_logging(client)
     )
@@ -108,7 +118,7 @@ def update_client(
     return client
 
 @router.delete("/{client_id}", status_code=204)
-def delete_client(client_id: int, db: Session = Depends(get_db), _: None = Depends(require_gestionnaire)):
+def delete_client(client_id: int, request: Request, db: Session = Depends(get_db), current_user: User = Depends(require_gestionnaire)):
     """Supprimer un client"""
     from models.mission_client_detail import MissionClientDetail
     
@@ -133,8 +143,11 @@ def delete_client(client_id: int, db: Session = Depends(get_db), _: None = Depen
         db=db,
         module_name="clients",
         action_type=ActionType.DELETE,
+        record_id=client_id,
         description=f"Suppression client #{client_id}",
-        old_data=clean_data_for_logging(client)
+        old_data=clean_data_for_logging(client),
+        user=current_user,
+        request=request
     )
     
     db.delete(client)

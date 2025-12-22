@@ -1,3 +1,81 @@
+## [3.6.1] - 2025-12-22
+
+### ✨ Nouvelles Fonctionnalités
+
+#### 📅 Gestion Avancée des Congés
+- **Mois de déduction flexible** : Les congés peuvent maintenant être déduits dans un mois différent de leur acquisition
+- Ajout colonnes `mois_deduction` (1-12) et `annee_deduction` dans la table `conges`
+- Validation stricte des dates (mois: 1-12, année: 2000-2100)
+- Intégration complète avec les bulletins de paie pour comptabilité précise
+
+#### 💰 Calculs Précis Crédits & Avances
+- **Échéancier automatique** : Calcul automatique des dates de début et fin lors de la création d'un crédit
+- Ajout colonnes : `mois_debut`, `annee_debut`, `mois_fin_prevu`, `annee_fin_prevu`
+- Début des retenues : mois suivant la date d'octroi
+- Fin calculée automatiquement selon le nombre de mensualités
+- Validation renforcée des périodes de retenue
+- Contrôle strict 70% du salaire pour les avances maintenu
+
+#### 🔄 Auto-Désactivation Contrats Expirés
+- **Service automatique** : Nouveau service de détection et désactivation des employés avec contrat expiré
+- Création service `employe_service.py` avec 3 fonctions principales
+- 3 nouveaux endpoints API :
+  - `GET /employes/contrats-expires` : Lister sans désactiver
+  - `POST /employes/verifier-contrats-expires` : Désactiver automatiquement (Admin uniquement)
+  - `POST /employes/mettre-a-jour-dates-fin-contrat` : Calculer dates manquantes (Admin uniquement)
+- Workflow de réactivation contrôlé (mise à jour manuelle date_fin_contrat + actif)
+- Logging complet de toutes les désactivations automatiques
+
+#### 🔒 Logging Amélioré
+- **Traçabilité complète** : Tous les logs incluent maintenant :
+  - `user_id` et `user_email` : Identification de l'utilisateur
+  - `ip_address` : Adresse IP de la requête
+  - `record_id` : ID de l'enregistrement modifié
+- Modules concernés : Congés, Crédits, Avances, Missions, Clients, Employés
+- Amélioration de l'audit et de la conformité
+
+### 🔧 Améliorations Techniques
+
+#### Backend
+- Modèles Congé et Crédit : Nouvelles colonnes avec commentaires
+- Service employé : Gestion automatique des contrats
+- Routers : Logging enrichi dans 6 modules
+- Configuration : Version 3.6.1
+
+#### Frontend
+- Version affichée : v3.6.1 (Dashboard et Login)
+- Package.json : Version 3.6.1
+
+#### Base de Données (MySQL)
+- Script migration `migration_v3.6.1_conges_credits_contrats.sql`
+- 6 nouvelles colonnes (2 congés + 4 crédits)
+- 3 index ajoutés pour optimisation des performances
+- Mise à jour automatique des données existantes
+
+### 🐛 Correctifs
+- **Migration SQL** : Syntaxe corrigée de PostgreSQL vers MySQL
+  - `EXTRACT()` → `MONTH()`, `YEAR()`
+  - `COMMENT ON COLUMN` → `COMMENT` inline
+  - `INTEGER` → `INT`
+  - `WHERE` dans index → syntaxe MySQL
+  - `DATE_ADD()` avec `INTERVAL`
+- Validation dates renforcée pour crédits et avances
+- Index optimisés pour meilleures performances
+
+### 📚 Documentation
+- **RELEASE_V3.6.1.md** : Documentation complète des nouvelles fonctionnalités
+- **UPGRADE_V3.6.1.md** : Guide de mise à jour détaillé avec checklist
+- **GIT_DEPLOY_v3.6.1.md** : Instructions Git et déploiement GitHub
+- **SUMMARY_v3.6.1.md** : Résumé technique complet
+- **README.md** : Section nouveautés v3.6.1 ajoutée
+
+### 📦 Versions
+- Backend : `3.6.1`
+- Frontend : `3.6.1`
+- Migration : `migration_v3.6.1_conges_credits_contrats.sql`
+
+---
+
 ## [3.5.0] - 2025-12-10
 ### 📄 Génération PDF Améliorée
 - **Rapport Salaires**

@@ -14,6 +14,7 @@ from schemas import (
 )
 from services.pdf_generator import PDFGenerator
 from services.logging_service import log_action, clean_data_for_logging
+from services.employe_service import verifier_contrats_expires, mettre_a_jour_dates_fin_contrat
 from middleware import require_admin, require_auth
 
 router = APIRouter(prefix="/employes", tags=["Employés"])
@@ -579,15 +580,15 @@ def generate_certificat_travail(
     db: Session = Depends(get_db),
     current_user: User = Depends(require_auth)
 ):
-    """Générer un certificat de travail pour un employé ayant quitté l'entreprise"""
+    """Générer un certificat de travail pour un employé ayant quitté l'entreprise (inactif)"""
     # Récupérer l'employé
     employe = db.query(Employe).filter(Employe.id == employe_id).first()
     
     if not employe:
         raise HTTPException(status_code=404, detail="Employé non trouvé")
     
-    # Vérifier que l'employé a une date de fin de contrat ou est inactif
-    if employe.actif and not employe.date_fin_contrat:
+    # Vérifier que l'employé est INACTIF (certificat = pour employés ayant quitté)
+    if employe.actif:
         raise HTTPException(
             status_code=400, 
             detail="Impossible de générer un certificat de travail pour un employé actif. Utilisez l'attestation de travail."
@@ -762,3 +763,100 @@ def export_employes_csv(db: Session = Depends(get_db), current_user: User = Depe
         media_type="text/csv",
         headers={"Content-Disposition": f"attachment; filename={filename}"}
     )
+
+@router.post("/verifier-contrats-expires")
+def verifier_et_desactiver_contrats_expires(
+    request: Request,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_admin)
+):
+    """
+    Vérifier tous les employés avec contrat expiré et les désactiver automatiquement.
+    Cette opération nécessite des droits d'administration.
+    """
+    employes_desactives = verifier_contrats_expires(db)
+    
+    # Logger chaque désactivation
+    for emp_info in employes_desactives:
+        log_action(
+            db=db,
+            module_name="employes",
+            action_type=ActionType.UPDATE,
+            record_id=emp_info["id"],
+            description=f"Désactivation automatique employé #{emp_info['id']} - {emp_info['prenom']} {emp_info['nom']} (contrat expiré depuis {emp_info['jours_expires']} jours)",
+            old_data={"actif": True},
+            new_data={"actif": False, "raison": "contrat_expire"},
+            user=current_user,
+            request=request
+        )
+    
+    return {
+        "message": f"{len(employes_desactives)} employé(s) désactivé(s) automatiquement",
+        "employes_desactives": employes_desactives
+    }
+
+@router.post("/mettre-a-jour-dates-fin-contrat")
+def calculer_dates_fin_contrat(
+    request: Request,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_admin)
+):
+    """
+    Calculer et mettre à jour automatiquement les dates de fin de contrat
+    pour les employés qui ont une durée de contrat mais pas de date de fin.
+    """
+    employes_mis_a_jour = mettre_a_jour_dates_fin_contrat(db)
+    
+    # Logger chaque mise à jour
+    for emp_info in employes_mis_a_jour:
+        log_action(
+            db=db,
+            module_name="employes",
+            action_type=ActionType.UPDATE,
+            record_id=emp_info["id"],
+            description=f"Calcul automatique date fin contrat pour {emp_info['prenom']} {emp_info['nom']} - Durée: {emp_info['duree_contrat']} mois",
+            new_data={"date_fin_contrat": emp_info["date_fin_contrat"].isoformat()},
+            user=current_user,
+            request=request
+        )
+    
+    return {
+        "message": f"{len(employes_mis_a_jour)} date(s) de fin de contrat calculée(s)",
+        "employes_mis_a_jour": employes_mis_a_jour
+    }
+
+@router.get("/contrats-expires")
+def lister_contrats_expires(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_auth)
+):
+    """
+    Lister tous les employés actifs avec contrat expiré (sans les désactiver).
+    Permet de voir qui doit être traité.
+    """
+    aujourd_hui = date.today()
+    
+    employes_expires = db.query(Employe).filter(
+        Employe.actif == True,
+        Employe.date_fin_contrat.isnot(None),
+        Employe.date_fin_contrat < aujourd_hui
+    ).all()
+    
+    resultats = []
+    for emp in employes_expires:
+        jours_expires = (aujourd_hui - emp.date_fin_contrat).days
+        resultats.append({
+            "id": emp.id,
+            "nom": emp.nom,
+            "prenom": emp.prenom,
+            "poste_travail": emp.poste_travail,
+            "date_recrutement": emp.date_recrutement,
+            "date_fin_contrat": emp.date_fin_contrat,
+            "jours_expires": jours_expires,
+            "salaire_base": float(emp.salaire_base)
+        })
+    
+    return {
+        "total": len(resultats),
+        "employes_contrats_expires": resultats
+    }

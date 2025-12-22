@@ -17,6 +17,8 @@ router = APIRouter(prefix="/conges", tags=["Congés"])
 # Schemas locaux pour éviter les dépendances circulaires ou complexes
 class CongeUpdate(BaseModel):
     jours_pris: float  # v3.5.3: Décimales supportées
+    mois_deduction: Optional[int] = None  # Mois où déduire du bulletin de paie (1-12)
+    annee_deduction: Optional[int] = None  # Année où déduire du bulletin de paie
 
 class CongeCreateFromDates(BaseModel):
     employe_id: int
@@ -36,6 +38,8 @@ class CongeResponse(BaseModel):
     jours_conges_acquis: float  # v3.5.3: Décimales
     jours_conges_pris: float    # v3.5.3: Décimales
     jours_conges_restants: float  # v3.5.3: Décimales
+    mois_deduction: Optional[int] = None  # Mois de déduction bulletin
+    annee_deduction: Optional[int] = None  # Année de déduction bulletin
 
     class Config:
         from_attributes = True
@@ -77,7 +81,9 @@ def list_conges(
             jours_travailles=c.jours_travailles,
             jours_conges_acquis=float(c.jours_conges_acquis or 0),  # ⭐ v3.6.0 Phase 5: Décimal
             jours_conges_pris=float(c.jours_conges_pris or 0),  # ⭐ v3.6.0
-            jours_conges_restants=float(c.jours_conges_restants or 0)  # ⭐ v3.6.0
+            jours_conges_restants=float(c.jours_conges_restants or 0),  # ⭐ v3.6.0
+            mois_deduction=c.mois_deduction,
+            annee_deduction=c.annee_deduction
         ))
         
     return results
@@ -127,6 +133,17 @@ def update_consommation(
     
     # Mise à jour (v3.5.3: avec décimales)
     conge.jours_conges_pris = jours_pris
+    
+    # Mise à jour du mois/année de déduction si fournis
+    if update.mois_deduction is not None:
+        if not (1 <= update.mois_deduction <= 12):
+            raise HTTPException(status_code=400, detail="Mois de déduction invalide (doit être entre 1 et 12)")
+        conge.mois_deduction = update.mois_deduction
+        
+    if update.annee_deduction is not None:
+        if update.annee_deduction < 2000 or update.annee_deduction > 2100:
+            raise HTTPException(status_code=400, detail="Année de déduction invalide")
+        conge.annee_deduction = update.annee_deduction
     
     # Recalcul du reste
     conge.jours_conges_restants = float(conge.jours_conges_acquis or 0) - float(conge.jours_conges_pris or 0)
