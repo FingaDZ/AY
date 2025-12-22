@@ -11,13 +11,13 @@ BASE_URL = "http://192.168.20.55:8000/api"
 
 # Identifiants de test (à ajuster)
 TEST_EMPLOYE_ID = 1
-TEST_USERNAME = "admin"
-TEST_PASSWORD = "admin"
+TEST_EMAIL = "admin@ayhr.local"  # Remplacer par un email valide
+TEST_PASSWORD = "admin123"  # Remplacer par le vrai mot de passe
 
 def login():
     """Se connecter et récupérer le token"""
-    response = requests.post(f"{BASE_URL}/users/login", data={
-        "username": TEST_USERNAME,
+    response = requests.post(f"{BASE_URL}/utilisateurs/login", json={
+        "email": TEST_EMAIL,
         "password": TEST_PASSWORD
     })
     if response.status_code == 200:
