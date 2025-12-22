@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Table, Card, Button, Tag, Modal, Form, InputNumber, message, Select, Statistic, Row, Col, Space } from 'antd';
-import { EditOutlined, CalendarOutlined, DownloadOutlined, EyeOutlined } from '@ant-design/icons';
+import { Table, Card, Button, Tag, Modal, Form, InputNumber, message, Select, Statistic, Row, Col, Space, Alert, Popconfirm, Divider, Descriptions, Input } from 'antd';
+import { EditOutlined, CalendarOutlined, DownloadOutlined, EyeOutlined, DeleteOutlined, PlusOutlined } from '@ant-design/icons';
 import api from '../../services/api';
 
 const { Option } = Select;
@@ -14,15 +14,17 @@ const CongesList = () => {
     const [selectedEmploye, setSelectedEmploye] = useState(null);
     const [selectedAnnee, setSelectedAnnee] = useState(new Date().getFullYear());
 
-    // Modal Saisie
-    const [isModalVisible, setIsModalVisible] = useState(false);
-    const [currentConge, setCurrentConge] = useState(null);
-    const [form] = Form.useForm();
+    // Modal Déduction v3.7.0
+    const [deductionModalVisible, setDeductionModalVisible] = useState(false);
+    const [selectedEmployeForDeduction, setSelectedEmployeForDeduction] = useState(null);
+    const [deductionForm] = Form.useForm();
 
     // Modal Détails Périodes
     const [detailsModalVisible, setDetailsModalVisible] = useState(false);
     const [detailsEmploye, setDetailsEmploye] = useState(null);
+    const [detailsEmployeId, setDetailsEmployeId] = useState(null);
     const [detailsPeriodes, setDetailsPeriodes] = useState([]);
+    const [deductions, setDeductions] = useState([]);
 
     // Stats globales
     const [synthese, setSynthese] = useState(null);
@@ -68,9 +70,19 @@ const CongesList = () => {
     const fetchSynthese = async (employeId) => {
         try {
             const response = await api.get(`/conges/synthese/${employeId}`);
+            // v3.7.0: Endpoint retourne total_deduit au lieu de total_pris
             setSynthese(response.data);
         } catch (error) {
             console.error("Erreur synthèse", error);
+        }
+    };
+
+    const fetchDeductions = async (employeId) => {
+        try {
+            const response = await api.get(`/deductions-conges/employe/${employeId}`);
+            setDeductions(response.data);
+        } catch (error) {
+            console.error("Erreur chargement déductions", error);
         }
     };
 
@@ -104,63 +116,67 @@ const CongesList = () => {
         return Object.values(grouped);
     };
 
-    const handleEdit = (periode) => {
-        // Ouvrir la modal de saisie pour cette période spécifique
-        setCurrentConge(periode);
-        form.setFieldsValue({
-            jours_pris: periode.jours_conges_pris,
-            mois_deduction: periode.mois_deduction || periode.mois,
-            annee_deduction: periode.annee_deduction || periode.annee
+    const handleOpenDeductionModal = (employeId, employeNom) => {
+        // v3.7.0: Ouvrir modal simple de création de déduction
+        setSelectedEmployeForDeduction(employeId);
+        deductionForm.resetFields();
+        deductionForm.setFieldsValue({
+            mois_deduction: new Date().getMonth() + 1,
+            annee_deduction: new Date().getFullYear(),
+            type_conge: 'ANNUEL'
         });
-        setIsModalVisible(true);
+        setDeductionModalVisible(true);
     };
 
     const handleShowDetails = (employe) => {
         setDetailsEmploye(employe.employe_nom);
+        setDetailsEmployeId(employe.employe_id);
         setDetailsPeriodes(employe.periodes);
+        fetchDeductions(employe.employe_id);  // v3.7.0: Charger déductions
         setDetailsModalVisible(true);
     };
 
-    const handleSave = async () => {
+    const handleCreateDeduction = async () => {
         try {
-            const values = await form.validateFields();
-            const response = await api.put(`/conges/${currentConge.id}/consommation`, {
-                jours_pris: values.jours_pris,
+            const values = await deductionForm.validateFields();
+            const response = await api.post('/deductions-conges/', {
+                employe_id: selectedEmployeForDeduction,
+                jours_deduits: values.jours_deduits,
                 mois_deduction: values.mois_deduction,
-                annee_deduction: values.annee_deduction
+                annee_deduction: values.annee_deduction,
+                type_conge: values.type_conge || 'ANNUEL',
+                motif: values.motif
             });
             
-            // Afficher message avec détails de répartition
-            const ancienTotal = response.data.ancien_total || 0;
-            const nouveauTotal = response.data.nouveau_total || 0;
-            const difference = response.data.difference || 0;
+            message.success(
+                `Déduction créée: ${response.data.jours_deduits}j pour bulletin ${values.mois_deduction}/${values.annee_deduction}. ` +
+                `Nouveau solde: ${response.data.nouveau_solde.toFixed(2)}j`,
+                6
+            );
             
-            if (response.data.repartition && response.data.repartition.length > 0) {
-                const details = response.data.details.join('\n');
-                const diffText = difference >= 0 ? `+${difference.toFixed(2)}j` : `${difference.toFixed(2)}j`;
-                message.success(
-                    <div>
-                        <strong>✅ Répartition automatique effectuée!</strong>
-                        <div style={{fontSize: '12px', marginTop: '8px', marginBottom: '8px'}}>
-                            Ancien total: {ancienTotal.toFixed(2)}j → Nouveau total: {nouveauTotal.toFixed(2)}j ({diffText})
-                        </div>
-                        <pre style={{fontSize: '11px', whiteSpace: 'pre-wrap', backgroundColor: '#f0f0f0', padding: '8px', borderRadius: '4px'}}>
-                            {details}
-                        </pre>
-                    </div>,
-                    10
-                );
-            } else {
-                message.success(`Consommation mise à jour: ${nouveauTotal.toFixed(2)}j`);
-            }
-            
-            setIsModalVisible(false);
+            setDeductionModalVisible(false);
             fetchConges();
             if (selectedEmploye) fetchSynthese(selectedEmploye);
         } catch (error) {
-            const errorMsg = error.response?.data?.detail || "Erreur lors de la mise à jour";
+            const errorMsg = error.response?.data?.detail || "Erreur lors de la création de la déduction";
             message.error(errorMsg, 8);
             console.error('Erreur:', error);
+        }
+    };
+
+    const handleDeleteDeduction = async (deductionId) => {
+        try {
+            await api.delete(`/deductions-conges/${deductionId}`);
+            message.success('Déduction supprimée, solde recalculé');
+            fetchConges();
+            if (detailsEmployeId) {
+                fetchDeductions(detailsEmployeId);
+                if (selectedEmploye === detailsEmployeId) {
+                    fetchSynthese(selectedEmploye);
+                }
+            }
+        } catch (error) {
+            message.error(error.response?.data?.detail || 'Erreur lors de la suppression');
         }
     };
 
@@ -244,14 +260,10 @@ const CongesList = () => {
                     <Button
                         type="primary"
                         size="small"
-                        icon={<EditOutlined />}
-                        onClick={() => {
-                            // Ouvrir modal pour la dernière période de cet employé
-                            const lastPeriode = record.periodes[record.periodes.length - 1];
-                            handleEdit(lastPeriode);
-                        }}
+                        icon={<PlusOutlined />}
+                        onClick={() => handleOpenDeductionModal(record.employe_id, record.employe_nom)}
                     >
-                        Éditer
+                        Déduire
                     </Button>
                 </Space>
             )
@@ -282,27 +294,13 @@ const CongesList = () => {
             render: (val) => <span className="text-orange-500">{Number(val).toFixed(2)} j</span>  // ⭐ v3.6.0
         },
         {
-            title: 'Solde',
+            title: 'Solde Cumulé',
             dataIndex: 'jours_conges_restants',
             key: 'jours_conges_restants',
             render: (val) => (
                 <Tag color={val >= 0 ? 'green' : 'red'}>
                     {Number(val).toFixed(2)} j
                 </Tag>
-            )
-        },
-        {
-            title: 'Actions',
-            key: 'actions',
-            width: 100,
-            render: (text, record) => (
-                <Button
-                    type="primary"
-                    size="small"
-                    onClick={() => handleEdit(record)}
-                >
-                    Saisie
-                </Button>
             )
         }
     ];
@@ -355,8 +353,8 @@ const CongesList = () => {
                         </Col>
                         <Col span={6}>
                             <Statistic 
-                                title="Total Pris" 
-                                value={synthese.total_pris} 
+                                title="Total Déduit" 
+                                value={synthese.total_deduit} 
                                 suffix="jours" 
                                 valueStyle={{ color: '#cf1322' }} 
                             />
@@ -384,91 +382,104 @@ const CongesList = () => {
                 />
             </Card>
 
-            {/* Modal Saisie Congés */}
+            {/* Modal Création Déduction v3.7.0 */}
             <Modal
-                title="Saisie Consommation Congé"
-                open={isModalVisible}
-                onOk={handleSave}
-                onCancel={() => setIsModalVisible(false)}
-                width={650}
+                title="Créer une Déduction de Congé"
+                open={deductionModalVisible}
+                onOk={handleCreateDeduction}
+                onCancel={() => setDeductionModalVisible(false)}
+                okText="Créer"
+                cancelText="Annuler"
+                width={550}
             >
-                <Form form={form} layout="vertical">
-                    <div className="mb-4 p-3 bg-blue-50 rounded border border-blue-200">
-                        <p className="text-sm font-semibold text-blue-700 mb-2">
-                            ⚠️ MODE: TOTAL GLOBAL (pas un ajout!)
-                        </p>
-                        <p className="text-xs text-blue-600 mb-2">
-                            Saisissez le <strong>nombre TOTAL de jours</strong> que l'employé doit avoir pris au total.
-                            Cette valeur <strong>remplace toutes les saisies précédentes</strong>.
-                        </p>
-                        <p className="text-xs text-blue-600">
-                            Le système répartira automatiquement sur les périodes disponibles 
-                            (du plus ancien au plus récent). Exemple: 5j total = 2.5j (oct) + 2.42j (nov) + 0.08j (déc).
-                        </p>
-                    </div>
-                    
-                    <p className="mb-4 text-gray-500">
-                        Période sélectionnée: <strong>{currentConge?.mois}/{currentConge?.annee}</strong>
-                    </p>
+                <Alert
+                    message="Nouvelle Architecture v3.7.0"
+                    description="Cette déduction sera enregistrée séparément et impactera le bulletin du mois sélectionné."
+                    type="info"
+                    showIcon
+                    style={{ marginBottom: 16 }}
+                />
+
+                <Form form={deductionForm} layout="vertical">
                     <Form.Item
-                        name="jours_pris"
-                        label="TOTAL de jours à prendre (remplace les saisies précédentes)"
-                        rules={[{ required: true, message: 'Veuillez saisir le total global' }]}
-                        extra="Saisissez le total cumulé que l'employé doit avoir pris, pas un ajout"
+                        name="jours_deduits"
+                        label="Nombre de jours à déduire"
+                        rules={[
+                            { required: true, message: 'Requis' },
+                            { type: 'number', min: 0.1, message: 'Minimum 0.1j' }
+                        ]}
                     >
-                        <InputNumber min={0} max={100} step={0.5} style={{ width: '100%' }} placeholder="Ex: 5.0 (total global)" />
+                        <InputNumber
+                            style={{ width: '100%' }}
+                            min={0.1}
+                            max={30}
+                            step={0.5}
+                            precision={2}
+                            placeholder="Ex: 2.5"
+                        />
                     </Form.Item>
-                    
-                    <div className="mb-4 p-3 bg-blue-50 rounded border border-blue-200">
-                        <p className="text-sm font-semibold text-blue-700 mb-2">📅 Affectation sur le bulletin de paie</p>
-                        <p className="text-xs text-blue-600 mb-3">
-                            Par défaut, les jours seront déduits du bulletin du mois d'acquisition. 
-                            Vous pouvez choisir un autre mois si nécessaire.
-                        </p>
-                        
-                        <Row gutter={16}>
-                            <Col span={12}>
-                                <Form.Item
-                                    name="mois_deduction"
-                                    label="Mois de déduction"
-                                    rules={[{ required: true, message: 'Requis' }]}
-                                >
-                                    <Select placeholder="Sélectionnez un mois">
-                                        <Option value={1}>Janvier</Option>
-                                        <Option value={2}>Février</Option>
-                                        <Option value={3}>Mars</Option>
-                                        <Option value={4}>Avril</Option>
-                                        <Option value={5}>Mai</Option>
-                                        <Option value={6}>Juin</Option>
-                                        <Option value={7}>Juillet</Option>
-                                        <Option value={8}>Août</Option>
-                                        <Option value={9}>Septembre</Option>
-                                        <Option value={10}>Octobre</Option>
-                                        <Option value={11}>Novembre</Option>
-                                        <Option value={12}>Décembre</Option>
-                                    </Select>
-                                </Form.Item>
-                            </Col>
-                            <Col span={12}>
-                                <Form.Item
-                                    name="annee_deduction"
-                                    label="Année de déduction"
-                                    rules={[{ required: true, message: 'Requis' }]}
-                                >
-                                    <InputNumber 
-                                        min={2020} 
-                                        max={2100} 
-                                        style={{ width: '100%' }} 
-                                        placeholder="2025"
-                                    />
-                                </Form.Item>
-                            </Col>
-                        </Row>
-                    </div>
+
+                    <Row gutter={16}>
+                        <Col span={12}>
+                            <Form.Item
+                                name="mois_deduction"
+                                label="Mois de déduction (bulletin)"
+                                rules={[{ required: true, message: 'Requis' }]}
+                            >
+                                <Select placeholder="Sélectionnez le mois">
+                                    <Option value={1}>Janvier</Option>
+                                    <Option value={2}>Février</Option>
+                                    <Option value={3}>Mars</Option>
+                                    <Option value={4}>Avril</Option>
+                                    <Option value={5}>Mai</Option>
+                                    <Option value={6}>Juin</Option>
+                                    <Option value={7}>Juillet</Option>
+                                    <Option value={8}>Août</Option>
+                                    <Option value={9}>Septembre</Option>
+                                    <Option value={10}>Octobre</Option>
+                                    <Option value={11}>Novembre</Option>
+                                    <Option value={12}>Décembre</Option>
+                                </Select>
+                            </Form.Item>
+                        </Col>
+                        <Col span={12}>
+                            <Form.Item
+                                name="annee_deduction"
+                                label="Année de déduction"
+                                rules={[{ required: true, message: 'Requis' }]}
+                            >
+                                <InputNumber
+                                    style={{ width: '100%' }}
+                                    min={2020}
+                                    max={2030}
+                                    placeholder="2024"
+                                />
+                            </Form.Item>
+                        </Col>
+                    </Row>
+
+                    <Form.Item
+                        name="type_conge"
+                        label="Type de congé"
+                        initialValue="ANNUEL"
+                    >
+                        <Select>
+                            <Option value="ANNUEL">Annuel</Option>
+                            <Option value="MALADIE">Maladie</Option>
+                            <Option value="EXCEPTIONNEL">Exceptionnel</Option>
+                        </Select>
+                    </Form.Item>
+
+                    <Form.Item
+                        name="motif"
+                        label="Motif (optionnel)"
+                    >
+                        <Input.TextArea rows={2} placeholder="Ex: Vacances d'été" />
+                    </Form.Item>
                 </Form>
             </Modal>
 
-            {/* Modal Détails Périodes */}
+            {/* Modal Détails Périodes avec Historique Déductions v3.7.0 */}
             <Modal
                 title={`Détails des périodes - ${detailsEmploye}`}
                 open={detailsModalVisible}
@@ -478,14 +489,86 @@ const CongesList = () => {
                         Fermer
                     </Button>
                 ]}
-                width={700}
+                width={900}
             >
+                <Descriptions bordered column={3} style={{ marginBottom: 16 }}>
+                    <Descriptions.Item label="Total Acquis">
+                        <Tag color="blue">{detailsPeriodes.reduce((sum, p) => sum + (p.jours_conges_acquis || 0), 0).toFixed(2)}j</Tag>
+                    </Descriptions.Item>
+                    <Descriptions.Item label="Solde Cumulé">
+                        <Tag color={detailsPeriodes.length > 0 && detailsPeriodes[detailsPeriodes.length - 1].jours_conges_restants >= 0 ? 'green' : 'red'}>
+                            {detailsPeriodes.length > 0 ? detailsPeriodes[detailsPeriodes.length - 1].jours_conges_restants.toFixed(2) : 0}j
+                        </Tag>
+                    </Descriptions.Item>
+                    <Descriptions.Item label="Déductions">
+                        <Tag color="orange">{deductions.length}</Tag>
+                    </Descriptions.Item>
+                </Descriptions>
+
+                <h3 className="font-semibold mb-2">Périodes d'Acquisition</h3>
                 <Table
                     columns={detailColumns}
                     dataSource={detailsPeriodes}
                     rowKey="id"
                     pagination={false}
                     size="small"
+                    style={{ marginBottom: 24 }}
+                />
+
+                <Divider>Historique des Déductions</Divider>
+
+                <Table
+                    dataSource={deductions}
+                    rowKey="id"
+                    columns={[
+                        {
+                            title: 'Jours',
+                            dataIndex: 'jours_deduits',
+                            render: (val) => `${val}j`,
+                            width: 80
+                        },
+                        {
+                            title: 'Bulletin',
+                            render: (_, record) => `${record.mois_deduction}/${record.annee_deduction}`,
+                            width: 100
+                        },
+                        {
+                            title: 'Type',
+                            dataIndex: 'type_conge',
+                            width: 100
+                        },
+                        {
+                            title: 'Motif',
+                            dataIndex: 'motif',
+                            ellipsis: true
+                        },
+                        {
+                            title: 'Créé le',
+                            dataIndex: 'created_at',
+                            render: (val) => new Date(val).toLocaleDateString('fr-FR'),
+                            width: 110
+                        },
+                        {
+                            title: 'Actions',
+                            render: (_, record) => (
+                                <Popconfirm
+                                    title="Supprimer cette déduction?"
+                                    description="Le solde sera recalculé automatiquement."
+                                    onConfirm={() => handleDeleteDeduction(record.id)}
+                                    okText="Oui"
+                                    cancelText="Non"
+                                >
+                                    <Button danger size="small" icon={<DeleteOutlined />}>
+                                        Supprimer
+                                    </Button>
+                                </Popconfirm>
+                            ),
+                            width: 120
+                        }
+                    ]}
+                    pagination={false}
+                    size="small"
+                    locale={{ emptyText: 'Aucune déduction enregistrée' }}
                 />
             </Modal>
         </div>
