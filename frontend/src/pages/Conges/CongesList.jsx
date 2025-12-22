@@ -29,10 +29,23 @@ const CongesList = () => {
     // Stats globales
     const [synthese, setSynthese] = useState(null);
 
+    // v3.7.0: Cache des stats de synthèse pour chaque employé
+    const [syntheseCache, setSyntheseCache] = useState({});
+
     useEffect(() => {
         fetchConges();
         fetchEmployes();
     }, [selectedEmploye, selectedAnnee]);
+
+    // v3.7.0: Charger synthèse pour chaque employé unique dans conges
+    useEffect(() => {
+        const uniqueEmployes = [...new Set(conges.map(c => c.employe_id))];
+        uniqueEmployes.forEach(empId => {
+            if (!syntheseCache[empId]) {
+                fetchSyntheseForCache(empId);
+            }
+        });
+    }, [conges]);
 
     useEffect(() => {
         if (selectedEmploye) {
@@ -77,6 +90,18 @@ const CongesList = () => {
         }
     };
 
+    const fetchSyntheseForCache = async (employeId) => {
+        try {
+            const response = await api.get(`/conges/synthese/${employeId}`);
+            setSyntheseCache(prev => ({
+                ...prev,
+                [employeId]: response.data
+            }));
+        } catch (error) {
+            console.error(`Erreur synthèse employé ${employeId}:`, error);
+        }
+    };
+
     const fetchDeductions = async (employeId) => {
         try {
             const response = await api.get(`/deductions-conges/employe/${employeId}`);
@@ -98,19 +123,25 @@ const CongesList = () => {
                     periodes: [],
                     total_travailles: 0,
                     total_acquis: 0,
-                    total_pris: 0,
+                    total_deduit: 0,  // v3.7.0: Changé de total_pris à total_deduit
                     solde: 0
                 };
             }
             grouped[key].periodes.push(conge);
             grouped[key].total_travailles += conge.jours_travailles || 0;
             grouped[key].total_acquis += conge.jours_conges_acquis || 0;
-            grouped[key].total_pris += conge.jours_conges_pris || 0;
         });
 
-        // Calculer soldes
+        // v3.7.0: Utiliser les stats du cache synthèse
         Object.keys(grouped).forEach(key => {
-            grouped[key].solde = grouped[key].total_acquis - grouped[key].total_pris;
+            const empId = grouped[key].employe_id;
+            if (syntheseCache[empId]) {
+                grouped[key].total_deduit = syntheseCache[empId].total_deduit || 0;
+                grouped[key].solde = syntheseCache[empId].solde || 0;
+            } else {
+                // Fallback si pas encore chargé
+                grouped[key].solde = grouped[key].total_acquis - grouped[key].total_deduit;
+            }
         });
 
         return Object.values(grouped);
@@ -225,9 +256,9 @@ const CongesList = () => {
             render: (val) => <span className="font-semibold text-green-600">{val} j</span>
         },
         {
-            title: 'Total Pris',
-            dataIndex: 'total_pris',
-            key: 'total_pris',
+            title: 'Total Déduit',  // v3.7.0: Changé de "Pris" à "Déduit"
+            dataIndex: 'total_deduit',
+            key: 'total_deduit',
             width: 110,
             render: (val) => <span className="font-semibold text-orange-500">{val} j</span>
         },
