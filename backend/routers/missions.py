@@ -113,10 +113,6 @@ def delete_mission(
         user=current_user,
         request=request
     )
-        action_type=ActionType.DELETE,
-        description=f"Suppression mission #{mission_id}",
-        old_data=clean_data_for_logging(db_mission)
-    )
     
     db.delete(db_mission)
     db.commit()
