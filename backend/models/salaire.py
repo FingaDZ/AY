@@ -18,7 +18,7 @@ class Salaire(Base):
     # Données de base
     jours_travailles = Column(Integer, default=0)
     jours_ouvrables = Column(Integer, default=26)
-    jours_conges = Column(Integer, default=0, comment="Jours de congés payés dans ce mois")
+    jours_conges = Column(Numeric(10, 2), default=0, comment="Jours de congés déduits dans ce bulletin (v3.7.0)")
     mode_calcul_conges = Column(String(20), nullable=True, comment="Mode de calcul si congés présents")
     
     # Salaire et heures
