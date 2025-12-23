@@ -136,7 +136,7 @@ def valider_salaire_employe(
     else:
         # Créer nouveau salaire
         salaire_data = {k: v for k, v in resultat.items() 
-                       if k not in ["status", "error", "details_calcul", "employe_nom", "employe_prenom"]}
+                       if k not in ["status", "error", "details_calcul", "employe_nom", "employe_prenom", "salaire_base"]}
         
         salaire_existant = Salaire(**salaire_data)
         salaire_existant.statut = "valide"
@@ -234,7 +234,7 @@ def valider_tous_salaires(
             else:
                 # Créer
                 salaire_data = {k: v for k, v in resultat.items() 
-                               if k not in ["status", "error", "details_calcul", "employe_nom", "employe_prenom"]}
+                               if k not in ["status", "error", "details_calcul", "employe_nom", "employe_prenom", "salaire_base"]}
                 salaire_existant = Salaire(**salaire_data)
                 salaire_existant.statut = "valide"
                 salaire_existant.date_paiement = date.today()
