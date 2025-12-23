@@ -97,7 +97,6 @@ def calculer_et_enregistrer_conges(
         
         # ⭐ CORRECTION v3.6.1: Calculer le SOLDE CUMULÉ (pas le solde de période)
         # Solde = (Total acquis depuis début) - (Total pris depuis début)
-        from sqlalchemy import func
         stats = db.query(
             func.sum(Conge.jours_conges_acquis).label("total_acquis"),
             func.sum(Conge.jours_conges_pris).label("total_pris")
