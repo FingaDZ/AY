@@ -190,7 +190,49 @@ def get_historique_credit(credit_id: int, db: Session = Depends(get_db)):
     return {
         "credit": credit,
         "retenues": retenues,
-        "prorogations": prorogations
+        "prorogations": prorogations,
+        "montant_restant": float(credit.montant_restant),
+        "montant_total": float(credit.montant_total),
+        "montant_retenu": float(credit.montant_retenu),
+        "pourcentage_rembourse": round((float(credit.montant_retenu) / float(credit.montant_total)) * 100, 2) if credit.montant_total > 0 else 0
+    }
+
+@router.get("/{credit_id}/retenues")
+def get_retenues_credit(credit_id: int, db: Session = Depends(get_db)):
+    """
+    ⭐ v3.6.1: Obtenir uniquement les retenues d'un crédit avec détails
+    Utilisé pour afficher l'historique des déductions mensuelles
+    """
+    credit = db.query(Credit).filter(Credit.id == credit_id).first()
+    
+    if not credit:
+        raise HTTPException(status_code=404, detail="Crédit non trouvé")
+    
+    retenues = db.query(RetenueCredit).filter(
+        RetenueCredit.credit_id == credit_id
+    ).order_by(RetenueCredit.annee.desc(), RetenueCredit.mois.desc()).all()
+    
+    retenues_data = []
+    for r in retenues:
+        retenues_data.append({
+            "id": r.id,
+            "mois": r.mois,
+            "annee": r.annee,
+            "montant": float(r.montant),
+            "date_retenue": r.date_retenue.strftime('%d/%m/%Y') if r.date_retenue else None
+        })
+    
+    return {
+        "credit_id": credit_id,
+        "employe_nom": f"{credit.employe.prenom} {credit.employe.nom}" if credit.employe else "N/A",
+        "montant_total": float(credit.montant_total),
+        "montant_mensualite": float(credit.montant_mensualite),
+        "montant_retenu": float(credit.montant_retenu),
+        "montant_restant": float(credit.montant_restant),
+        "statut": credit.statut.value if hasattr(credit.statut, 'value') else str(credit.statut),
+        "retenues": retenues_data,
+        "nombre_retenues": len(retenues_data),
+        "nombre_mensualites_prevues": credit.nombre_mensualites
     }
 
 @router.get("/{credit_id}/echeancier")

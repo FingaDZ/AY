@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Date, ForeignKey
+from sqlalchemy import Column, Integer, String, Date, ForeignKey, Boolean
 from sqlalchemy.types import Numeric
 from sqlalchemy.orm import relationship
 from database import Base
@@ -13,6 +13,10 @@ class Avance(Base):
     mois_deduction = Column(Integer, nullable=False, index=True)  # Mois de déduction (1-12)
     annee_deduction = Column(Integer, nullable=False, index=True)  # Année de déduction
     motif = Column(String(500), nullable=True)
+    
+    # ⭐ v3.6.1: Suivi des déductions
+    deduit = Column(Boolean, default=False, nullable=False, index=True)  # Avance déduite du salaire
+    date_deduction = Column(Date, nullable=True, index=True)  # Date de la déduction
     
     # Relation
     employe = relationship("Employe", back_populates="avances")

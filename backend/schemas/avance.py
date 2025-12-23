@@ -23,6 +23,8 @@ class AvanceUpdate(BaseModel):
 
 class AvanceResponse(AvanceBase):
     id: int
+    deduit: bool = Field(default=False, description="Indique si l'avance a été déduite du salaire")
+    date_deduction: Optional[date] = Field(None, description="Date de la déduction du salaire")
     
     class Config:
         from_attributes = True

@@ -16,13 +16,69 @@ from openpyxl.styles import Font, Alignment, PatternFill, Border, Side
 from database import get_db
 from services.salary_processor import SalaireProcessor
 from services.pdf_generator import PDFGenerator
-from models import Salaire, Employe, Avance, Credit, StatutCredit
+from models import Salaire, Employe, Avance, Credit, StatutCredit, RetenueCredit
 from sqlalchemy import inspect
 
 router = APIRouter(prefix="/traitement-salaires", tags=["Traitement Salaires v3.0"])
 
 # Liste des colonnes valides du modèle Salaire (pour filtrage)
 SALAIRE_COLUMNS = {c.key for c in inspect(Salaire).mapper.column_attrs}
+
+
+# ⭐ v3.6.1: Fonctions helper pour suivi des déductions
+
+def _enregistrer_retenues_credits(db: Session, employe_id: int, annee: int, mois: int, resultat: dict):
+    """
+    Enregistrer les retenues de crédits dans la table retenues_credit
+    Met à jour montant_retenu et statut du crédit
+    """
+    # Récupérer tous les crédits EN_COURS de l'employé
+    credits_actifs = db.query(Credit).filter(
+        Credit.employe_id == employe_id,
+        Credit.statut == StatutCredit.EN_COURS
+    ).all()
+    
+    for credit in credits_actifs:
+        # Vérifier si une retenue existe déjà pour ce mois
+        retenue_existante = db.query(RetenueCredit).filter(
+            RetenueCredit.credit_id == credit.id,
+            RetenueCredit.mois == mois,
+            RetenueCredit.annee == annee
+        ).first()
+        
+        if not retenue_existante:
+            # Créer la retenue
+            retenue = RetenueCredit(
+                credit_id=credit.id,
+                mois=mois,
+                annee=annee,
+                montant=credit.montant_mensualite,
+                date_retenue=date.today()
+            )
+            db.add(retenue)
+            
+            # Mettre à jour le cumul
+            credit.montant_retenu = Decimal(str(credit.montant_retenu or 0)) + Decimal(str(credit.montant_mensualite))
+            
+            # Vérifier si le crédit est soldé
+            if credit.montant_retenu >= credit.montant_total:
+                credit.statut = StatutCredit.SOLDE
+
+
+def _marquer_avances_deduites(db: Session, employe_id: int, annee: int, mois: int):
+    """
+    Marquer les avances comme déduites pour le mois donné
+    """
+    avances = db.query(Avance).filter(
+        Avance.employe_id == employe_id,
+        Avance.annee_deduction == annee,
+        Avance.mois_deduction == mois,
+        Avance.deduit == False
+    ).all()
+    
+    for avance in avances:
+        avance.deduit = True
+        avance.date_deduction = date.today()
 
 
 @router.get("/preview")
@@ -169,6 +225,8 @@ def valider_tous_salaires(
     Utilise le même processus que valider_salaire_employe
     mais pour tous les employés actifs
     
+    ⭐ v3.6.1: Enregistre aussi les retenues (crédits) et marque avances comme déduites
+    
     Returns:
         Rapport avec succès/erreurs
     """
@@ -213,6 +271,12 @@ def valider_tous_salaires(
                 salaire_existant.statut = "valide"
                 salaire_existant.date_paiement = date.today()
                 db.add(salaire_existant)
+            
+            # ⭐ v3.6.1: Enregistrer les retenues de crédits
+            _enregistrer_retenues_credits(db, employe_id, annee, mois, resultat)
+            
+            # ⭐ v3.6.1: Marquer les avances comme déduites
+            _marquer_avances_deduites(db, employe_id, annee, mois)
             
             success_count += 1
             
