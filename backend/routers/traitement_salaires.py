@@ -145,21 +145,7 @@ def valider_salaire_employe(
         salaire_existant.date_paiement = date.today()
         db.add(salaire_existant)
     
-    # 3. Mettre à jour crédits
-    credits = db.query(Credit).filter(
-        Credit.employe_id == employe_id,
-        Credit.statut == StatutCredit.EN_COURS
-    ).all()
-    
-    for credit in credits:
-        if credit.mois_restants > 0:
-            credit.mois_restants -= 1
-            
-            if credit.mois_restants == 0:
-                credit.statut = StatutCredit.TERMINE
-                credit.date_fin_effective = date.today()
-    
-    # 4. Commit
+    # 3. Commit
     db.commit()
     db.refresh(salaire_existant)
     
@@ -227,19 +213,6 @@ def valider_tous_salaires(
                 salaire_existant.statut = "valide"
                 salaire_existant.date_paiement = date.today()
                 db.add(salaire_existant)
-            
-            # Mettre à jour crédits
-            credits = db.query(Credit).filter(
-                Credit.employe_id == employe_id,
-                Credit.statut == StatutCredit.EN_COURS
-            ).all()
-            
-            for credit in credits:
-                if credit.mois_restants > 0:
-                    credit.mois_restants -= 1
-                    if credit.mois_restants == 0:
-                        credit.statut = StatutCredit.TERMINE
-                        credit.date_fin_effective = date.today()
             
             success_count += 1
             
