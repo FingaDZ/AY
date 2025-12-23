@@ -17,8 +17,12 @@ from database import get_db
 from services.salary_processor import SalaireProcessor
 from services.pdf_generator import PDFGenerator
 from models import Salaire, Employe, Avance, Credit, StatutCredit
+from sqlalchemy import inspect
 
 router = APIRouter(prefix="/traitement-salaires", tags=["Traitement Salaires v3.0"])
+
+# Liste des colonnes valides du modèle Salaire (pour filtrage)
+SALAIRE_COLUMNS = {c.key for c in inspect(Salaire).mapper.column_attrs}
 
 
 @router.get("/preview")
@@ -126,17 +130,15 @@ def valider_salaire_employe(
     if salaire_existant:
         # Mettre à jour
         for key, value in resultat.items():
-            if key not in ["status", "error", "details_calcul", "employe_nom", "employe_prenom"]:
-                if hasattr(salaire_existant, key):
-                    setattr(salaire_existant, key, value)
+            if key in SALAIRE_COLUMNS:
+                setattr(salaire_existant, key, value)
         
         salaire_existant.statut = "valide"
         salaire_existant.date_paiement = date.today()
         
     else:
-        # Créer nouveau salaire
-        salaire_data = {k: v for k, v in resultat.items() 
-                       if k not in ["status", "error", "details_calcul", "employe_nom", "employe_prenom", "salaire_base"]}
+        # Créer nouveau salaire - ne garder que les colonnes valides
+        salaire_data = {k: v for k, v in resultat.items() if k in SALAIRE_COLUMNS}
         
         salaire_existant = Salaire(**salaire_data)
         salaire_existant.statut = "valide"
@@ -224,17 +226,15 @@ def valider_tous_salaires(
             ).first()
             
             if salaire_existant:
-                # Mettre à jour
+                # Mettre à jour avec colonnes valides uniquement
                 for key, value in resultat.items():
-                    if key not in ["status", "error", "details_calcul", "employe_nom", "employe_prenom"]:
-                        if hasattr(salaire_existant, key):
-                            setattr(salaire_existant, key, value)
+                    if key in SALAIRE_COLUMNS:
+                        setattr(salaire_existant, key, value)
                 salaire_existant.statut = "valide"
                 salaire_existant.date_paiement = date.today()
             else:
-                # Créer
-                salaire_data = {k: v for k, v in resultat.items() 
-                               if k not in ["status", "error", "details_calcul", "employe_nom", "employe_prenom", "salaire_base"]}
+                # Créer avec colonnes valides uniquement
+                salaire_data = {k: v for k, v in resultat.items() if k in SALAIRE_COLUMNS}
                 salaire_existant = Salaire(**salaire_data)
                 salaire_existant.statut = "valide"
                 salaire_existant.date_paiement = date.today()
