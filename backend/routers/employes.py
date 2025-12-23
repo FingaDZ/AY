@@ -538,8 +538,8 @@ def generate_attestation_travail(
     if not employe:
         raise HTTPException(status_code=404, detail="Employé non trouvé")
     
-    # Vérifier que l'employé est actif
-    if not employe.actif:
+    # Vérifier que l'employé est actif (statut du contrat)
+    if employe.statut_contrat != StatutContrat.ACTIF:
         raise HTTPException(
             status_code=400, 
             detail="Impossible de générer une attestation de travail pour un employé inactif. Utilisez le certificat de travail."
@@ -588,7 +588,7 @@ def generate_certificat_travail(
         raise HTTPException(status_code=404, detail="Employé non trouvé")
     
     # Vérifier que l'employé est INACTIF (certificat = pour employés ayant quitté)
-    if employe.actif:
+    if employe.statut_contrat == StatutContrat.ACTIF:
         raise HTTPException(
             status_code=400, 
             detail="Impossible de générer un certificat de travail pour un employé actif. Utilisez l'attestation de travail."
