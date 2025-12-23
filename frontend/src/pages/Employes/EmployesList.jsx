@@ -455,7 +455,7 @@ function EmployesList() {
             </Button>
           </Tooltip>
 
-          {record.actif ? (
+          {record.statut_contrat === 'Actif' ? (
             <>
               <Tooltip title="Attestation">
                 <Button
@@ -550,7 +550,7 @@ function EmployesList() {
           >
             Modifier
           </Button>
-          {employe.actif ? (
+          {employe.statut_contrat === 'Actif' ? (
             <>
               <Button
                 size="small"
