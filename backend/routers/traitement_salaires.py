@@ -145,19 +145,7 @@ def valider_salaire_employe(
         salaire_existant.date_paiement = date.today()
         db.add(salaire_existant)
     
-    # 3. Marquer avances comme déduites
-    avances = db.query(Avance).filter(
-        Avance.employe_id == employe_id,
-        Avance.annee_deduction == annee,
-        Avance.mois_deduction == mois,
-        Avance.deduit == False
-    ).all()
-    
-    for avance in avances:
-        avance.deduit = True
-        avance.date_deduction = date.today()
-    
-    # 4. Mettre à jour crédits
+    # 3. Mettre à jour crédits
     credits = db.query(Credit).filter(
         Credit.employe_id == employe_id,
         Credit.statut == StatutCredit.EN_COURS
@@ -171,7 +159,7 @@ def valider_salaire_employe(
                 credit.statut = StatutCredit.TERMINE
                 credit.date_fin_effective = date.today()
     
-    # 5. Commit
+    # 4. Commit
     db.commit()
     db.refresh(salaire_existant)
     
@@ -239,18 +227,6 @@ def valider_tous_salaires(
                 salaire_existant.statut = "valide"
                 salaire_existant.date_paiement = date.today()
                 db.add(salaire_existant)
-            
-            # Marquer avances
-            avances = db.query(Avance).filter(
-                Avance.employe_id == employe_id,
-                Avance.annee_deduction == annee,
-                Avance.mois_deduction == mois,
-                Avance.deduit == False
-            ).all()
-            
-            for avance in avances:
-                avance.deduit = True
-                avance.date_deduction = date.today()
             
             # Mettre à jour crédits
             credits = db.query(Credit).filter(
