@@ -169,6 +169,128 @@ def get_employes_actifs_mois(
         ]
     }
 
+@router.get("/template-import")
+def telecharger_template_import(
+    annee: int = Query(..., ge=2000, le=2100),
+    mois: int = Query(..., ge=1, le=12),
+    db: Session = Depends(get_db)
+):
+    """
+    Générer un fichier Excel modèle pour l'import des pointages
+    Contient la liste de tous les employés actifs avec colonnes jour1-jour31
+    """
+    import openpyxl
+    from openpyxl.styles import Font, Alignment, PatternFill, Border, Side
+    from io import BytesIO
+    import calendar
+    
+    # Récupérer tous les employés actifs
+    employes = db.query(Employe).filter(Employe.actif == True).order_by(Employe.nom, Employe.prenom).all()
+    
+    if not employes:
+        raise HTTPException(status_code=404, detail="Aucun employé actif")
+    
+    # Créer workbook
+    wb = openpyxl.Workbook()
+    ws = wb.active
+    ws.title = f"Pointages {mois:02d}-{annee}"
+    
+    # Styles
+    header_fill = PatternFill(start_color="366092", end_color="366092", fill_type="solid")
+    header_font = Font(color="FFFFFF", bold=True, size=11)
+    border = Border(
+        left=Side(style='thin'),
+        right=Side(style='thin'),
+        top=Side(style='thin'),
+        bottom=Side(style='thin')
+    )
+    
+    # Nombre de jours dans le mois
+    _, nb_jours = calendar.monthrange(annee, mois)
+    
+    # En-têtes
+    headers = ['Matricule', 'Nom', 'Prénom', 'Poste']
+    for jour in range(1, nb_jours + 1):
+        headers.append(f'J{jour:02d}')
+    
+    # Écrire en-têtes
+    for col_idx, header in enumerate(headers, 1):
+        cell = ws.cell(row=1, column=col_idx, value=header)
+        cell.fill = header_fill
+        cell.font = header_font
+        cell.alignment = Alignment(horizontal='center', vertical='center')
+        cell.border = border
+    
+    # Écrire employés
+    for row_idx, emp in enumerate(employes, 2):
+        ws.cell(row=row_idx, column=1, value=emp.id).border = border
+        ws.cell(row=row_idx, column=2, value=emp.nom).border = border
+        ws.cell(row=row_idx, column=3, value=emp.prenom).border = border
+        ws.cell(row=row_idx, column=4, value=emp.poste_travail or "").border = border
+        
+        # Colonnes jours (vides, à remplir)
+        for col_idx in range(5, 5 + nb_jours):
+            cell = ws.cell(row=row_idx, column=col_idx, value="")
+            cell.border = border
+            cell.alignment = Alignment(horizontal='center')
+    
+    # Ajuster largeurs
+    ws.column_dimensions['A'].width = 12  # Matricule
+    ws.column_dimensions['B'].width = 20  # Nom
+    ws.column_dimensions['C'].width = 20  # Prénom
+    ws.column_dimensions['D'].width = 25  # Poste
+    for col_idx in range(5, 5 + nb_jours):
+        ws.column_dimensions[openpyxl.utils.get_column_letter(col_idx)].width = 5
+    
+    # Figer première ligne
+    ws.freeze_panes = 'A2'
+    
+    # Instructions dans feuille séparée
+    ws_instructions = wb.create_sheet("Instructions")
+    instructions = [
+        "INSTRUCTIONS - IMPORT POINTAGES",
+        "",
+        "1. Valeurs acceptées pour chaque jour:",
+        "   - 1 ou Tr = Travaillé",
+        "   - 0 ou Ab = Absence",
+        "   - C ou Co = Congé",
+        "   - M ou Ma = Maladie",
+        "   - Fe ou Fé = Férié",
+        "   - (vide) = Pas encore défini",
+        "",
+        "2. NE PAS MODIFIER les colonnes Matricule, Nom, Prénom",
+        "",
+        "3. Après remplissage, importer le fichier dans 'Import Pointages'",
+        "",
+        "4. Le système validera automatiquement les données",
+        "",
+        f"Période: {mois:02d}/{annee}",
+        f"Employés actifs: {len(employes)}"
+    ]
+    
+    for row_idx, instruction in enumerate(instructions, 1):
+        cell = ws_instructions.cell(row=row_idx, column=1, value=instruction)
+        if row_idx == 1:
+            cell.font = Font(bold=True, size=14, color="366092")
+        elif "Valeurs acceptées" in instruction or "NE PAS MODIFIER" in instruction:
+            cell.font = Font(bold=True, color="D32F2F")
+    
+    ws_instructions.column_dimensions['A'].width = 60
+    
+    # Sauvegarder dans buffer
+    buffer = BytesIO()
+    wb.save(buffer)
+    buffer.seek(0)
+    
+    # Nom du fichier
+    filename = f"template_pointages_{mois:02d}_{annee}.xlsx"
+    
+    return StreamingResponse(
+        buffer,
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers={"Content-Disposition": f"attachment; filename={filename}"}
+    )
+
 @router.get("/{pointage_id}", response_model=PointageResponse)
 def get_pointage(pointage_id: int, db: Session = Depends(get_db)):
     """Obtenir un pointage par son ID"""
@@ -522,125 +644,3 @@ def generer_rapport_pointages_mensuel(
         }
     )
 
-
-@router.get("/template-import")
-def telecharger_template_import(
-    annee: int = Query(..., ge=2000, le=2100),
-    mois: int = Query(..., ge=1, le=12),
-    db: Session = Depends(get_db)
-):
-    """
-    Générer un fichier Excel modèle pour l'import des pointages
-    Contient la liste de tous les employés actifs avec colonnes jour1-jour31
-    """
-    import openpyxl
-    from openpyxl.styles import Font, Alignment, PatternFill, Border, Side
-    from io import BytesIO
-    import calendar
-    
-    # Récupérer tous les employés actifs
-    employes = db.query(Employe).filter(Employe.actif == True).order_by(Employe.nom, Employe.prenom).all()
-    
-    if not employes:
-        raise HTTPException(status_code=404, detail="Aucun employé actif")
-    
-    # Créer workbook
-    wb = openpyxl.Workbook()
-    ws = wb.active
-    ws.title = f"Pointages {mois:02d}-{annee}"
-    
-    # Styles
-    header_fill = PatternFill(start_color="366092", end_color="366092", fill_type="solid")
-    header_font = Font(color="FFFFFF", bold=True, size=11)
-    border = Border(
-        left=Side(style='thin'),
-        right=Side(style='thin'),
-        top=Side(style='thin'),
-        bottom=Side(style='thin')
-    )
-    
-    # Nombre de jours dans le mois
-    _, nb_jours = calendar.monthrange(annee, mois)
-    
-    # En-têtes
-    headers = ['Matricule', 'Nom', 'Prénom', 'Poste']
-    for jour in range(1, nb_jours + 1):
-        headers.append(f'J{jour:02d}')
-    
-    # Écrire en-têtes
-    for col_idx, header in enumerate(headers, 1):
-        cell = ws.cell(row=1, column=col_idx, value=header)
-        cell.fill = header_fill
-        cell.font = header_font
-        cell.alignment = Alignment(horizontal='center', vertical='center')
-        cell.border = border
-    
-    # Écrire employés
-    for row_idx, emp in enumerate(employes, 2):
-        ws.cell(row=row_idx, column=1, value=emp.id).border = border
-        ws.cell(row=row_idx, column=2, value=emp.nom).border = border
-        ws.cell(row=row_idx, column=3, value=emp.prenom).border = border
-        ws.cell(row=row_idx, column=4, value=emp.poste_travail or "").border = border
-        
-        # Colonnes jours (vides, à remplir)
-        for col_idx in range(5, 5 + nb_jours):
-            cell = ws.cell(row=row_idx, column=col_idx, value="")
-            cell.border = border
-            cell.alignment = Alignment(horizontal='center')
-    
-    # Ajuster largeurs
-    ws.column_dimensions['A'].width = 12  # Matricule
-    ws.column_dimensions['B'].width = 20  # Nom
-    ws.column_dimensions['C'].width = 20  # Prénom
-    ws.column_dimensions['D'].width = 25  # Poste
-    for col_idx in range(5, 5 + nb_jours):
-        ws.column_dimensions[openpyxl.utils.get_column_letter(col_idx)].width = 5
-    
-    # Figer première ligne
-    ws.freeze_panes = 'A2'
-    
-    # Instructions dans feuille séparée
-    ws_instructions = wb.create_sheet("Instructions")
-    instructions = [
-        "INSTRUCTIONS - IMPORT POINTAGES",
-        "",
-        "1. Valeurs acceptées pour chaque jour:",
-        "   - 1 ou Tr = Travaillé",
-        "   - 0 ou Ab = Absence",
-        "   - C ou Co = Congé",
-        "   - M ou Ma = Maladie",
-        "   - Fe ou Fé = Férié",
-        "   - (vide) = Pas encore défini",
-        "",
-        "2. NE PAS MODIFIER les colonnes Matricule, Nom, Prénom",
-        "",
-        "3. Après remplissage, importer le fichier dans 'Import Pointages'",
-        "",
-        "4. Le système validera automatiquement les données",
-        "",
-        f"Période: {mois:02d}/{annee}",
-        f"Employés actifs: {len(employes)}"
-    ]
-    
-    for row_idx, instruction in enumerate(instructions, 1):
-        cell = ws_instructions.cell(row=row_idx, column=1, value=instruction)
-        if row_idx == 1:
-            cell.font = Font(bold=True, size=14, color="366092")
-        elif "Valeurs acceptées" in instruction or "NE PAS MODIFIER" in instruction:
-            cell.font = Font(bold=True, color="D32F2F")
-    
-    ws_instructions.column_dimensions['A'].width = 60
-    
-    # Sauvegarder dans buffer
-    buffer = BytesIO()
-    wb.save(buffer)
-    buffer.seek(0)
-    
-    # Nom du fichier
-    filename = f"template_pointages_{mois:02d}_{annee}.xlsx"
-    
-    return StreamingResponse(
-        buffer,
-        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-        headers={"Content-Disposition": f"attachment; filename={filename}"}
-    )
