@@ -164,7 +164,7 @@ Write-Host "💾 Sauvegardes: $BACKUP_DIR" -ForegroundColor Cyan
 Write-Host ""
 Write-Host "📝 Prochaines étapes:" -ForegroundColor Yellow
 Write-Host "  1. Tester l'API: http://${SERVER}:8000/docs" -ForegroundColor White
-Write-Host "  2. Vérifier les logs: ssh $USER@$SERVER 'tail -f /var/log/ay_hr_backend.log'" -ForegroundColor White
+Write-Host "  2. Vérifier les logs: ssh $USER@$SERVER `"tail -f /var/log/ay_hr_backend.log`"" -ForegroundColor White
 Write-Host "  3. Tester les nouvelles fonctionnalités v3.6.1:" -ForegroundColor White
 Write-Host "     - Gestion des congés avec déduction flexible" -ForegroundColor White
 Write-Host "     - Échéancier automatique des crédits" -ForegroundColor White
