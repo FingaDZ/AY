@@ -6,9 +6,11 @@ import {
     WarningOutlined,
     CloseCircleOutlined,
     ReloadOutlined,
-    CheckOutlined
+    CheckOutlined,
+    DownloadOutlined
 } from '@ant-design/icons';
 import { attendanceService } from '../../services';
+import axios from 'axios';
 import dayjs from 'dayjs';
 import 'dayjs/locale/fr';
 
@@ -17,6 +19,7 @@ const { RangePicker } = DatePicker;
 dayjs.locale('fr');
 
 function ImportPreview() {
+    const currentDate = dayjs();
     const [loading, setLoading] = useState(false);
     const [previewData, setPreviewData] = useState(null);
     const [selectedRowKeys, setSelectedRowKeys] = useState([]);
@@ -25,6 +28,38 @@ function ImportPreview() {
     const [dateRange, setDateRange] = useState(null);
     const [authorizedPhotos, setAuthorizedPhotos] = useState(new Set());
     const [detailsModal, setDetailsModal] = useState({ visible: false, title: '', items: [], type: '' });
+    const [templateMonth, setTemplateMonth] = useState(currentDate.month() + 1);
+    const [templateYear, setTemplateYear] = useState(currentDate.year());
+
+    const handleDownloadTemplate = async () => {
+        try {
+            setLoading(true);
+            message.loading({ content: 'Génération du modèle...', key: 'download', duration: 0 });
+            
+            const response = await axios.get('/api/pointages/template-import', {
+                params: { annee: templateYear, mois: templateMonth },
+                responseType: 'blob'
+            });
+            
+            const url = window.URL.createObjectURL(new Blob([response.data]));
+            const link = document.createElement('a');
+            link.href = url;
+            link.setAttribute('download', `template_pointages_${templateMonth.toString().padStart(2, '0')}_${templateYear}.xlsx`);
+            document.body.appendChild(link);
+            link.click();
+            link.remove();
+            window.URL.revokeObjectURL(url);
+            
+            message.destroy('download');
+            message.success('Modèle téléchargé avec succès');
+        } catch (error) {
+            message.destroy('download');
+            message.error('Erreur lors du téléchargement');
+            console.error('Download error:', error);
+        } finally {
+            setLoading(false);
+        }
+    };
 
     const handleFileUpload = async (file) => {
         try {
@@ -381,6 +416,52 @@ function ImportPreview() {
                             <p style={{ color: '#999', fontSize: '12px' }}>
                                 * Estimation automatique si entrée ou sortie manquante
                             </p>
+                            
+                            {/* Téléchargement modèle */}
+                            <div style={{ marginTop: '32px', padding: '24px', backgroundColor: '#f5f5f5', borderRadius: '8px' }}>
+                                <h3 style={{ marginBottom: '16px', color: '#366092' }}>
+                                    📋 Télécharger le modèle Excel
+                                </h3>
+                                <Space size="middle">
+                                    <Select
+                                        value={templateMonth}
+                                        onChange={setTemplateMonth}
+                                        style={{ width: 120 }}
+                                    >
+                                        {Array.from({ length: 12 }, (_, i) => (
+                                            <Select.Option key={i + 1} value={i + 1}>
+                                                {dayjs().month(i).format('MMMM')}
+                                            </Select.Option>
+                                        ))}
+                                    </Select>
+                                    <Select
+                                        value={templateYear}
+                                        onChange={setTemplateYear}
+                                        style={{ width: 100 }}
+                                    >
+                                        {Array.from({ length: 5 }, (_, i) => {
+                                            const year = currentDate.year() - 1 + i;
+                                            return (
+                                                <Select.Option key={year} value={year}>
+                                                    {year}
+                                                </Select.Option>
+                                            );
+                                        })}
+                                    </Select>
+                                    <Button
+                                        type="primary"
+                                        icon={<DownloadOutlined />}
+                                        onClick={handleDownloadTemplate}
+                                        loading={loading}
+                                        size="large"
+                                    >
+                                        Télécharger le modèle
+                                    </Button>
+                                </Space>
+                                <p style={{ marginTop: '12px', color: '#666', fontSize: '12px' }}>
+                                    Le fichier contient tous les employés actifs avec colonnes pour chaque jour du mois
+                                </p>
+                            </div>
                         </div>
                     ) : (
                         <>
