@@ -29,6 +29,7 @@ class ParametresSalaire(Base):
     taux_securite_sociale = Column(Numeric(5, 2), default=9.00, nullable=False, comment="Retenue Sécurité Sociale (%)")
     
     # Options de calcul
+    jours_ouvrables_base = Column(Integer, default=26, nullable=False, comment="Nombre de jours ouvrables de base par mois")
     activer_heures_supp = Column(Boolean, default=True, nullable=False, comment="Activer calcul heures supplémentaires")
     activer_irg_proratise = Column(Boolean, default=True, nullable=False, comment="Proratiser IRG selon jours travaillés")
     mode_calcul_conges = Column(String(20), default='proratise', nullable=False, comment="Mode calcul congés: complet|proratise|hybride")

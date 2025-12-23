@@ -68,7 +68,7 @@ class BaseSalaryProvider:
             
         elif mode == "hybride":
             # Salaire sur jours ouvrables base (ex: 26)
-            base_days = self.params.jours_ouvrables_base or 26
+            base_days = getattr(self.params, 'jours_ouvrables_base', 26) or 26
             part_work = base_salary * Decimal(worked_days) / Decimal(base_days)
             part_leave = base_salary * Decimal(leave_days) / Decimal(base_days)
             return part_work + part_leave

@@ -76,8 +76,8 @@ class SalaireCalculator:
         # Somme de toutes les déductions pour CE bulletin
         jours_conges = sum(float(d.jours_deduits or 0) for d in deductions)
         
-        # Nombre de jours ouvrables du mois
-        jours_ouvrables = self.params.jours_ouvrables_base
+        # Nombre de jours ouvrables du mois (26 par défaut si non défini)
+        jours_ouvrables = getattr(self.params, 'jours_ouvrables_base', 26) or 26
         
         # Calculer les jours ouvrables réellement travaillés (exclure les vendredis/fériés)
         # On estime qu'il y a 4-5 vendredis par mois, donc environ 4 jours fériés
@@ -357,7 +357,7 @@ class SalaireCalculator:
             
         elif mode == "hybride":
             # Salaire sur jours ouvrables base (ex: 26)
-            jours_base = self.params.jours_ouvrables_base or 26
+            jours_base = getattr(self.params, 'jours_ouvrables_base', 26) or 26
             part_travail = salaire_base * Decimal(jours_travailles) / Decimal(jours_base)
             part_conges = salaire_base * Decimal(jours_conges) / Decimal(jours_base)
             return part_travail + part_conges
