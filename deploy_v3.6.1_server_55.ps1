@@ -154,24 +154,24 @@ if ($apiCheck) {
 
 Write-Host ""
 Write-Host "========================================" -ForegroundColor Green
-Write-Host "   DÉPLOIEMENT TERMINÉ!" -ForegroundColor Green
+Write-Host "   DEPLOIEMENT TERMINE!" -ForegroundColor Green
 Write-Host "========================================" -ForegroundColor Green
 Write-Host ""
-Write-Host "📊 Version déployée: v3.6.1" -ForegroundColor Cyan
-Write-Host "🌐 API Backend: http://${SERVER}:8000" -ForegroundColor Cyan
-Write-Host "📚 Documentation: http://${SERVER}:8000/docs" -ForegroundColor Cyan
-Write-Host "💾 Sauvegardes: $BACKUP_DIR" -ForegroundColor Cyan
+Write-Host "Version deployee: v3.6.1" -ForegroundColor Cyan
+Write-Host "API Backend: http://${SERVER}:8000" -ForegroundColor Cyan
+Write-Host "Documentation: http://${SERVER}:8000/docs" -ForegroundColor Cyan
+Write-Host "Sauvegardes: $BACKUP_DIR" -ForegroundColor Cyan
 Write-Host ""
-Write-Host "📝 Prochaines étapes:" -ForegroundColor Yellow
+Write-Host "Prochaines etapes:" -ForegroundColor Yellow
 Write-Host "  1. Tester l'API: http://${SERVER}:8000/docs" -ForegroundColor White
-Write-Host "  2. Vérifier les logs: ssh $USER@$SERVER `"tail -f /var/log/ay_hr_backend.log`"" -ForegroundColor White
-Write-Host "  3. Tester les nouvelles fonctionnalités v3.6.1:" -ForegroundColor White
-Write-Host "     - Gestion des congés avec déduction flexible" -ForegroundColor White
-Write-Host "     - Échéancier automatique des crédits" -ForegroundColor White
-Write-Host "     - Auto-désactivation des contrats expirés" -ForegroundColor White
+Write-Host "  2. Verifier les logs sur le serveur" -ForegroundColor White
+Write-Host "  3. Tester les nouvelles fonctionnalites v3.6.1:" -ForegroundColor White
+Write-Host "     - Gestion des conges avec deduction flexible" -ForegroundColor White
+Write-Host "     - Echeancier automatique des credits" -ForegroundColor White
+Write-Host "     - Auto-desactivation des contrats expires" -ForegroundColor White
 Write-Host ""
-Write-Host "⚠️  Notes importantes:" -ForegroundColor Yellow
-Write-Host "  - Vérifiez le fichier .env sur le serveur" -ForegroundColor White
-Write-Host "  - Testez la connexion à la base de données MySQL" -ForegroundColor White
-Write-Host "  - Vérifiez que le mot de passe MySQL root est configuré" -ForegroundColor White
+Write-Host "Notes importantes:" -ForegroundColor Yellow
+Write-Host "  - Verifiez le fichier .env sur le serveur" -ForegroundColor White
+Write-Host "  - Testez la connexion a la base de donnees MySQL" -ForegroundColor White
+Write-Host "  - Verifiez que le mot de passe MySQL root est configure" -ForegroundColor White
 Write-Host ""

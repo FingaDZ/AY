@@ -1,4 +1,4 @@
-# AY HR System v3.6.1
+# AY HR System v3.7.0
 
 ## 🚀 Installation Rapide
 
@@ -24,7 +24,7 @@ Guide complet: [INSTALL_DOCKER.md](INSTALL_DOCKER.md)
 
 ---
 
-## 🎉 Nouveautés Version 3.6.1 (Décembre 2025)
+## 🎉 Nouveautés Version 3.7.0 (Décembre 2025)
 
 ### 📅 **GESTION AVANCÉE DES CONGÉS**
 - **Mois de déduction flexible**: Les congés peuvent être déduits dans un mois différent de leur acquisition
